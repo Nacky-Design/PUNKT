@@ -6,6 +6,7 @@ import {
   ChevronRight,
   ArrowRight,
 } from "lucide-vue-next";
+import { usePopoverPlacement } from "../composables/usePopoverPlacement";
 import { todayISO, localDate, isoDate } from "../data";
 const props = defineProps<{ start: string; end: string }>();
 const emit = defineEmits<{
@@ -21,6 +22,7 @@ const root = ref<HTMLElement>(),
       1,
     ),
   );
+const above = usePopoverPlacement(root, () => active.value, ".calendar");
 const today = todayISO();
 const label = (s: string) =>
   localDate(s)
@@ -105,7 +107,11 @@ onBeforeUnmount(() => document.removeEventListener("click", close));
         ><span class="field-value">{{ label(end) }}</span></span
       ></button
     ><Transition name="popover"
-      ><div v-if="active" class="calendar popover-surface">
+      ><div
+        v-if="active"
+        class="calendar popover-surface"
+        :class="{ 'popover-above': above }"
+      >
         <div class="calendar-purpose">
           {{
             active === "start"

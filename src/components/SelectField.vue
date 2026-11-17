@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, nextTick } from "vue";
+import { usePopoverPlacement } from "../composables/usePopoverPlacement";
 import { ChevronDown, Check } from "lucide-vue-next";
 defineProps<{ modelValue: string; label: string; options: string[] }>();
 const emit = defineEmits<{ "update:modelValue": [value: string] }>();
 const open = ref(false),
   root = ref<HTMLElement>(),
   trigger = ref<HTMLButtonElement>();
+const above = usePopoverPlacement(root, () => open.value, ".select-menu");
 function close(e: MouseEvent) {
   if (!root.value?.contains(e.target as Node)) open.value = false;
 }
@@ -62,7 +64,13 @@ onBeforeUnmount(() => document.removeEventListener("click", close));
         ><span class="field-value">{{ modelValue }}</span></span
       ><ChevronDown :size="16" :class="{ rotated: open }" /></button
     ><Transition name="popover"
-      ><div v-if="open" class="select-menu" role="listbox" :aria-label="label">
+      ><div
+        v-if="open"
+        class="select-menu"
+        :class="{ 'popover-above': above }"
+        role="listbox"
+        :aria-label="label"
+      >
         <button
           v-for="option in options"
           :key="option"

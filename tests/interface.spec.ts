@@ -8,11 +8,19 @@ test("quick selection preserves hero geometry, filters cars and scrolls the rail
     panel = page.locator(".search-panel");
   const before = await hero.boundingBox(),
     panelBefore = await panel.boundingBox();
-  await page.getByRole("button", { name: "Быстрый выбор автомобиля" }).click();
+  await expect(
+    page.getByRole("button", { name: "Быстрый выбор автомобиля" }),
+  ).toHaveAttribute("aria-expanded", "false");
   await expect(page.locator(".quick-expand")).toHaveClass(/quick-hidden/);
-  expect((await hero.boundingBox())!.height).toBe(before!.height);
-  expect((await panel.boundingBox())!.y).toBe(panelBefore!.y);
   await page.getByRole("button", { name: "Быстрый выбор автомобиля" }).click();
+  await page.waitForTimeout(450);
+  expect((await hero.boundingBox())!.height).toBe(before!.height);
+  const panelOpen = await panel.boundingBox();
+  expect(panelOpen!.y).toBeLessThan(panelBefore!.y);
+  expect(panelOpen!.y + panelOpen!.height).toBeCloseTo(
+    panelBefore!.y + panelBefore!.height,
+    1,
+  );
   await page.getByRole("button", { name: "Кроссовер", exact: true }).click();
   await expect(page.locator(".car-card")).toHaveCount(2);
   await expect(page.locator(".car-card").first()).toContainText(
@@ -83,9 +91,12 @@ test("calculator reacts to mileage, protection and duration; gallery and form wo
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Пробег: 100 км / сутки" }).click();
+  await page
+    .getByRole("button", { name: "Лимит пробега: 100 км / сутки" })
+    .click();
   await page.getByRole("option", { name: "250 км / сутки" }).click();
   await page.getByRole("checkbox", { name: "Защита+", exact: true }).check();
+  await page.getByRole("button", { name: "Быстрый выбор автомобиля" }).click();
   await page
     .locator(".car-card")
     .filter({ hasText: "Hyundai Solaris" })
@@ -206,7 +217,7 @@ for (const [width, height] of [
   [1440, 900],
   [1366, 768],
 ]) {
-  test(`hero viewport ${width}x${height}: one frame, stable panel anchor and no decorative copy`, async ({
+  test(`hero viewport ${width}x${height}: one frame, upward opening with fixed lower edge and no decorative copy`, async ({
     page,
   }) => {
     await page.setViewportSize({ width, height });
@@ -233,7 +244,12 @@ for (const [width, height] of [
         .click();
       await page.waitForTimeout(450);
       const after = await panel.boundingBox();
-      expect(after!.y).toBe(before!.y);
+      expect(after!.y + after!.height).toBeCloseTo(
+        before!.y + before!.height,
+        1,
+      );
+      if (i === 0) expect(after!.y).toBeLessThan(before!.y);
+      else expect(after!.y).toBeCloseTo(before!.y, 1);
       expect(after!.y + after!.height).toBeLessThanOrEqual(height - 15);
       expect(
         await page.evaluate(() => document.documentElement.scrollHeight),
@@ -246,5 +262,101 @@ for (const [width, height] of [
       page.getByRole("dialog", { name: "Подбор автомобилей" }),
     ).toBeVisible();
     expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  });
+}
+
+test("mileage explanation distinguishes allowance from odometer and follows selection", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Как работает лимит пробега" })
+    .click();
+  const info = page.getByRole("dialog", { name: "Что означает лимит пробега" });
+  await expect(info).toContainText("не пробег самого автомобиля");
+  await expect(info).toContainText("120 км");
+  await page.keyboard.press("Escape");
+  await expect(
+    page.getByRole("button", { name: "Как работает лимит пробега" }),
+  ).toBeFocused();
+  await page
+    .getByRole("button", { name: "Лимит пробега: 100 км / сутки" })
+    .click();
+  await page.getByRole("option", { name: "250 км / сутки" }).click();
+  await page
+    .getByRole("button", { name: "Как работает лимит пробега" })
+    .click();
+  await expect(info).toContainText("270 км");
+});
+
+test("delivery help does not toggle the checkbox; pickup and delivery stay consistent", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const box = page.getByRole("checkbox", { name: "Доставка", exact: true });
+  await page.getByRole("button", { name: "Как работает доставка" }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Как работает доставка" }),
+  ).toContainText("печатный договор");
+  await expect(box).not.toBeChecked();
+  await page.keyboard.press("Escape");
+  await box.check();
+  await expect(
+    page.getByRole("button", { name: "Место получения: Доставка по Москве" }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Место получения: Доставка по Москве" })
+    .click();
+  await page
+    .getByRole("option", { name: "Офис на Авиационной", exact: true })
+    .click();
+  await expect(box).not.toBeChecked();
+  await page
+    .getByRole("button", { name: "Место получения: Офис на Авиационной" })
+    .click();
+  await page.getByRole("option", { name: "Шереметьево (SVO)" }).click();
+  await expect(box).toBeChecked();
+  await box.uncheck();
+  await expect(
+    page.getByRole("button", { name: "Место получения: Офис на Авиационной" }),
+  ).toBeVisible();
+});
+
+for (const [width, height] of [
+  [1920, 1080],
+  [1536, 864],
+  [1366, 768],
+]) {
+  test(`bottom-anchored popovers and background cover the frame at ${width}x${height}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height });
+    await page.goto("/");
+    const bg = await page.locator(".hero-visual").boundingBox();
+    expect(bg).toEqual({ x: 0, y: 0, width, height });
+    const mask = await page
+      .locator(".hero-visual")
+      .evaluate((el) => getComputedStyle(el).maskImage);
+    expect(mask).toBe("none");
+    for (const [name, selector] of [
+      ["Дата получения", ".calendar"],
+      [
+        "Класс автомобиля: Все классы",
+        '.select-menu[aria-label="Класс автомобиля"]',
+      ],
+      [
+        "Лимит пробега: 100 км / сутки",
+        '.select-menu[aria-label="Лимит пробега"]',
+      ],
+    ]) {
+      await page.getByRole("button", { name, exact: true }).click();
+      const popup = page.locator(selector);
+      await expect(popup).toBeVisible();
+      const rect = await popup.boundingBox();
+      expect(rect!.y).toBeGreaterThanOrEqual(0);
+      expect(rect!.y + rect!.height).toBeLessThanOrEqual(height);
+      await page.keyboard.press("Escape");
+      await expect(popup).toBeHidden();
+    }
   });
 }

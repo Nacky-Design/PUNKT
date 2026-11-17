@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick } from "vue";
+import { ref, computed, nextTick, watch } from "vue";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -50,7 +50,7 @@ const protection = ref(false),
   delivery = ref(false),
   business = ref(false),
   foreign = ref(false);
-const quickOpen = ref(true),
+const quickOpen = ref(false),
   quickCategory = ref("Все классы"),
   mobileMenu = ref(false),
   rail = ref<HTMLElement>();
@@ -136,6 +136,29 @@ function openInfo(title: string, body: string) {
   modal.value = "info";
   mobileMenu.value = false;
 }
+function explainMileage() {
+  const limit = Number.parseInt(mileage.value, 10);
+  openInfo(
+    "Что означает лимит пробега",
+    `Это расстояние, включённое в тариф, а не пробег самого автомобиля.\n\nПри аренде на одни сутки с пакетом ${limit} км можно проехать ${limit} км без доплаты за километры. Если проехать ${limit + 20} км, 20 км будут сверх лимита.\n\nДля более длинных поездок выберите больший пакет — он меняет предварительную стоимость. Ставку за перепробег и правила расчёта за несколько суток подтвердим до оформления.`,
+  );
+}
+function explainDelivery() {
+  openInfo(
+    "Как работает доставка",
+    "Привезём автомобиль в согласованное место и время. Выберите место в поле «Место получения».\n\nСначала свяжемся с вами и проверим документы в согласованном чате. После одобрения договоримся о времени; водитель привезёт автомобиль и печатный договор.\n\nОтметка «Доставка» — пожелание к заявке, не подтверждение выдачи. Стоимость согласуется отдельно; даты и территория акции бесплатной доставки ещё уточняются.",
+  );
+}
+// Receiving the car in the office and requesting delivery are mutually exclusive.
+watch(location, (value) => {
+  delivery.value = value !== "Офис на Авиационной";
+});
+watch(delivery, (enabled) => {
+  if (enabled && location.value === "Офис на Авиационной")
+    location.value = "Доставка по Москве";
+  else if (!enabled && location.value !== "Офис на Авиационной")
+    location.value = "Офис на Авиационной";
+});
 function nav(item: string) {
   mobileMenu.value = false;
   if (item === "Цены") search();
@@ -371,41 +394,67 @@ function account() {
               </button>
             </div>
             <div class="search-secondary">
-              <SelectField
-                v-model="mileage"
-                label="Пробег"
-                :options="[
-                  '100 км / сутки',
-                  '250 км / сутки',
-                  '500 км / сутки',
-                ]"
-                ><Gauge :size="20"
-              /></SelectField>
-              <label class="check-label"
-                ><input
-                  type="checkbox"
-                  v-model="protection"
-                  aria-label="Защита+" /><span class="check-visual"
-                  ><Check :size="13" /></span
-                >Защита+<button
+              <div class="mileage-control">
+                <SelectField
+                  v-model="mileage"
+                  label="Лимит пробега"
+                  :options="[
+                    '100 км / сутки',
+                    '250 км / сутки',
+                    '500 км / сутки',
+                  ]"
+                  ><Gauge :size="20"
+                /></SelectField>
+                <button
+                  type="button"
+                  class="help-button"
+                  aria-label="Как работает лимит пробега"
+                  @click="explainMileage"
+                >
+                  <CircleHelp :size="16" />
+                </button>
+              </div>
+              <div class="option-with-help">
+                <label class="check-label"
+                  ><input
+                    type="checkbox"
+                    v-model="protection"
+                    aria-label="Защита+"
+                  /><span class="check-visual"><Check :size="13" /></span
+                  >Защита+</label
+                >
+                <button
                   type="button"
                   class="help-button"
                   aria-label="Что такое Защита+"
-                  @click.prevent="
+                  @click="
                     openInfo(
                       'Защита+',
                       'Дополнительная опция защиты. В прототипе используется демонстрационная стоимость 490 ₽/сутки. Объём покрытия, исключения и условия ответственности нужно подтвердить перед оформлением. Это не обещание отсутствия ответственности за любые повреждения.',
                     )
                   "
                 >
-                  <CircleHelp :size="14" /></button
-              ></label>
-              <label class="check-label"
-                ><input type="checkbox" v-model="delivery" /><span
-                  class="check-visual"
-                  ><Check :size="13" /></span
-                >Доставка</label
-              >
+                  <CircleHelp :size="14" />
+                </button>
+              </div>
+              <div class="option-with-help">
+                <label class="check-label"
+                  ><input
+                    type="checkbox"
+                    v-model="delivery"
+                    aria-label="Доставка"
+                  /><span class="check-visual"><Check :size="13" /></span
+                  >Доставка</label
+                >
+                <button
+                  type="button"
+                  class="help-button"
+                  aria-label="Как работает доставка"
+                  @click="explainDelivery"
+                >
+                  <CircleHelp :size="14" />
+                </button>
+              </div>
               <label class="check-label"
                 ><input type="checkbox" v-model="business" /><span
                   class="check-visual"

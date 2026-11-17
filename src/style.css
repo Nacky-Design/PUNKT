@@ -1080,7 +1080,6 @@ h2 {
   display: none;
 }
 .hero {
-  --panel-top: min(47.5svh, 520px);
   position: relative;
   height: 100svh;
   min-height: 720px;
@@ -1090,7 +1089,7 @@ h2 {
 }
 .hero-visual {
   position: absolute;
-  inset: 0 0 230px;
+  inset: 0;
   z-index: -3;
   background: url("/assets/hero-moscow.webp") center bottom / cover no-repeat;
 }
@@ -1099,9 +1098,8 @@ h2 {
   inset: 0;
   z-index: -2;
   background:
-    linear-gradient(180deg, #101a2570, transparent 24%),
-    linear-gradient(90deg, #14212a70, transparent 63%),
-    linear-gradient(0deg, #242e2f 2%, #242e2f20 43%, transparent 75%);
+    linear-gradient(90deg, #0d1b2840, #0d1b2808 72%),
+    linear-gradient(180deg, #0d17252b, transparent 24%);
 }
 .hero-content {
   position: relative;
@@ -1220,7 +1218,8 @@ h1 {
 }
 .search-panel {
   position: absolute;
-  top: var(--panel-top);
+  top: auto;
+  bottom: clamp(24px, 5svh, 54px);
   left: 0;
   right: 0;
   padding: 24px 26px 14px;
@@ -1577,7 +1576,6 @@ h1 {
 
 @media (min-width: 1051px) and (max-height: 850px) {
   .hero {
-    --panel-top: calc(100svh - 390px);
   }
   .hero-copy {
     top: 115px;
@@ -1591,9 +1589,6 @@ h1 {
   }
   h1 {
     font-size: 54px;
-  }
-  .hero-visual {
-    bottom: 220px;
   }
   .search-panel {
     padding: 17px 22px 11px;
@@ -1793,10 +1788,6 @@ h1 {
   }
   .hero {
     height: max(100svh, 1000px);
-    --panel-top: 440px;
-  }
-  .hero-visual {
-    bottom: 375px;
   }
   .hero-copy {
     top: 132px;
@@ -1939,21 +1930,9 @@ h1 {
   .hero {
     height: 1160px;
     min-height: 0;
-    --panel-top: 480px;
   }
   .hero-content {
     width: calc(100% - 32px);
-  }
-  .hero-visual {
-    bottom: 470px;
-    background-size: auto 730px;
-    background-position: 58% top;
-  }
-  .hero-shade {
-    background:
-      linear-gradient(180deg, #101a2560, transparent 25%),
-      linear-gradient(90deg, #14212a60, transparent),
-      linear-gradient(0deg, #242e2f 35%, transparent 65%);
   }
   .hero-copy {
     top: 113px;
@@ -2289,9 +2268,6 @@ h1 {
   .hero-benefits svg {
     width: 19px;
   }
-  .hero-visual {
-    background-position: 57% top;
-  }
   .delivery-offer {
     width: 230px;
   }
@@ -2359,10 +2335,6 @@ h1 {
   position: absolute;
   pointer-events: none;
 }
-.hero-visual {
-  mask-image: linear-gradient(#000 0%, #000 75%, transparent 100%);
-  -webkit-mask-image: linear-gradient(#000 0%, #000 75%, transparent 100%);
-}
 @media (min-width: 1051px) and (min-height: 851px) and (max-height: 899px) {
   .search-panel {
     padding: 20px 24px 12px;
@@ -2383,5 +2355,80 @@ h1 {
   }
   .offer-copy strong br {
     display: initial;
+  }
+}
+
+/* The lower edge is fixed; the optional car rail expands into the scene above it. */
+.hero-visual {
+  background-position: center;
+}
+.mileage-control {
+  display: flex;
+  align-items: center;
+  flex: 0 0 310px;
+  gap: 8px;
+  min-width: 0;
+}
+.mileage-control > .select-field {
+  flex: 1;
+  min-width: 0;
+}
+.mileage-control > .help-button {
+  flex-shrink: 0;
+}
+.option-with-help {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.info-body {
+  white-space: pre-line;
+}
+.select-menu.popover-above,
+.calendar.popover-above {
+  top: auto;
+  bottom: calc(100% + 10px);
+}
+.select-menu:not(.popover-above),
+.calendar:not(.popover-above) {
+  bottom: auto;
+  top: calc(100% + 10px);
+}
+@media (max-width: 1100px) {
+  .mileage-control {
+    flex-basis: 280px;
+  }
+}
+@media (min-width: 761px) and (max-width: 1050px) {
+  .mileage-control {
+    flex: 0 0 100%;
+  }
+}
+@media (max-width: 760px) {
+  .hero-visual {
+    background-position: 58% center;
+  }
+  .search-panel {
+    bottom: 20px;
+  }
+  .mileage-control {
+    width: 100%;
+    grid-column: 1/-1;
+  }
+  .search-secondary .field-caption,
+  .search-secondary .field-value {
+    font-size: 10px;
+  }
+  .option-with-help {
+    gap: 4px;
+  }
+  .option-with-help .help-button {
+    margin-left: 0;
+  }
+}
+@media (min-width: 1051px) and (min-height: 851px) and (max-height: 899px) {
+  .hero-copy {
+    top: 112px;
   }
 }
