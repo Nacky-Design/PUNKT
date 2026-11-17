@@ -23,14 +23,10 @@ import {
   CircleHelp,
   Clock3,
   MessageCircle,
-  ArrowDown,
-  SlidersHorizontal,
   CheckCircle2,
   Info,
   RotateCcw,
   Mail,
-  ExternalLink,
-  Send,
 } from "lucide-vue-next";
 import SelectField from "./components/SelectField.vue";
 import DateRange from "./components/DateRange.vue";
@@ -58,14 +54,20 @@ const quickOpen = ref(true),
   quickCategory = ref("Все классы"),
   mobileMenu = ref(false),
   rail = ref<HTMLElement>();
-const modal = ref<"car" | "request" | "account" | "offer" | "info" | null>(
-    null,
-  ),
+const modal = ref<
+    | "car"
+    | "request"
+    | "account"
+    | "offer"
+    | "info"
+    | "catalog"
+    | "contacts"
+    | null
+  >(null),
   selected = ref<Car>(cars[0]!),
   gallery = ref(0);
 const infoTitle = ref(""),
   infoBody = ref(""),
-  catalog = ref(false),
   showKit = ref(new URLSearchParams(window.location.search).has("ui-kit"));
 const name = ref(""),
   phone = ref(""),
@@ -74,8 +76,7 @@ const name = ref(""),
   errors = ref<Record<string, string>>({}),
   requestSnapshot = ref("");
 const searchStatus = ref(""),
-  sort = ref("По цене"),
-  notice = ref("");
+  sort = ref("По цене");
 const days = computed(() =>
   Math.max(
     1,
@@ -139,8 +140,7 @@ function nav(item: string) {
   mobileMenu.value = false;
   if (item === "Цены") search();
   else if (item === "Акции") modal.value = "offer";
-  else if (item === "Контакты")
-    document.getElementById("contacts")?.scrollIntoView({ behavior: "smooth" });
+  else if (item === "Контакты") modal.value = "contacts";
   else if (item === "Условия")
     openInfo(
       "Условия аренды",
@@ -196,14 +196,11 @@ function submitRequest() {
   phone.value = "";
   consent.value = false;
 }
-async function search() {
-  catalog.value = true;
+function search() {
   searchStatus.value = `${dateText.value} · ${days.value} ${dayLabel.value}`;
-  await nextTick();
-  document
-    .getElementById("catalog")
-    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  modal.value = "catalog";
 }
+
 function selectQuick(value: string) {
   quickCategory.value = value;
   nextTick(() => rail.value?.scrollTo({ left: 0, behavior: "smooth" }));
@@ -214,9 +211,6 @@ function scrollRail(direction: number) {
     behavior: "smooth",
   });
 }
-function scrollTo(id: string) {
-  document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-}
 function reset() {
   category.value = "Все классы";
   mileage.value = "100 км / сутки";
@@ -226,29 +220,35 @@ function account() {
   modal.value = "account";
   mobileMenu.value = false;
 }
-const steps = [
-  {
-    n: "01",
-    icon: CarFront,
-    title: "Выберите автомобиль",
-    text: "Укажите даты, класс и параметры поездки. Посмотрите предварительную стоимость.",
-  },
-  {
-    n: "02",
-    icon: MessageCircle,
-    title: "Согласуйте детали",
-    text: "Мы уточним наличие, документы и удобное время получения автомобиля.",
-  },
-  {
-    n: "03",
-    icon: MapPin,
-    title: "Получите ключи",
-    text: "В офисе или с доставкой. Подпишите договор — и отправляйтесь по своим планам.",
-  },
-];
 </script>
 
 <template>
+  <svg
+    class="logo-filter-definitions"
+    width="0"
+    height="0"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <defs>
+      <filter
+        id="logo-white"
+        x="0"
+        y="0"
+        width="100%"
+        height="100%"
+        color-interpolation-filters="sRGB"
+      >
+        <feColorMatrix
+          type="matrix"
+          values="0 0 0 0 1  -1 1 0 0 1  -1 0 1 0 1  -2 -3 -1 0 6"
+        />
+        <feComponentTransfer>
+          <feFuncA type="linear" slope="1.12" intercept="-0.12" />
+        </feComponentTransfer>
+      </filter>
+    </defs>
+  </svg>
   <a href="#search" class="skip-link">Перейти к подбору автомобиля</a>
   <header class="site-header">
     <a class="brand" href="#" aria-label="Пункт — на главную"
@@ -314,7 +314,6 @@ const steps = [
       <div class="hero-shade" aria-hidden="true"></div>
       <div class="hero-content">
         <div class="hero-copy">
-          <div class="eyebrow"><span></span> ПРОКАТ АВТОМОБИЛЕЙ В МОСКВЕ</div>
           <h1 id="hero-title">
             Автомобиль<br />под ваши
             <span>планы<span class="headline-dot">.</span></span>
@@ -328,17 +327,19 @@ const steps = [
             ><span><ShieldCheck />Понятные<br />условия</span
             ><span><MapPin />В офисе<br />или с доставкой</span>
           </div>
-          <button class="delivery-offer" @click="modal = 'offer'">
-            <span class="offer-icon"><Truck :size="22" /></span
-            ><span
-              ><small>К ОТКРЫТИЮ САЙТА</small
-              ><strong>Доставим бесплатно</strong></span
-            ><ArrowUpRight :size="20" />
-          </button>
         </div>
-        <span class="scene-caption"
-          ><span></span> Москва. Впереди — ваши планы.</span
+        <button
+          class="delivery-offer"
+          @click="modal = 'offer'"
+          aria-label="Бесплатная доставка к открытию сайта — подробнее"
         >
+          <span class="offer-icon"><Truck :size="25" /></span>
+          <span class="offer-copy"
+            ><strong>Доставим<br />бесплатно</strong
+            ><span>В честь открытия сайта</span></span
+          >
+          <ArrowUpRight class="offer-arrow" :size="20" />
+        </button>
         <section
           id="search"
           class="search-panel"
@@ -516,15 +517,85 @@ const steps = [
         </section>
       </div>
     </section>
+    <section v-if="showKit" id="ui-kit" class="ui-kit section-container">
+      <h2>Одна система. Все состояния.</h2>
+      <p class="muted">
+        Компоненты главного экрана. Golos Text · сетка 4 px · жёлтый акцент.
+      </p>
+      <div class="swatches">
+        <div
+          v-for="color in ['#FFC107', '#171717', '#FFFFFF', '#F5F5F5']"
+          :key="color"
+        >
+          <span :style="{ background: color }"></span><code>{{ color }}</code>
+        </div>
+      </div>
+      <div class="kit-grid">
+        <article>
+          <h3>Кнопки</h3>
+          <div class="kit-stack">
+            <button class="button button-primary">
+              Найти автомобиль<ArrowRight :size="18" /></button
+            ><button class="button button-dark">
+              Основное действие<ArrowRight :size="18" /></button
+            ><button class="button button-soft">Вторичное действие</button
+            ><button class="button button-primary" disabled>Недоступно</button>
+          </div>
+        </article>
+        <article>
+          <h3>Поля и состояния</h3>
+          <div class="kit-stack">
+            <label class="text-field"
+              >Имя<input placeholder="Как к вам обращаться" /></label
+            ><label class="text-field"
+              >Фокус<input class="force-focus" value="Александр" /></label
+            ><label class="text-field"
+              >Ошибка<input class="input-error" value="+7 (999)" /><small
+                class="error-text"
+                >Введите телефон полностью</small
+              ></label
+            >
+          </div>
+        </article>
+        <article>
+          <h3>Выбор и обратная связь</h3>
+          <label class="check-label"
+            ><input type="checkbox" checked /><span class="check-visual"
+              ><Check :size="13" /></span
+            >Выбрано</label
+          ><label class="check-label"
+            ><input type="checkbox" /><span class="check-visual"
+              ><Check :size="13" /></span
+            >Не выбрано</label
+          ><label class="check-label"
+            ><input type="checkbox" disabled /><span class="check-visual"
+              ><Check :size="13" /></span
+            >Недоступно</label
+          >
+          <p class="status-chip">
+            <CheckCircle2 :size="15" />Параметры выбраны
+          </p>
+          <p class="data-disclaimer">
+            Hover — мягкая тень и смена тона. Focus — видимое кольцо. Reduced
+            motion — без анимации.
+          </p>
+        </article>
+      </div>
+    </section>
+  </main>
+  <BaseModal
+    v-if="modal === 'catalog'"
+    title="Подбор автомобилей"
+    wide
+    @close="modal = null"
+  >
     <section
-      v-if="catalog"
       id="catalog"
-      class="catalog-section section-container"
+      class="catalog-content"
+      aria-label="Результаты подбора"
     >
       <div class="section-top">
         <div>
-          <div class="section-kicker">ВАШ ПОДБОР</div>
-          <h2>Есть из чего выбрать<span class="yellow-dot">.</span></h2>
           <p class="muted">
             {{ searchStatus }} · {{ mileage }} · {{ location }}
           </p>
@@ -591,154 +662,23 @@ const steps = [
         означает бронирование.
       </p>
     </section>
-    <section class="how-section section-container" id="how-it-works">
-      <div class="section-top">
-        <div>
-          <div class="section-kicker">ПРОСТО О ГЛАВНОМ</div>
-          <h2>
-            Меньше формальностей.<br />Больше ваших планов<span
-              class="yellow-dot"
-              >.</span
-            >
-          </h2>
-        </div>
-        <p class="section-intro">
-          От выбора автомобиля до получения ключей —<br />три понятных шага.
-        </p>
-      </div>
-      <div class="steps">
-        <article v-for="step in steps" :key="step.n">
-          <div class="step-top">
-            <component :is="step.icon" :size="26" /><span>{{ step.n }}</span>
-          </div>
-          <h3>{{ step.title }}</h3>
-          <p>{{ step.text }}</p>
-        </article>
-      </div>
-      <div class="document-note">
-        <ShieldCheck :size="20" />
-        <p>
-          Всё начинается с понятных условий.<span>
-            Договор подписывается при получении и ссылается на редакцию условий
-            аренды.</span
-          >
-        </p>
-        <button class="text-button" @click="nav('Условия')">
-          Об условиях<ArrowUpRight :size="17" />
-        </button>
-      </div>
-    </section>
-    <footer id="contacts">
-      <div class="footer-top">
-        <div>
-          <div class="footer-wordmark">Пункт<span>▪</span></div>
-          <p>Автомобиль под ваши планы.</p>
-        </div>
-        <div>
-          <a class="footer-phone" href="tel:+74951041010"
-            >8 495 104-10-10<ArrowUpRight :size="22" /></a
-          ><span>Ежедневно, 09:00–21:00</span>
-        </div>
-        <div class="footer-address">
-          <span>Москва, ул. Авиационная, 24с1</span
-          ><a href="mailto:info@punktprokat.ru"
-            >info@punktprokat.ru<Mail :size="15"
-          /></a>
-        </div>
-      </div>
-      <div class="footer-bottom">
-        <span>© {{ new Date().getFullYear() }} Пункт. Прокат автомобилей.</span
-        ><button
-          @click="
-            showKit = !showKit;
-            nextTick(() => scrollTo('ui-kit'));
-          "
-        >
-          UI kit<ArrowUpRight :size="13" /></button
-        ><button
-          @click="
-            openInfo(
-              'Конфиденциальность',
-              'Это интерактивный прототип. Данные форм не отправляются на сервер и не сохраняются. Политика обработки персональных данных и реквизиты будут предоставлены компанией перед запуском сайта.',
-            )
-          "
-        >
-          Конфиденциальность</button
-        ><span class="prototype-label">Интерактивная концепция · v0.1</span>
-      </div>
-    </footer>
-    <section v-if="showKit" id="ui-kit" class="ui-kit section-container">
-      <div class="section-kicker">ПУНКТ / СИСТЕМА ИНТЕРФЕЙСА</div>
-      <h2>Одна система. Все состояния.</h2>
-      <p class="muted">
-        Компоненты главного экрана. Golos Text · сетка 4 px · жёлтый акцент.
-      </p>
-      <div class="swatches">
-        <div
-          v-for="color in ['#FFC107', '#171717', '#FFFFFF', '#F5F5F5']"
-          :key="color"
-        >
-          <span :style="{ background: color }"></span><code>{{ color }}</code>
-        </div>
-      </div>
-      <div class="kit-grid">
-        <article>
-          <h3>Кнопки</h3>
-          <div class="kit-stack">
-            <button class="button button-primary">
-              Найти автомобиль<ArrowRight :size="18" /></button
-            ><button class="button button-dark">
-              Основное действие<ArrowRight :size="18" /></button
-            ><button class="button button-soft">Вторичное действие</button
-            ><button class="button button-primary" disabled>Недоступно</button>
-          </div>
-        </article>
-        <article>
-          <h3>Поля и состояния</h3>
-          <div class="kit-stack">
-            <label class="text-field"
-              >Имя<input placeholder="Как к вам обращаться" /></label
-            ><label class="text-field"
-              >Фокус<input class="force-focus" value="Александр" /></label
-            ><label class="text-field"
-              >Ошибка<input class="input-error" value="+7 (999)" /><small
-                class="error-text"
-                >Введите телефон полностью</small
-              ></label
-            >
-          </div>
-        </article>
-        <article>
-          <h3>Выбор и обратная связь</h3>
-          <label class="check-label"
-            ><input type="checkbox" checked /><span class="check-visual"
-              ><Check :size="13" /></span
-            >Выбрано</label
-          ><label class="check-label"
-            ><input type="checkbox" /><span class="check-visual"
-              ><Check :size="13" /></span
-            >Не выбрано</label
-          ><label class="check-label"
-            ><input type="checkbox" disabled /><span class="check-visual"
-              ><Check :size="13" /></span
-            >Недоступно</label
-          >
-          <p class="status-chip">
-            <CheckCircle2 :size="15" />Параметры выбраны
-          </p>
-          <p class="data-disclaimer">
-            Hover — мягкая тень и смена тона. Focus — видимое кольцо. Reduced
-            motion — без анимации.
-          </p>
-        </article>
-      </div>
-    </section>
-  </main>
-  <Transition name="toast"
-    ><div v-if="notice" class="toast" role="status">
-      {{ notice }}
-    </div></Transition
+  </BaseModal>
+  <BaseModal
+    v-if="modal === 'contacts'"
+    title="На связи с вашими планами"
+    @close="modal = null"
   >
+    <div class="contact-details">
+      <a href="tel:+74951041010" class="contact-phone"
+        ><Phone :size="21" />8 495 104-10-10</a
+      >
+      <p>Ежедневно, 09:00–21:00</p>
+      <p><MapPin :size="19" />Москва, ул. Авиационная, 24с1</p>
+      <a href="mailto:info@punktprokat.ru"
+        ><Mail :size="18" />info@punktprokat.ru</a
+      >
+    </div>
+  </BaseModal>
   <BaseModal
     v-if="modal === 'car'"
     :title="selected.name"
@@ -810,7 +750,7 @@ const steps = [
         </div>
       </div>
       <aside class="estimate">
-        <span class="section-kicker">ПРЕДВАРИТЕЛЬНЫЙ РАСЧЁТ</span>
+        <span class="estimate-caption">Предварительный расчёт</span>
         <div class="detail-daily">
           {{ money(rate(selected)) }} ₽<small>/ сутки</small>
         </div>
@@ -954,7 +894,7 @@ const steps = [
     ><div class="offer-modal-icon">
       <Truck :size="38" /><Sparkles :size="20" />
     </div>
-    <div class="section-kicker">АКЦИЯ К ОТКРЫТИЮ САЙТА</div>
+
     <h3 class="offer-title">Хорошие поездки<br />начинаются у вашей двери.</h3>
     <p class="modal-lead">
       Готовим бесплатную доставку автомобиля к запуску сайта.
@@ -980,7 +920,6 @@ const steps = [
         modal = null;
         delivery = true;
         location = 'Доставка по Москве';
-        scrollTo('search');
       "
     >
       Подобрать автомобиль<ArrowRight :size="19" /></button
