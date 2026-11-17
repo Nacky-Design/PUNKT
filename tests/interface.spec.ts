@@ -1,0 +1,201 @@
+import { test, expect } from "@playwright/test";
+
+test("quick selection preserves hero geometry, filters cars and scrolls the rail", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const hero = page.locator(".hero"),
+    next = page.locator("#how-it-works");
+  const before = await hero.boundingBox(),
+    nextBefore = await next.boundingBox();
+  await page.getByRole("button", { name: "Быстрый выбор автомобиля" }).click();
+  await expect(page.locator(".quick-expand")).toHaveClass(/quick-hidden/);
+  expect((await hero.boundingBox())!.height).toBe(before!.height);
+  expect((await next.boundingBox())!.y).toBe(nextBefore!.y);
+  await page.getByRole("button", { name: "Быстрый выбор автомобиля" }).click();
+  await page.getByRole("button", { name: "Кроссовер", exact: true }).click();
+  await expect(page.locator(".car-card")).toHaveCount(2);
+  await expect(page.locator(".car-card").first()).toContainText(
+    "Geely Coolray",
+  );
+  await page.getByRole("button", { name: "Все классы", exact: true }).click();
+  await page.getByRole("button", { name: "Следующие автомобили" }).click();
+  await expect
+    .poll(() => page.locator(".car-rail").evaluate((el) => el.scrollLeft))
+    .toBeGreaterThan(20);
+});
+
+test("class selection supports keyboard and search has an honest empty state", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const classField = page.getByRole("button", {
+    name: "Класс автомобиля: Все классы",
+  });
+  await classField.focus();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await expect(
+    page.getByRole("button", { name: "Класс автомобиля: Стандарт" }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Найти автомобиль", exact: true })
+    .click();
+  await expect(page.getByText("В этом классе пока нет примеров")).toBeVisible();
+  await page
+    .locator(".empty-state")
+    .getByRole("button", { name: "Все классы" })
+    .click();
+  await expect(page.locator(".result-row")).toHaveCount(6);
+});
+
+test("dates reject past days and require return after collection", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Дата получения", exact: true })
+    .click();
+  const calendar = page.locator(".calendar");
+  await expect(calendar).toBeVisible();
+  const enabled = calendar.locator(
+    ".calendar-grid button:not([disabled]):not(.outside)",
+  );
+  await enabled.last().click();
+  await expect(calendar.getByText("Когда вернёте автомобиль?")).toBeVisible();
+  const selectedStart = calendar.locator("button.endpoint").first();
+  await expect(selectedStart).toBeDisabled();
+  await calendar.getByRole("button", { name: "Следующий месяц" }).click();
+  await calendar
+    .locator(".calendar-grid button:not([disabled]):not(.outside)")
+    .first()
+    .click();
+  await expect(calendar).toBeHidden();
+  await page
+    .getByRole("button", { name: "Найти автомобиль", exact: true })
+    .click();
+  await expect(page.locator("#catalog .section-top")).not.toContainText("NaN");
+});
+
+test("calculator reacts to mileage, protection and duration; gallery and form work", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Пробег: 100 км / сутки" }).click();
+  await page.getByRole("option", { name: "250 км / сутки" }).click();
+  await page.getByRole("checkbox", { name: "Защита+", exact: true }).check();
+  await page
+    .locator(".car-card")
+    .filter({ hasText: "Hyundai Solaris" })
+    .click();
+  const modal = page.getByRole("dialog");
+  await expect(modal.locator(".detail-daily")).toContainText("4 090");
+  await expect(modal.locator(".estimate-total")).toContainText("20 450");
+  await modal.getByRole("button", { name: "Следующее фото" }).click();
+  await expect(modal.locator(".gallery-controls")).toContainText("2 / 3");
+  await modal.getByRole("button", { name: "Оставить заявку" }).click();
+  await page.getByRole("button", { name: "Проверить заявку" }).click();
+  await expect(page.getByText("Введите телефон полностью")).toBeVisible();
+  await page.getByRole("textbox", { name: "Ваше имя" }).fill("Александр");
+  await page
+    .getByRole("textbox", { name: "Телефон", exact: true })
+    .fill("9991234567");
+  await page.getByRole("checkbox", { name: "Согласен на обработку" }).check();
+  await page.getByRole("button", { name: "Проверить заявку" }).click();
+  await expect(page.getByText("Форма заполнена корректно")).toBeVisible();
+  await expect(
+    page.getByText("Сейчас данные не отправлены.", { exact: false }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(page.locator("body")).not.toHaveCSS("overflow", "hidden");
+});
+
+test("modal traps focus, restores trigger and makes no auth claim", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const trigger = page.getByRole("button", {
+    name: "Личный кабинет",
+    exact: true,
+  });
+  await trigger.click();
+  await expect(page.getByRole("dialog")).toContainText(
+    "Сейчас вход недоступен",
+  );
+  await page.keyboard.press("Shift+Tab");
+  await expect(
+    page.getByRole("dialog").getByRole("link", { name: "Связаться с нами" }),
+  ).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(
+    page.getByRole("button", { name: "Закрыть окно" }),
+  ).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(trigger).toBeFocused();
+});
+
+for (const width of [320, 430, 768, 1024, 1440, 1536, 2048]) {
+  test(`responsive ${width}: no clipping, all options and stable hero`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/");
+    await page.evaluate(() => document.fonts.ready);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    for (const name of [
+      "Защита+",
+      "Доставка",
+      "Для юридических лиц",
+      "Иностранный гражданин",
+    ])
+      await expect(
+        page.getByRole("checkbox", { name, exact: true }),
+      ).toBeVisible();
+    const before = (await page.locator(".hero").boundingBox())!.height;
+    const offer = await page.locator(".delivery-offer").boundingBox(),
+      panel = await page.locator(".search-panel").boundingBox(),
+      benefits = await page.locator(".hero-benefits").boundingBox();
+    expect(offer!.y + offer!.height).toBeLessThanOrEqual(panel!.y);
+    expect(benefits!.y + benefits!.height).toBeLessThanOrEqual(offer!.y);
+    await page
+      .getByRole("button", { name: "Быстрый выбор автомобиля" })
+      .click();
+    expect((await page.locator(".hero").boundingBox())!.height).toBe(before);
+    if (width < 761) {
+      await page.getByRole("button", { name: "Открыть меню" }).click();
+      await expect(
+        page.getByRole("navigation", { name: "Мобильное меню" }),
+      ).toBeVisible();
+    }
+  });
+}
+
+test("UI kit and delivery announcement disclose provisional state", async ({
+  page,
+}) => {
+  await page.goto("/?ui-kit");
+  await expect(
+    page.getByRole("heading", { name: "Одна система. Все состояния." }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Недоступно", exact: true }),
+  ).toBeDisabled();
+  await page.locator(".delivery-offer").click();
+  await expect(page.getByRole("dialog")).toContainText(
+    "Даты, территория и ограничения ещё уточняются",
+  );
+  await page.getByRole("button", { name: "Подобрать автомобиль" }).click();
+  await expect(
+    page.getByRole("checkbox", { name: "Доставка", exact: true }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole("button", { name: "Место получения: Доставка по Москве" }),
+  ).toBeVisible();
+});
