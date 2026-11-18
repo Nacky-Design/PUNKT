@@ -5,6 +5,7 @@ export type Car = {
   category: string;
   price: number;
   power: number;
+  seats: number;
   fuel: string;
   drive: string;
   image: number;
@@ -17,6 +18,7 @@ export const cars: Car[] = [
     category: "Эконом",
     price: 2900,
     power: 123,
+    seats: 5,
     fuel: "Бензин",
     drive: "Передний",
     image: 0,
@@ -28,6 +30,7 @@ export const cars: Car[] = [
     category: "Эконом",
     price: 3200,
     power: 123,
+    seats: 5,
     fuel: "Бензин",
     drive: "Передний",
     image: 1,
@@ -39,6 +42,7 @@ export const cars: Car[] = [
     category: "Бизнес",
     price: 5500,
     power: 184,
+    seats: 5,
     fuel: "Бензин",
     drive: "Задний",
     image: 2,
@@ -50,6 +54,7 @@ export const cars: Car[] = [
     category: "Бизнес",
     price: 6200,
     power: 200,
+    seats: 5,
     fuel: "Бензин",
     drive: "Передний",
     image: 3,
@@ -61,6 +66,7 @@ export const cars: Car[] = [
     category: "Кроссовер",
     price: 4800,
     power: 150,
+    seats: 5,
     fuel: "Бензин",
     drive: "Передний",
     image: 4,
@@ -72,6 +78,7 @@ export const cars: Car[] = [
     category: "Кроссовер",
     price: 4600,
     power: 143,
+    seats: 5,
     fuel: "Бензин",
     drive: "Передний",
     image: 5,

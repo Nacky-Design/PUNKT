@@ -115,7 +115,7 @@ test("dates reject past days and require return after collection", async ({
   await expect(page.locator("#catalog .section-top")).not.toContainText("NaN");
 });
 
-test("calculator reacts to mileage, protection and duration; gallery and form work", async ({
+test("vehicle details, rental calculation and request form", async ({
   page,
 }) => {
   await page.goto("/");
@@ -132,8 +132,11 @@ test("calculator reacts to mileage, protection and duration; gallery and form wo
   const modal = page.getByRole("dialog");
   await expect(modal.locator(".detail-daily")).toContainText("4 090");
   await expect(modal.locator(".estimate-total")).toContainText("20 450");
-  await modal.getByRole("button", { name: "Следующее фото" }).click();
-  await expect(modal.locator(".gallery-controls")).toContainText("2 / 3");
+  await expect(modal.locator(".estimate-total")).toContainText("Итого за 5 дней");
+  await expect(modal.locator(".estimate-trip")).toContainText("Офис на Авиационной");
+  await expect(modal.locator(".spec-grid > div").first()).toContainText("Посадочные места");
+  await expect(modal.locator(".spec-grid > div").first().locator("dd")).toHaveText("5");
+  await expect(modal.getByRole("img", { name: "Hyundai Solaris" })).toHaveCount(1);
   await modal.getByRole("button", { name: "Оставить заявку" }).click();
   await page.getByRole("button", { name: "Проверить заявку" }).click();
   await expect(page.getByText("Введите телефон полностью")).toBeVisible();

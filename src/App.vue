@@ -14,6 +14,8 @@ import {
   ShieldCheck,
   Gauge,
   UserRound,
+  UsersRound,
+  Settings2,
   Phone,
   Menu,
   X,
@@ -96,8 +98,7 @@ const modal = ref<
     | "contacts"
     | null
   >(null),
-  selected = ref<Car>(cars[0]!),
-  gallery = ref(0);
+  selected = ref<Car>(cars[0]!);
 const infoTitle = ref(""),
   infoBody = ref(""),
   infoPhoto = ref<keyof typeof guidePhotos>(),
@@ -143,12 +144,14 @@ const filteredCars = computed(() => {
     ? list.sort((a, b) => a.price - b.price)
     : list.sort((a, b) => a.name.localeCompare(b.name));
 });
-const context = computed(() =>
+const renterContext = computed(() =>
   [
     business.value ? "Для юридического лица" : "",
     foreign.value ? "Иностранный гражданин" : "",
-    delivery.value ? "Нужна доставка" : "",
   ].filter(Boolean),
+);
+const context = computed(() =>
+  delivery.value ? [...renterContext.value, "Нужна доставка"] : renterContext.value,
 );
 const dateText = computed(
   () =>
@@ -238,7 +241,6 @@ function chooseDelivery() {
 }
 function showCar(car: Car) {
   selected.value = car;
-  gallery.value = 0;
   modal.value = "car";
 }
 function request() {
@@ -842,83 +844,32 @@ function account() {
     :title="selected.name"
     wide
     @close="modal = null"
-    ><div class="detail-meta">
-      {{ selected.category }} · {{ selected.year }} · демонстрационный
-      автомобиль
-    </div>
+    >
+    <p class="detail-meta">{{ selected.category }} · {{ selected.year }} г.</p>
     <div class="car-detail-grid">
-      <div>
-        <div class="detail-gallery">
-          <CarArt
-            :index="selected.image"
-            :name="selected.name"
-            :class="'gallery-view-' + gallery"
-          /><span class="gallery-caption">{{
-            ["Общий вид", "Детали кузова", "Передняя часть"][gallery]
-          }}</span>
-          <div class="gallery-controls">
-            <button
-              class="icon-button"
-              aria-label="Предыдущее фото"
-              @click="gallery = (gallery + 2) % 3"
-            >
-              <ChevronLeft :size="18" /></button
-            ><span>{{ gallery + 1 }} / 3</span
-            ><button
-              class="icon-button"
-              aria-label="Следующее фото"
-              @click="gallery = (gallery + 1) % 3"
-            >
-              <ChevronRight :size="18" />
-            </button>
-          </div>
+      <figure class="detail-photo">
+        <div class="detail-photo-frame">
+          <CarArt :index="selected.image" :name="selected.name" />
         </div>
-        <div class="gallery-thumbnails">
-          <button
-            v-for="i in 3"
-            :key="i"
-            :aria-label="`Ракурс ${i}`"
-            :aria-pressed="gallery === i - 1"
-            :class="{ active: gallery === i - 1 }"
-            @click="gallery = i - 1"
-          >
-            <CarArt
-              :index="selected.image"
-              :name="selected.name"
-              :class="'gallery-view-' + (i - 1)"
-            />
-          </button>
+        <figcaption>Иллюстрация автомобиля</figcaption>
+      </figure>
+
+      <aside class="estimate" aria-label="Расчёт аренды">
+        <div class="estimate-total">
+          <span>Итого за {{ days }} {{ dayLabel }}</span>
+          <strong>{{ money(rate(selected) * days) }} ₽</strong>
         </div>
-        <p class="tiny muted">
-          Сгенерированное изображение. Детальные виды показаны увеличением;
-          реальные фото будут добавлены.
-        </p>
-        <div class="spec-grid">
-          <span
-            ><Zap :size="18" />{{ selected.power }} л.с.<small
-              >Мощность</small
-            ></span
-          ><span
-            ><Fuel :size="18" />{{ selected.fuel }}<small>Топливо</small></span
-          ><span><Gauge :size="18" />Автомат<small>Коробка передач</small></span
-          ><span
-            ><CarFront :size="18" />{{ selected.drive
-            }}<small>Привод</small></span
-          >
+        <p class="detail-daily">{{ money(rate(selected)) }} ₽ <span>/ сутки</span></p>
+        <div class="estimate-trip">
+          <p><CalendarRange :size="17" aria-hidden="true" />{{ dateText }}</p>
+          <p><MapPin :size="17" aria-hidden="true" />{{ location }}</p>
         </div>
-      </div>
-      <aside class="estimate">
-        <span class="estimate-caption">Предварительный расчёт</span>
-        <div class="detail-daily">
-          {{ money(rate(selected)) }} ₽<small>/ сутки</small>
+        <div v-if="renterContext.length" class="context-tags">
+          <span v-for="tag in renterContext" :key="tag">{{ tag }}</span>
         </div>
-        <p class="muted">{{ dateText }} · {{ days }} {{ dayLabel }}</p>
-        <div v-if="context.length" class="context-tags">
-          <span v-for="tag in context" :key="tag">{{ tag }}</span>
-        </div>
-        <dl>
+        <dl v-if="mileageExtra || protection">
           <div>
-            <dt>Аренда · {{ days }} {{ dayLabel }}</dt>
+            <dt>Аренда</dt>
             <dd>{{ money(selected.price * days) }} ₽</dd>
           </div>
           <div v-if="mileageExtra">
@@ -929,31 +880,37 @@ function account() {
             <dt>Защита+</dt>
             <dd>{{ money(490 * days) }} ₽</dd>
           </div>
-          <div>
-            <dt>Получение</dt>
-            <dd>
-              {{
-                delivery || location !== "Офис на Авиационной"
-                  ? "Доставка"
-                  : "В офисе"
-              }}
-            </dd>
-          </div>
         </dl>
-        <div class="estimate-total">
-          <span>Итого за аренду</span
-          ><strong>{{ money(rate(selected) * days) }} ₽</strong>
-        </div>
         <button class="button button-primary full-width" @click="request">
           Оставить заявку<ArrowRight :size="18" />
         </button>
-        <p class="tiny muted">
-          Пример расчёта. Залог, доставка и другие условия согласуются отдельно.
-          Без списаний и онлайн-оплаты.
-        </p>
+        <p class="estimate-note">Предварительный расчёт. Залог и стоимость доставки согласуются отдельно.</p>
       </aside>
-    </div></BaseModal
-  >
+
+      <dl class="spec-grid" aria-label="Характеристики автомобиля">
+        <div>
+          <dt><span class="spec-icon"><UsersRound :size="18" aria-hidden="true" /></span>Посадочные места</dt>
+          <dd>{{ selected.seats }}</dd>
+        </div>
+        <div>
+          <dt><span class="spec-icon"><Settings2 :size="18" aria-hidden="true" /></span>Коробка передач</dt>
+          <dd>Автомат</dd>
+        </div>
+        <div>
+          <dt><span class="spec-icon"><Fuel :size="18" aria-hidden="true" /></span>Топливо</dt>
+          <dd>{{ selected.fuel }}</dd>
+        </div>
+        <div>
+          <dt><span class="spec-icon"><CarFront :size="18" aria-hidden="true" /></span>Привод</dt>
+          <dd>{{ selected.drive }}</dd>
+        </div>
+        <div>
+          <dt><span class="spec-icon"><Zap :size="18" aria-hidden="true" /></span>Мощность</dt>
+          <dd>{{ selected.power }} л.с.</dd>
+        </div>
+      </dl>
+    </div>
+  </BaseModal>
   <BaseModal
     v-if="modal === 'request'"
     :title="
