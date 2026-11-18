@@ -163,7 +163,17 @@ test("vehicle details, rental calculation and request form", async ({
   await expect(modal.locator(".estimate-trip")).toContainText("250 км / сутки включено");
   await expect(modal.locator(".spec-grid > div").first()).toContainText("Посадочные места");
   await expect(modal.locator(".spec-grid > div").first().locator("dd")).toHaveText("5");
-  await expect(modal.getByRole("img", { name: "Hyundai Solaris" })).toHaveCount(1);
+  await expect(modal.getByRole("img", { name: "Hyundai Solaris — Общий вид" })).toHaveJSProperty("naturalWidth", 425);
+  await modal.getByRole("button", { name: "Следующее фото автомобиля" }).click();
+  await expect(modal.getByRole("img", { name: "Hyundai Solaris — Место водителя" })).toBeVisible();
+  await modal.getByRole("button", { name: "Багажник" }).click();
+  await expect(modal.getByRole("img", { name: "Hyundai Solaris — Багажник" })).toBeVisible();
+  await expect(modal.locator(".vehicle-tech")).toContainText("480 л");
+  const packages = modal.getByRole("group", { name: "Выбор тарифа по пробегу" });
+  await packages.getByRole("button", { name: /500 км/ }).click();
+  await expect(modal.locator(".estimate-total")).toContainText("24 450");
+  await packages.getByRole("button", { name: /250 км/ }).click();
+  await expect(modal.locator(".estimate-total")).toContainText("20 450");
   await modal.getByRole("button", { name: "Оставить заявку" }).click();
   await page.getByRole("button", { name: "Проверить заявку" }).click();
   await expect(page.getByText("Введите телефон полностью")).toBeVisible();

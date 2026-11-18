@@ -1,3 +1,4 @@
+export type CarPhoto = { label: string; file: string };
 export type Car = {
   id: number;
   name: string;
@@ -8,7 +9,11 @@ export type Car = {
   seats: number;
   fuel: string;
   drive: string;
+  body: "Седан" | "Кроссовер";
   image: number;
+  photos?: CarPhoto[];
+  extraSpecs?: { label: string; value: string }[];
+  trim?: { name: string; features: string[] };
 };
 export const cars: Car[] = [
   {
@@ -21,7 +26,30 @@ export const cars: Car[] = [
     seats: 5,
     fuel: "Бензин",
     drive: "Передний",
+    body: "Седан",
     image: 0,
+    photos: [
+      { label: "Общий вид", file: "solaris-exterior.webp" },
+      { label: "Место водителя", file: "solaris-interior.webp" },
+      { label: "Задние сиденья", file: "solaris-seats.webp" },
+      { label: "Багажник", file: "solaris-trunk.webp" },
+    ],
+    extraSpecs: [
+      { label: "Двигатель", value: "1,6 л" },
+      { label: "Объём багажника", value: "480 л" },
+      { label: "Клиренс", value: "160 мм" },
+      { label: "Средний расход", value: "6,6 л / 100 км" },
+      { label: "Разгон до 100 км/ч", value: "11,2 с" },
+      { label: "Длина × ширина × высота", value: "4 405 × 1 729 × 1 469 мм" },
+    ],
+    trim: {
+      name: "Comfort",
+      features: [
+        "Кондиционер", "Подогрев передних сидений", "Мультимедиа с Bluetooth",
+        "Управление аудио на руле", "Электростеклоподъёмники",
+        "Электрорегулировка зеркал", "Центральный замок", "Две подушки безопасности",
+      ],
+    },
   },
   {
     id: 2,
@@ -33,6 +61,7 @@ export const cars: Car[] = [
     seats: 5,
     fuel: "Бензин",
     drive: "Передний",
+    body: "Седан",
     image: 1,
   },
   {
@@ -45,6 +74,7 @@ export const cars: Car[] = [
     seats: 5,
     fuel: "Бензин",
     drive: "Задний",
+    body: "Седан",
     image: 2,
   },
   {
@@ -57,6 +87,7 @@ export const cars: Car[] = [
     seats: 5,
     fuel: "Бензин",
     drive: "Передний",
+    body: "Седан",
     image: 3,
   },
   {
@@ -69,6 +100,7 @@ export const cars: Car[] = [
     seats: 5,
     fuel: "Бензин",
     drive: "Передний",
+    body: "Кроссовер",
     image: 4,
   },
   {
@@ -81,6 +113,7 @@ export const cars: Car[] = [
     seats: 5,
     fuel: "Бензин",
     drive: "Передний",
+    body: "Кроссовер",
     image: 5,
   },
 ];

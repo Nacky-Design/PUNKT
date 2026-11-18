@@ -33,6 +33,7 @@ import SelectField from "./components/SelectField.vue";
 import DateRange from "./components/DateRange.vue";
 import BaseModal from "./components/BaseModal.vue";
 import CarArt from "./components/CarArt.vue";
+import VehicleGallery from "./components/VehicleGallery.vue";
 import ServicesMenu from "./components/ServicesMenu.vue";
 import HeroVideo from "./components/HeroVideo.vue";
 import DeliveryAddress from "./components/DeliveryAddress.vue";
@@ -918,18 +919,13 @@ function account() {
     @close="closeCar"
   >
     <div class="detail-meta detail-navigation">
-      <p>{{ selected.category }} · {{ selected.year }} г.</p>
+      <p>{{ selected.category }} · {{ selected.year }} г. · {{ selected.body }}</p>
       <button v-if="carFromCatalog" class="text-button" type="button" @click="closeCar">
         <ChevronLeft :size="16" aria-hidden="true" />К результатам
       </button>
     </div>
     <div class="car-detail-grid">
-      <figure class="detail-photo">
-        <div class="detail-photo-frame">
-          <CarArt :index="selected.image" :name="selected.name" />
-        </div>
-        <figcaption>Иллюстрация автомобиля</figcaption>
-      </figure>
+      <VehicleGallery :key="selected.id" :car="selected" />
 
       <aside class="estimate" aria-label="Расчёт аренды">
         <div class="estimate-total">
@@ -937,6 +933,21 @@ function account() {
           <strong>{{ money(rate(selected) * days) }} ₽</strong>
         </div>
         <p class="detail-daily">{{ money(rate(selected)) }} ₽ <span>/ сутки</span></p>
+        <div class="vehicle-mileage" role="group" aria-label="Выбор тарифа по пробегу">
+          <p>Лимит в сутки</p>
+          <div class="vehicle-mileage-options">
+            <button
+              v-for="(price, option) in mileagePrices"
+              :key="option"
+              type="button"
+              :aria-pressed="mileage === option"
+              @click="mileage = option"
+            >
+              <strong>{{ option }}</strong>
+              <small>{{ price ? '+' + money(price) + ' ₽ / сутки' : 'Включено' }}</small>
+            </button>
+          </div>
+        </div>
         <div class="estimate-trip">
           <p><CalendarRange :size="17" aria-hidden="true" />{{ dateText }}</p>
           <p><MapPin :size="17" aria-hidden="true" />{{ pickupLabel }}</p>
@@ -968,31 +979,67 @@ function account() {
         <button class="button button-primary full-width" @click="request()">
           Оставить заявку<ArrowRight :size="18" />
         </button>
-        <p class="estimate-note">Предварительный расчёт. Залог и стоимость доставки согласуются отдельно.</p>
       </aside>
 
-      <dl class="spec-grid" aria-label="Характеристики автомобиля">
-        <div>
-          <dt><span class="spec-icon"><UsersRound :size="18" aria-hidden="true" /></span>Посадочные места</dt>
-          <dd>{{ selected.seats }}</dd>
-        </div>
-        <div>
-          <dt><span class="spec-icon"><Settings2 :size="18" aria-hidden="true" /></span>Коробка передач</dt>
-          <dd>Автомат</dd>
-        </div>
-        <div>
-          <dt><span class="spec-icon"><Fuel :size="18" aria-hidden="true" /></span>Топливо</dt>
-          <dd>{{ selected.fuel }}</dd>
-        </div>
-        <div>
-          <dt><span class="spec-icon"><CarFront :size="18" aria-hidden="true" /></span>Привод</dt>
-          <dd>{{ selected.drive }}</dd>
-        </div>
-        <div>
-          <dt><span class="spec-icon"><Zap :size="18" aria-hidden="true" /></span>Мощность</dt>
-          <dd>{{ selected.power }} л.с.</dd>
-        </div>
-      </dl>
+      <div class="vehicle-sections">
+        <section class="vehicle-section" aria-labelledby="vehicle-specs-title">
+          <h3 id="vehicle-specs-title">Характеристики</h3>
+          <dl class="spec-grid">
+            <div>
+              <dt><span class="spec-icon"><UsersRound :size="18" aria-hidden="true" /></span>Посадочные места</dt>
+              <dd>{{ selected.seats }}</dd>
+            </div>
+            <div>
+              <dt><span class="spec-icon"><Settings2 :size="18" aria-hidden="true" /></span>Коробка передач</dt>
+              <dd>Автомат</dd>
+            </div>
+            <div>
+              <dt><span class="spec-icon"><Fuel :size="18" aria-hidden="true" /></span>Топливо</dt>
+              <dd>{{ selected.fuel }}</dd>
+            </div>
+            <div>
+              <dt><span class="spec-icon"><CarFront :size="18" aria-hidden="true" /></span>Привод</dt>
+              <dd>{{ selected.drive }}</dd>
+            </div>
+            <div>
+              <dt><span class="spec-icon"><Zap :size="18" aria-hidden="true" /></span>Мощность</dt>
+              <dd>{{ selected.power }} л.с.</dd>
+            </div>
+            <div>
+              <dt><span class="spec-icon"><CarFront :size="18" aria-hidden="true" /></span>Тип кузова</dt>
+              <dd>{{ selected.body }}</dd>
+            </div>
+          </dl>
+          <dl v-if="selected.extraSpecs?.length" class="vehicle-tech">
+            <div v-for="spec in selected.extraSpecs" :key="spec.label">
+              <dt>{{ spec.label }}</dt>
+              <dd>{{ spec.value }}</dd>
+            </div>
+          </dl>
+        </section>
+        <section v-if="selected.trim" class="vehicle-section" aria-labelledby="vehicle-trim-title">
+          <h3 id="vehicle-trim-title">Комплектация {{ selected.trim.name }}</h3>
+          <ul class="vehicle-features">
+            <li v-for="feature in selected.trim.features" :key="feature"><Check :size="16" aria-hidden="true" />{{ feature }}</li>
+          </ul>
+        </section>
+        <section class="vehicle-section" aria-labelledby="vehicle-terms-title">
+          <h3 id="vehicle-terms-title">Что учесть в стоимости</h3>
+          <dl class="vehicle-terms">
+            <div><dt>Пробег сверх лимита</dt><dd>Оплачивается отдельно. Ставку за километр и правила расчёта за несколько суток согласуем до оформления.</dd></div>
+            <div><dt>Залог</dt><dd>Размер и применимость зависят от условий аренды и маршрута. Уточним до подтверждения.</dd></div>
+            <div v-if="delivery"><dt>Доставка</dt><dd>Стоимость подачи согласуем по выбранному месту получения.</dd></div>
+            <div><dt>Мойка и топливо</dt><dd>Машину возвращают чистой и с тем же уровнем топлива. При необходимости мойка и дозаправка оплачиваются отдельно.</dd></div>
+            <div><dt>Защита+</dt><dd>Дополнительная опция. Покрытие и исключения уточняются перед заключением договора.</dd></div>
+          </dl>
+        </section>
+        <section class="vehicle-section" aria-labelledby="vehicle-pickup-title">
+          <h3 id="vehicle-pickup-title">Что будет после заявки</h3>
+          <p>Подтвердим наличие автомобиля, итоговую цену и время выдачи. Для оформления понадобятся паспорт и водительское удостоверение.</p>
+          <p v-if="delivery">Согласуем место встречи. При передаче автомобиля водитель привезёт печатный договор.</p>
+          <p v-else>В офисе на Авиационной вы подпишете договор и получите автомобиль.</p>
+        </section>
+      </div>
     </div>
   </BaseModal>
   <BaseModal
