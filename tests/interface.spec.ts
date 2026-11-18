@@ -26,11 +26,18 @@ test("quick selection preserves hero geometry, filters cars and scrolls the rail
   await expect(page.locator(".car-card").first()).toContainText(
     "Geely Coolray",
   );
+  const previous = page.getByRole("button", { name: "Предыдущие автомобили" });
+  const next = page.getByRole("button", { name: "Следующие автомобили" });
+  await expect(previous).toBeHidden();
+  await expect(next).toBeHidden();
   await page.getByRole("button", { name: "Все классы", exact: true }).click();
-  await page.getByRole("button", { name: "Следующие автомобили" }).click();
+  await expect(previous).toBeHidden();
+  await next.click();
   await expect
     .poll(() => page.locator(".car-rail").evaluate((el) => el.scrollLeft))
     .toBeGreaterThan(20);
+  await expect(previous).toBeVisible();
+  await expect(next).toBeHidden();
 });
 
 test("class selection supports keyboard and search has an honest empty state", async ({
@@ -186,13 +193,22 @@ for (const width of [320, 430, 768, 1024, 1440, 1536, 2048]) {
     await page
       .getByRole("button", { name: "Быстрый выбор автомобиля" })
       .click();
-    expect((await page.locator(".hero").boundingBox())!.height).toBe(before);
+    const hero = page.locator(".hero");
     if (width < 761) {
+      await expect.poll(async () => (await hero.boundingBox())!.height).toBeGreaterThan(before);
+      const openPanel = (await page.locator(".search-panel").boundingBox())!;
+      const visibleOffer = (await page.locator(".delivery-offer").boundingBox())!;
+      expect(openPanel.y - visibleOffer.y).toBeCloseTo(panel!.y - offer!.y, 1);
+      const allCars = page.getByRole("button", { name: "Весь автопарк" });
+      await expect(allCars).toBeVisible();
+      await allCars.click();
+      await expect(page.getByRole("dialog", { name: "Подбор автомобилей" })).toBeVisible();
+      await page.keyboard.press("Escape");
       await page.getByRole("button", { name: "Открыть меню" }).click();
       await expect(
         page.getByRole("navigation", { name: "Мобильное меню" }),
       ).toBeVisible();
-    }
+    } else expect((await hero.boundingBox())!.height).toBe(before);
   });
 }
 

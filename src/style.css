@@ -1236,13 +1236,32 @@ h2 {
   border: 0;
   padding-right: 0;
 }
-.hero-benefits svg {
-  width: 26px;
-  height: 26px;
-  color: var(--yellow);
-  fill: #ffc10716;
-  stroke-width: 1.95;
-  filter: drop-shadow(0 2px 2px #1717178c);
+.benefit-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #ffffff47;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #ffffff23, #17171733);
+  box-shadow: inset 0 1px #ffffff20, 0 3px 10px #17171733;
+}
+.benefit-icon::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  top: 3px;
+  width: 5px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--yellow);
+}
+.benefit-icon svg {
+  width: 19px;
+  height: 19px;
+  stroke-width: 1.65;
 }
 .delivery-offer {
   position: absolute;
@@ -1407,14 +1426,16 @@ h2 {
   opacity: 0;
 }
 .quick-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 12px;
   min-height: 0;
   overflow: hidden;
 }
 .quick-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
   padding: 13px 0 11px;
 }
 .category-tabs {
@@ -1447,9 +1468,30 @@ h2 {
   color: #9e7200;
 }
 .all-cars {
-  font-size: 11px;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 33px;
+  padding: 5px 12px;
+  border: 1px solid #b7b9b2;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 550;
+}
+.all-cars:hover {
+  background: #f1f0ec;
+  border-color: #777b70;
 }
 .car-rail-wrapper {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  min-width: 0;
   position: relative;
 }
 .car-rail {
@@ -1464,11 +1506,14 @@ h2 {
   display: none;
 }
 .car-card {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 3px;
   position: relative;
   flex: 0 0 calc((100% - 48px) / 5);
   min-width: 170px;
-  height: 164px;
-  padding: 10px 15px 13px;
+  height: 174px;
+  padding: 8px 14px;
   text-align: left;
   background: #f5f5f2;
   border: 1px solid #edede8;
@@ -1482,12 +1527,9 @@ h2 {
   border-color: #dcb746;
 }
 .card-class {
-  position: absolute;
-  top: 9px;
-  left: 15px;
-  font-size: 8px;
-  color: #8e9386;
-  z-index: 1;
+  font-size: 11px;
+  font-weight: 550;
+  color: #53584d;
 }
 .car-art {
   position: relative;
@@ -1508,15 +1550,13 @@ h2 {
   transform: translate(-50%, calc(-1 * var(--car-center, 57%)));
 }
 .car-card .car-art {
-  height: 105px;
   aspect-ratio: auto;
-  transition: transform 0.35s var(--ease);
+  container-type: size;
 }
 .car-card .car-art:before {
-  width: min(96%, 205px);
-}
-.car-card:hover .car-art {
-  transform: scale(1.04);
+  /* Allow room for the tallest silhouette in the square sprite cells. */
+  width: min(100%, 205px, calc((100cqh - 8px) * 1.6));
+  transform: translate(-50%, -53%);
 }
 .car-card-bottom {
   display: flex;
@@ -1573,21 +1613,6 @@ h2 {
 }
 .rail-next {
   right: 2px;
-}
-.panel-note {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding-top: 7px;
-  font-size: 9px;
-  color: #969c8c;
-}
-.panel-note > span:last-child {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
 }
 .catalog-content .section-top {
   display: flex;
@@ -1717,24 +1742,14 @@ h2 {
     font-size: 10px;
   }
   .car-card {
-    height: 133px;
+    height: 157px;
     padding-top: 8px;
-  }
-  .car-card .car-art {
-    height: 79px;
-  }
-  .car-card .car-art:before {
-    width: min(90%, 160px);
   }
   .car-card-bottom > strong {
     font-size: 12px;
   }
   .car-card-bottom > span {
     font-size: 11px;
-  }
-  .panel-note {
-    font-size: 8px;
-    padding-top: 4px;
   }
   .calendar {
     top: auto;
@@ -1814,9 +1829,6 @@ h2 {
   .car-card-bottom > strong {
     font-size: 13px;
   }
-  .car-card .car-art:before {
-    width: min(98%, 185px);
-  }
 }
 @media (max-width: 1100px) {
   .site-header {
@@ -1894,9 +1906,9 @@ h2 {
     gap: 8px;
     padding-right: 16px;
   }
-  .hero-benefits svg {
-    width: 23px;
-    height: 23px;
+  .benefit-icon {
+    width: 30px;
+    height: 30px;
   }
   .delivery-offer {
     top: 137px;
@@ -1942,14 +1954,8 @@ h2 {
     font-size: 11px;
   }
   .car-card {
-    height: 150px;
+    height: 158px;
     min-width: 170px;
-  }
-  .car-card .car-art {
-    height: 92px;
-  }
-  .panel-note {
-    font-size: 8px;
   }
 }
 @media (max-width: 760px) {
@@ -2047,8 +2053,17 @@ h2 {
     transform: rotate(180deg);
   }
   .hero {
-    height: 1160px;
+    height: auto;
     min-height: 0;
+  }
+  .hero-content {
+    height: auto;
+    padding-top: 670px;
+    padding-bottom: 20px;
+  }
+  .hero-visual {
+    bottom: auto;
+    height: 1160px;
   }
   .hero-copy {
     top: 113px;
@@ -2066,13 +2081,18 @@ h2 {
     gap: 12px;
   }
   .hero-benefits > span {
-    font-size: 9px;
-    gap: 7px;
-    padding-right: 12px;
+    font-size: 11px;
+    gap: 6px;
+    padding-right: 8px;
   }
-  .hero-benefits svg {
-    width: 22px;
-    height: 22px;
+  .benefit-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+  }
+  .benefit-icon svg {
+    width: 15px;
+    height: 15px;
   }
   .delivery-offer {
     top: 404px;
@@ -2094,6 +2114,8 @@ h2 {
     width: 16px;
   }
   .search-panel {
+    position: relative;
+    inset: auto;
     padding: 17px 16px 12px;
     border-radius: 18px;
   }
@@ -2185,7 +2207,10 @@ h2 {
     padding: 7px 11px;
   }
   .all-cars {
-    display: none;
+    grid-column: 1 / -1;
+    grid-row: 3;
+    margin-top: 8px;
+    min-height: 40px;
   }
   .car-rail {
     gap: 8px;
@@ -2193,14 +2218,8 @@ h2 {
   .car-card {
     flex-basis: calc((100% - 8px) / 2);
     min-width: 142px;
-    height: 144px;
+    height: 150px;
     padding: 10px 11px;
-  }
-  .car-card .car-art {
-    height: 86px;
-  }
-  .car-card .car-art:before {
-    width: 96%;
   }
   .car-card-bottom > strong {
     font-size: 11px;
@@ -2211,18 +2230,7 @@ h2 {
   .car-card-bottom small {
     font-size: 9px;
   }
-  .card-class {
-    left: 11px;
-    font-size: 7px;
-  }
   .card-arrow {
-    display: none;
-  }
-  .panel-note {
-    padding-top: 5px;
-    font-size: 7px;
-  }
-  .panel-note > span:last-child {
     display: none;
   }
   .rail-arrow {
@@ -2363,12 +2371,9 @@ h2 {
     gap: 8px;
   }
   .hero-benefits > span {
-    font-size: 8px;
+    font-size: 10px;
     gap: 5px;
-    padding-right: 8px;
-  }
-  .hero-benefits svg {
-    width: 19px;
+    padding-right: 6px;
   }
   .delivery-offer {
     width: 230px;
@@ -2446,13 +2451,7 @@ h2 {
     padding: 20px 24px 12px;
   }
   .car-card {
-    height: 150px;
-  }
-  .car-card .car-art {
-    height: 91px;
-  }
-  .car-card .car-art:before {
-    width: min(96%, 180px);
+    height: 158px;
   }
 }
 
@@ -2503,9 +2502,6 @@ h2 {
 @media (max-width: 760px) {
   .hero-visual {
     background-position: 58% center;
-  }
-  .search-panel {
-    bottom: 20px;
   }
   .mileage-control {
     width: 100%;

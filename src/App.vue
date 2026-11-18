@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, watch } from "vue";
+import { ref, computed, nextTick, watch, watchEffect } from "vue";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -7,7 +7,9 @@ import {
   ChevronRight,
   ChevronDown,
   CarFront,
-  CalendarDays,
+  CalendarRange,
+  ClipboardCheck,
+  KeyRound,
   MapPin,
   ShieldCheck,
   Gauge,
@@ -54,6 +56,8 @@ const quickOpen = ref(false),
   mobileMenu = ref(false),
   mobileMenuButton = ref<HTMLButtonElement>(),
   rail = ref<HTMLElement>();
+const canScrollBack = ref(false);
+const canScrollForward = ref(false);
 const navItems = ["Цены", "Услуги", "Условия", "Акции", "Новости", "Контакты"];
 const guidePhotos = {
   delivery: "Передача ключей от автомобиля клиенту",
@@ -243,8 +247,24 @@ function search() {
 
 function selectQuick(value: string) {
   quickCategory.value = value;
-  nextTick(() => rail.value?.scrollTo({ left: 0, behavior: "smooth" }));
+  nextTick(() => {
+    rail.value?.scrollTo({ left: 0, behavior: "instant" });
+    updateRailArrows();
+  });
 }
+function updateRailArrows() {
+  const element = rail.value;
+  if (!element) return;
+  canScrollBack.value = element.scrollLeft > 1;
+  canScrollForward.value =
+    element.scrollLeft + element.clientWidth < element.scrollWidth - 1;
+}
+watchEffect((onCleanup) => {
+  if (!rail.value || !quickOpen.value) return;
+  const observer = new ResizeObserver(updateRailArrows);
+  observer.observe(rail.value);
+  onCleanup(() => observer.disconnect());
+}, { flush: "post" });
 function scrollRail(direction: number) {
   rail.value?.scrollBy({
     left: direction * (rail.value.clientWidth * 0.65),
@@ -358,15 +378,15 @@ function account() {
           </p>
           <div class="hero-benefits">
             <span>
-              <MapPin aria-hidden="true" />
+              <span class="benefit-icon" aria-hidden="true"><KeyRound /></span>
               <span>В офисе или<br />с доставкой</span>
             </span>
             <span>
-              <CalendarDays aria-hidden="true" />
+              <span class="benefit-icon" aria-hidden="true"><CalendarRange /></span>
               <span>На сутки<br />или надолго</span>
             </span>
             <span>
-              <ShieldCheck aria-hidden="true" />
+              <span class="benefit-icon" aria-hidden="true"><ClipboardCheck /></span>
               <span>Условия до<br />оформления</span>
             </span>
           </div>
@@ -528,25 +548,17 @@ function account() {
                     {{ item }}
                   </button>
                 </div>
-                <button
-                  class="text-button all-cars"
-                  @click="
-                    category = 'Все классы';
-                    search();
-                  "
-                >
-                  Весь автопарк<ArrowUpRight :size="17" />
-                </button>
               </div>
               <div class="car-rail-wrapper">
                 <button
+                  v-show="canScrollBack"
                   class="rail-arrow rail-prev"
                   aria-label="Предыдущие автомобили"
                   @click="scrollRail(-1)"
                 >
                   <ChevronLeft :size="20" />
                 </button>
-                <div ref="rail" class="car-rail">
+                <div ref="rail" class="car-rail" @scroll.passive="updateRailArrows">
                   <button
                     v-for="car in filteredQuick"
                     :key="car.id"
@@ -565,6 +577,7 @@ function account() {
                   </button>
                 </div>
                 <button
+                  v-show="canScrollForward"
                   class="rail-arrow rail-next"
                   aria-label="Следующие автомобили"
                   @click="scrollRail(1)"
@@ -572,12 +585,15 @@ function account() {
                   <ChevronRight :size="20" />
                 </button>
               </div>
-              <div class="panel-note">
-                <span
-                  >Автомобили и цены — примеры для знакомства с
-                  интерфейсом</span
-                ><span><ShieldCheck :size="12" /> Без онлайн-оплаты</span>
-              </div>
+              <button
+                class="all-cars"
+                @click="
+                  category = 'Все классы';
+                  search();
+                "
+              >
+                Весь автопарк<ArrowRight :size="16" />
+              </button>
             </div>
           </div>
         </section>
