@@ -1091,6 +1091,12 @@ h2 {
 .desktop-nav .nav-label:is(:hover, :focus-visible, [aria-expanded="true"])::after {
   transform: scaleX(1);
 }
+.services-panel,
+.mobile-nav {
+  background: linear-gradient(145deg, #ffffff0c, #ffffff03), #1b1b1bee;
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+}
 .services-panel {
   position: absolute;
   top: calc(50% + 27px);
@@ -1103,8 +1109,6 @@ h2 {
   padding: 21px;
   border: 1px solid #ffffff36;
   border-radius: 16px;
-  background: #182527f5;
-  backdrop-filter: blur(24px);
   box-shadow: 0 16px 48px #0005;
 }
 .services-panel h2 {
@@ -2026,8 +2030,6 @@ h2 {
     right: 0;
     flex-direction: column;
     padding: 10px;
-    background: #182629e8;
-    backdrop-filter: blur(24px);
     border: 1px solid #ffffff30;
     border-radius: 15px;
     box-shadow: 0 15px 45px #0004;

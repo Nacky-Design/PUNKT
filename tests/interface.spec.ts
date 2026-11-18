@@ -17,7 +17,7 @@ test("hero video starts muted, respects pause and supports reduced motion", asyn
   await expect(video).toHaveAttribute("poster", /hero-delivery-mobile\.webp$/);
   await expect(video).not.toHaveAttribute("src", /.+/);
   await page.getByRole("button", { name: "Воспроизвести фоновое видео" }).click();
-  await expect(video).toHaveAttribute("src", /hero-delivery-mobile\.mp4$/);
+  await expect(video).toHaveAttribute("src", /hero-delivery-mobile\.mp4(?:\?.*)?$/);
   await expect.poll(() => video.evaluate((el: HTMLVideoElement) => el.currentTime)).toBeGreaterThan(0);
 });
 

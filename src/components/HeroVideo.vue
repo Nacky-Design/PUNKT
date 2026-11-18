@@ -57,7 +57,7 @@ onBeforeUnmount(() => {
   <div class="hero-visual" aria-hidden="true" :style="{ backgroundImage: `url('${asset}.webp')` }">
     <video
       ref="video"
-      :src="loadVideo ? asset + '.mp4' : undefined"
+      :src="loadVideo ? asset + '.mp4?v=08' : undefined"
       :poster="asset + '.webp'"
       muted
       loop
