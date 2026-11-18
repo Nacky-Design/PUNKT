@@ -33,6 +33,7 @@ import DateRange from "./components/DateRange.vue";
 import BaseModal from "./components/BaseModal.vue";
 import CarArt from "./components/CarArt.vue";
 import ServicesMenu from "./components/ServicesMenu.vue";
+import HeroVideo from "./components/HeroVideo.vue";
 import {
   cars,
   categories,
@@ -398,7 +399,7 @@ function account() {
   </header>
   <main>
     <section class="hero" aria-labelledby="hero-title">
-      <div class="hero-visual" aria-hidden="true"></div>
+      <HeroVideo />
       <div class="hero-shade" aria-hidden="true"></div>
       <div class="hero-content">
         <div class="hero-copy">

@@ -1177,21 +1177,46 @@ h2 {
   min-height: 720px;
   isolation: isolate;
   overflow: clip;
-  background: #242e2f;
+  background: #1d2628;
 }
 .hero-visual {
   position: absolute;
   inset: 0;
   z-index: -3;
-  background: url("/assets/hero-moscow.webp") center bottom / cover no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+.hero-visual video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .hero-shade {
   position: absolute;
   inset: 0;
   z-index: -2;
   background:
-    linear-gradient(90deg, #0d1b2840, #0d1b2808 72%),
-    linear-gradient(180deg, #0d17252b, transparent 24%);
+    linear-gradient(90deg, #15181bbd 0%, #15181ba8 37%, #15181b20 61%, transparent 83%),
+    linear-gradient(180deg, #15181bc2 0%, #15181b9e 10%, transparent 28%);
+}
+.hero-playback {
+  position: absolute;
+  z-index: 1;
+  top: 286px;
+  right: max(var(--page-gutter), calc((100% - 1680px) / 2));
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #ffffff66;
+  border-radius: 50%;
+  color: #fff;
+  background: #171717b8;
+}
+.hero-playback:hover {
+  color: var(--ink);
+  background: var(--yellow);
 }
 .hero-content {
   position: relative;
@@ -1277,7 +1302,7 @@ h2 {
   color: #fff;
   border: 1px solid #ffffff42;
   border-radius: 18px;
-  background: linear-gradient(125deg, #ffffff1c, #ffffff05), #1c292a38;
+  background: linear-gradient(125deg, #ffffff0f, #ffffff03), #171717bd;
   backdrop-filter: blur(24px) saturate(1.2);
   -webkit-backdrop-filter: blur(24px) saturate(1.2);
   box-shadow:
@@ -1286,7 +1311,7 @@ h2 {
 }
 .delivery-offer:hover {
   transform: translateY(-3px);
-  background: linear-gradient(125deg, #ffffff27, #ffffff0c), #1c292a50;
+  background: linear-gradient(125deg, #ffffff15, #ffffff05), #171717c4;
   border-color: #ffffff7a;
   box-shadow:
     inset 0 1px 0 #ffffff20,
@@ -2064,7 +2089,22 @@ h2 {
   }
   .hero-visual {
     bottom: auto;
-    height: 1160px;
+    height: 760px;
+  }
+  .hero-shade {
+    bottom: auto;
+    height: 760px;
+    background: linear-gradient(
+      180deg,
+      #15181bc2 0%,
+      #15181bb8 53%,
+      #15181b38 70%,
+      #1d262800 81%,
+      #1d2628 100%
+    );
+  }
+  .hero-playback {
+    top: 523px;
   }
   .hero-copy {
     top: 113px;
@@ -2454,9 +2494,6 @@ h2 {
 }
 
 /* The lower edge is fixed; the optional car rail expands into the scene above it. */
-.hero-visual {
-  background-position: center;
-}
 .mileage-control {
   display: flex;
   align-items: center;
@@ -2498,9 +2535,6 @@ h2 {
   }
 }
 @media (max-width: 760px) {
-  .hero-visual {
-    background-position: 58% center;
-  }
   .mileage-control {
     width: 100%;
     grid-column: 1/-1;

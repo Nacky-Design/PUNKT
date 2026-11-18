@@ -1,5 +1,26 @@
 import { test, expect } from "@playwright/test";
 
+test("hero video starts muted, respects pause and supports reduced motion", async ({ page }) => {
+  await page.goto("/");
+  const video = page.locator(".hero-visual video");
+  await expect.poll(() => video.evaluate((el: HTMLVideoElement) => el.currentTime)).toBeGreaterThan(0);
+  await expect(video).toHaveJSProperty("muted", true);
+  await expect(video).toHaveJSProperty("loop", true);
+  await page.getByRole("button", { name: "Приостановить фоновое видео" }).click();
+  await expect(video).toHaveJSProperty("paused", true);
+  await page.getByRole("button", { name: "Воспроизвести фоновое видео" }).click();
+  await expect(video).toHaveJSProperty("paused", false);
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload();
+  await expect(video).toHaveAttribute("poster", /hero-delivery-mobile\.webp$/);
+  await expect(video).not.toHaveAttribute("src", /.+/);
+  await page.getByRole("button", { name: "Воспроизвести фоновое видео" }).click();
+  await expect(video).toHaveAttribute("src", /hero-delivery-mobile\.mp4$/);
+  await expect.poll(() => video.evaluate((el: HTMLVideoElement) => el.currentTime)).toBeGreaterThan(0);
+});
+
 test("quick selection preserves hero geometry, filters cars and scrolls the rail", async ({
   page,
 }) => {
