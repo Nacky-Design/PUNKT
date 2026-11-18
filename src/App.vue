@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, watch, watchEffect } from "vue";
+import { ref, computed, nextTick, watchEffect } from "vue";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -36,6 +36,7 @@ import BaseModal from "./components/BaseModal.vue";
 import CarArt from "./components/CarArt.vue";
 import ServicesMenu from "./components/ServicesMenu.vue";
 import HeroVideo from "./components/HeroVideo.vue";
+import DeliveryAddress from "./components/DeliveryAddress.vue";
 import {
   cars,
   categories,
@@ -45,13 +46,36 @@ import {
   localDate,
   type Car,
 } from "./data";
+const office = "Офис на Авиационной";
+const addressDelivery = "Доставка по адресу";
+const pickupPresets = [office, "Шереметьево (SVO)", "Домодедово (DME)", "Внуково (VKO)"];
 const category = ref("Все классы"),
-  location = ref("Офис на Авиационной"),
+  location = ref(office),
   mileage = ref("100 км / сутки");
+const address = ref("");
+const searchAddressErrors = ref(false);
+const discussMileage = ref(false);
+const addressSelected = computed(() => location.value === addressDelivery);
+const cleanAddress = computed(() => address.value.trim().replace(/^Москва\s*,\s*/iu, "").replace(/\s+/g, " "));
+const incompleteAddress = computed(() =>
+  addressSelected.value &&
+  !/\p{L}.*[ ,](?:д(?:ом|\.)?\s*)?\d+[а-яa-z]?(?:\s*(?:[ксkc/]|корп(?:ус)?\.?|стр(?:оение)?\.?)\s*\d+[а-яa-z]?)*(?:\s*,.+)?$/iu.test(cleanAddress.value),
+);
+const pickupLabel = computed(() => {
+  if (!addressSelected.value) return location.value;
+  if (incompleteAddress.value) return "Доставка по Москве, адрес уточняется";
+  return `Москва, ${cleanAddress.value}`;
+});
+const delivery = computed({
+  get: () => location.value !== office,
+  set: (enabled: boolean) => {
+    if (!enabled) location.value = office;
+    else if (location.value === office) location.value = addressDelivery;
+  },
+});
 const start = ref(addDays(todayISO(), 2)),
   end = ref(addDays(todayISO(), 7));
 const protection = ref(false),
-  delivery = ref(false),
   business = ref(false),
   foreign = ref(false);
 const quickOpen = ref(false),
@@ -120,13 +144,18 @@ const days = computed(() =>
     ),
   ),
 );
-const mileageExtra = computed(() =>
-  mileage.value.startsWith("250")
-    ? 700
-    : mileage.value.startsWith("500")
-      ? 1500
-      : 0,
+const mileagePrices: Record<string, number> = {
+  "100 км / сутки": 0,
+  "250 км / сутки": 700,
+  "500 км / сутки": 1500,
+};
+const mileageOptions = Object.keys(mileagePrices);
+const mileageOptionDetails = Object.fromEntries(
+  Object.entries(mileagePrices).map(([option, price]) =>
+    [option, price ? `+${money(price)} ₽ / сутки` : "Включено в базовый тариф"]),
 );
+const mileageExtra = computed(() => mileagePrices[mileage.value] ?? 0);
+const mileageLabel = computed(() => `${mileage.value} включено`);
 const rate = (car: Car) =>
   car.price + mileageExtra.value + (protection.value ? 490 : 0);
 const filteredQuick = computed(() =>
@@ -199,16 +228,6 @@ function explainProtection() {
     "protection",
   );
 }
-// Receiving the car in the office and requesting delivery are mutually exclusive.
-watch(location, (value) => {
-  delivery.value = value !== "Офис на Авиационной";
-});
-watch(delivery, (enabled) => {
-  if (enabled && location.value === "Офис на Авиационной")
-    location.value = "Доставка по Москве";
-  else if (!enabled && location.value !== "Офис на Авиационной")
-    location.value = "Офис на Авиационной";
-});
 function nav(item: string) {
   mobileMenu.value = false;
   if (item === "Цены") search();
@@ -235,15 +254,15 @@ function changeOfferStep(direction: number) {
 }
 function chooseDelivery() {
   modal.value = null;
-  delivery.value = true;
-  location.value = "Доставка по Москве";
+  location.value = addressDelivery;
   nextTick(() => searchPanel.value?.focus());
 }
 function showCar(car: Car) {
   selected.value = car;
   modal.value = "car";
 }
-function request() {
+function request(withMileageDiscussion = false) {
+  discussMileage.value = withMileageDiscussion;
   modal.value = "request";
   submitted.value = false;
   errors.value = {};
@@ -270,12 +289,24 @@ function submitRequest() {
     errors.value.phone = "Введите телефон полностью";
   if (!consent.value)
     errors.value.consent = "Нужно согласие на обработку данных";
+  if (incompleteAddress.value) errors.value.address = "Уточните адрес доставки";
   if (Object.keys(errors.value).length) return;
-  requestSnapshot.value = `${selected.value.name} · ${dateText.value}`;
+  requestSnapshot.value = [
+    selected.value.name, dateText.value, pickupLabel.value, mileageLabel.value,
+    discussMileage.value ? "Пробег — обсудить перед оформлением" : "",
+  ].filter(Boolean).join(" · ");
   submitted.value = true;
   name.value = "";
   phone.value = "";
   consent.value = false;
+}
+function searchWithAddress() {
+  searchAddressErrors.value = incompleteAddress.value;
+  if (incompleteAddress.value) {
+    nextTick(() => searchPanel.value?.querySelector<HTMLElement>('input[aria-invalid="true"]')?.focus());
+    return;
+  }
+  search();
 }
 function search() {
   searchStatus.value = `${dateText.value} · ${days.value} ${dayLabel.value}`;
@@ -312,6 +343,7 @@ function reset() {
   category.value = "Все классы";
   mileage.value = "100 км / сутки";
   protection.value = delivery.value = business.value = foreign.value = false;
+  searchAddressErrors.value = false;
 }
 function account() {
   modal.value = "account";
@@ -449,7 +481,7 @@ function account() {
           class="search-panel"
           aria-label="Подбор автомобиля"
         >
-          <form @submit.prevent="search">
+          <form @submit.prevent="searchWithAddress">
             <div class="search-primary">
               <SelectField
                 v-model="category"
@@ -458,18 +490,13 @@ function account() {
                 ><CarFront :size="22"
               /></SelectField>
               <DateRange v-model:start="start" v-model:end="end" />
-              <SelectField
+              <DeliveryAddress
                 v-model="location"
-                label="Место получения"
-                :options="[
-                  'Офис на Авиационной',
-                  'Доставка по Москве',
-                  'Шереметьево (SVO)',
-                  'Домодедово (DME)',
-                  'Внуково (VKO)',
-                ]"
-                ><MapPin :size="22"
-              /></SelectField>
+                v-model:address="address"
+                :presets="pickupPresets"
+                :address-mode="addressDelivery"
+                :invalid="searchAddressErrors && incompleteAddress"
+              />
               <button type="submit" class="button button-primary search-submit">
                 Найти автомобиль<ArrowRight :size="21" />
               </button>
@@ -479,11 +506,10 @@ function account() {
                 <SelectField
                   v-model="mileage"
                   label="Лимит пробега"
-                  :options="[
-                    '100 км / сутки',
-                    '250 км / сутки',
-                    '500 км / сутки',
-                  ]"
+                  :options="mileageOptions"
+                  :option-details="mileageOptionDetails"
+                  :display-value="(mileageExtra ? 'Пакет ' : 'Включено ') + mileage"
+                  action-label="Изменить"
                   ><Gauge :size="20"
                 /></SelectField>
                 <button
@@ -757,7 +783,7 @@ function account() {
       <div class="section-top">
         <div>
           <p class="muted">
-            {{ searchStatus }} · {{ mileage }} · {{ location }}
+            {{ searchStatus }} · {{ mileageLabel }} · {{ pickupLabel }}
           </p>
         </div>
         <button class="text-button" @click="reset">
@@ -862,7 +888,11 @@ function account() {
         <p class="detail-daily">{{ money(rate(selected)) }} ₽ <span>/ сутки</span></p>
         <div class="estimate-trip">
           <p><CalendarRange :size="17" aria-hidden="true" />{{ dateText }}</p>
-          <p><MapPin :size="17" aria-hidden="true" />{{ location }}</p>
+          <p><MapPin :size="17" aria-hidden="true" />{{ pickupLabel }}</p>
+          <div class="estimate-mileage">
+            <p><Gauge :size="17" aria-hidden="true" /><span>Пробег · <strong>{{ mileageLabel }}</strong></span></p>
+            <small>Сверх лимита — доплата. Ставку уточним до оформления.</small>
+          </div>
         </div>
         <div v-if="renterContext.length" class="context-tags">
           <span v-for="tag in renterContext" :key="tag">{{ tag }}</span>
@@ -881,7 +911,10 @@ function account() {
             <dd>{{ money(490 * days) }} ₽</dd>
           </div>
         </dl>
-        <button class="button button-primary full-width" @click="request">
+        <button class="mileage-discuss text-button" type="button" @click="request(true)">
+          Обсудить пробег<ArrowUpRight :size="15" aria-hidden="true" />
+        </button>
+        <button class="button button-primary full-width" @click="request()">
           Оставить заявку<ArrowRight :size="18" />
         </button>
         <p class="estimate-note">Предварительный расчёт. Залог и стоимость доставки согласуются отдельно.</p>
@@ -922,6 +955,25 @@ function account() {
     ><template v-if="!submitted"
       ><p class="modal-lead">{{ selected.name }} · {{ dateText }}</p>
       <form class="request-form" novalidate @submit.prevent="submitRequest">
+        <div class="request-trip">
+          <p v-if="!addressSelected"><MapPin :size="16" aria-hidden="true" />{{ pickupLabel }}</p>
+          <p><Gauge :size="16" aria-hidden="true" />Пробег · {{ mileageLabel }}</p>
+          <label class="check-label">
+            <input v-model="discussMileage" type="checkbox" />
+            <span class="check-visual"><Check :size="13" /></span>
+            Хочу обсудить пробег
+          </label>
+          <small v-if="discussMileage">В расчёте пока используется выбранный лимит.</small>
+        </div>
+        <DeliveryAddress
+          v-if="addressSelected"
+          v-model="location"
+          v-model:address="address"
+          :presets="pickupPresets"
+          :address-mode="addressDelivery"
+          :invalid="!!errors.address && incompleteAddress"
+          address-only
+        />
         <label class="text-field"
           >Ваше имя<input
             aria-label="Ваше имя"

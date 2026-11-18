@@ -122,6 +122,7 @@ test("vehicle details, rental calculation and request form", async ({
   await page
     .getByRole("button", { name: "Лимит пробега: 100 км / сутки" })
     .click();
+  await expect(page.getByRole("option", { name: /250 км \/ сутки/ })).toContainText("700 ₽ / сутки");
   await page.getByRole("option", { name: "250 км / сутки" }).click();
   await page.getByRole("checkbox", { name: "Защита+", exact: true }).check();
   await page.getByRole("button", { name: "Быстрый выбор автомобиля" }).click();
@@ -134,6 +135,7 @@ test("vehicle details, rental calculation and request form", async ({
   await expect(modal.locator(".estimate-total")).toContainText("20 450");
   await expect(modal.locator(".estimate-total")).toContainText("Итого за 5 дней");
   await expect(modal.locator(".estimate-trip")).toContainText("Офис на Авиационной");
+  await expect(modal.locator(".estimate-trip")).toContainText("250 км / сутки включено");
   await expect(modal.locator(".spec-grid > div").first()).toContainText("Посадочные места");
   await expect(modal.locator(".spec-grid > div").first().locator("dd")).toHaveText("5");
   await expect(modal.getByRole("img", { name: "Hyundai Solaris" })).toHaveCount(1);
@@ -273,8 +275,8 @@ test("UI kit and delivery announcement disclose provisional state", async ({
     page.getByRole("checkbox", { name: "Доставка", exact: true }),
   ).toBeChecked();
   await expect(
-    page.getByRole("button", { name: "Место получения: Доставка по Москве" }),
-  ).toBeVisible();
+    page.getByRole("combobox", { name: "Место получения", exact: true }),
+  ).toHaveAttribute("placeholder", "Улица и дом в Москве");
 });
 
 test("desktop services open on hover, click and keyboard, then restore focus", async ({ page }) => {
@@ -418,24 +420,59 @@ test("delivery help does not toggle the checkbox; pickup and delivery stay consi
   await page.keyboard.press("Escape");
   await box.check();
   await expect(
-    page.getByRole("button", { name: "Место получения: Доставка по Москве" }),
-  ).toBeVisible();
+    page.getByRole("combobox", { name: "Место получения", exact: true }),
+  ).toHaveAttribute("placeholder", "Улица и дом в Москве");
   await page
-    .getByRole("button", { name: "Место получения: Доставка по Москве" })
+    .getByRole("combobox", { name: "Место получения", exact: true })
     .click();
   await page
     .getByRole("option", { name: "Офис на Авиационной", exact: true })
     .click();
   await expect(box).not.toBeChecked();
   await page
-    .getByRole("button", { name: "Место получения: Офис на Авиационной" })
+    .getByRole("combobox", { name: "Место получения", exact: true })
     .click();
   await page.getByRole("option", { name: "Шереметьево (SVO)" }).click();
   await expect(box).toBeChecked();
   await box.uncheck();
   await expect(
-    page.getByRole("button", { name: "Место получения: Офис на Авиационной" }),
-  ).toBeVisible();
+    page.getByRole("combobox", { name: "Место получения", exact: true }),
+  ).toHaveValue("Офис на Авиационной");
+});
+
+test("editable pickup suggests houses and preserves a manual address and mileage in the request", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  const pickup = page.getByRole("combobox", { name: "Место получения", exact: true });
+  await pickup.fill("Академика Королева ");
+  const house = page.getByRole("option", { name: "улица Академика Королёва, 12", exact: true });
+  await expect(house).toBeVisible();
+  await pickup.press("ArrowDown");
+  await pickup.press("Enter");
+  await expect(pickup).toHaveValue("улица Академика Королёва, 12");
+  await pickup.fill("улица Академика Королёва");
+  await page.getByRole("button", { name: "Найти автомобиль" }).click();
+  await expect(pickup).toHaveAttribute("aria-invalid", "true");
+  await expect(pickup).toBeFocused();
+  await pickup.fill("Сиреневый бульвар, 24с1");
+  await page.getByRole("button", { name: "Найти автомобиль" }).click();
+  const results = page.getByRole("dialog", { name: "Подбор автомобилей" });
+  await expect(results).toContainText("Москва, Сиреневый бульвар, 24с1");
+  await expect(results).toContainText("100 км / сутки включено");
+  await results.getByRole("button", { name: /Hyundai Solaris/ }).click();
+  const car = page.getByRole("dialog", { name: "Hyundai Solaris" });
+  await expect(car.locator(".estimate-trip")).toContainText("100 км / сутки включено");
+  await expect(car.locator(".estimate-trip")).toContainText("Москва, Сиреневый бульвар, 24с1");
+  await car.getByRole("button", { name: "Обсудить пробег" }).click();
+  const request = page.getByRole("dialog");
+  await expect(request.getByRole("checkbox", { name: "Хочу обсудить пробег" })).toBeChecked();
+  await expect(request.getByRole("combobox", { name: "Адрес доставки · Москва" })).toHaveValue("Сиреневый бульвар, 24с1");
+  await request.getByRole("textbox", { name: "Ваше имя" }).fill("Александр");
+  await request.getByRole("textbox", { name: "Телефон", exact: true }).fill("9991234567");
+  await request.getByRole("checkbox", { name: "Согласен на обработку" }).check();
+  await request.getByRole("button", { name: "Проверить заявку" }).click();
+  await expect(request).toContainText("Пробег — обсудить перед оформлением");
+  await expect(request).toContainText("Москва, Сиреневый бульвар, 24с1");
 });
 
 test("protection guide shows the inspection photo and a cost example", async ({ page }) => {

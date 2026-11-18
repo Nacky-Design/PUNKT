@@ -2,7 +2,14 @@
 import { ref, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { usePopoverPlacement } from "../composables/usePopoverPlacement";
 import { ChevronDown, Check } from "lucide-vue-next";
-defineProps<{ modelValue: string; label: string; options: string[] }>();
+defineProps<{
+  modelValue: string;
+  label: string;
+  options: string[];
+  displayValue?: string;
+  actionLabel?: string;
+  optionDetails?: Record<string, string>;
+}>();
 const emit = defineEmits<{ "update:modelValue": [value: string] }>();
 const open = ref(false),
   root = ref<HTMLElement>(),
@@ -60,9 +67,10 @@ onBeforeUnmount(() => document.removeEventListener("click", close));
       @click="open = !open"
     >
       <slot /><span class="field-text"
-        ><span class="field-caption">{{ label }}</span
-        ><span class="field-value">{{ modelValue }}</span></span
-      ><ChevronDown :size="16" :class="{ rotated: open }" /></button
+        ><span v-if="!displayValue" class="field-caption">{{ label }}</span
+        ><span class="field-value">{{ displayValue ?? modelValue }}</span></span
+      ><span v-if="actionLabel" class="field-action">{{ actionLabel }}</span>
+      <ChevronDown v-else :size="16" :class="{ rotated: open }" /></button
     ><Transition name="popover"
       ><div
         v-if="open"
@@ -80,7 +88,8 @@ onBeforeUnmount(() => document.removeEventListener("click", close));
           :class="{ selected: option === modelValue }"
           @click="pick(option)"
         >
-          {{ option }}<Check v-if="option === modelValue" :size="16" />
+          <span>{{ option }}<small v-if="optionDetails?.[option]" class="option-detail">{{ optionDetails[option] }}</small></span>
+          <Check v-if="option === modelValue" :size="16" />
         </button></div
     ></Transition>
   </div>
