@@ -1641,32 +1641,349 @@ h2 {
 .rail-next {
   right: 2px;
 }
-.catalog-content .section-top {
+.modal:has(.catalog-content) {
+  width: 1160px;
+  scrollbar-gutter: stable;
+}
+.modal:has(.catalog-content) .modal-heading {
+  position: sticky;
+  top: -1px;
+  z-index: 3;
+  padding-bottom: 10px;
+  background: #fff;
+}
+.modal:has(.catalog-content) .modal-heading h2 {
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 650;
+  letter-spacing: -0.035em;
+}
+.catalog-trip {
+  padding: 14px 17px 11px;
+  border: 1px solid #e1e1de;
+  border-radius: 12px;
+  background: #f5f5f4;
+}
+.catalog-trip dl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 0.8fr);
+  gap: 14px 20px;
+  margin: 0;
+}
+.catalog-trip dt {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  margin: 4px 0 27px;
-}
-.catalog-content .section-top .muted {
+  gap: 7px;
+  color: #50504d;
   font-size: 12px;
 }
-.catalog-content .result-car > .car-art {
-  width: 130px;
-  height: 85px;
+.catalog-trip dd {
+  margin: 5px 0 0;
+  font-size: 14px;
+  font-weight: 550;
+  overflow-wrap: anywhere;
 }
-.catalog-content .result-row {
-  grid-template-columns: 1.7fr 0.8fr 1.1fr auto;
-  gap: 18px;
+.catalog-trip dd span {
+  white-space: nowrap;
 }
-.catalog-content .result-car {
+.catalog-trip-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  border-top: 1px solid #dededb;
+  margin-top: 12px;
+  padding-top: 7px;
+}
+.catalog-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.catalog-tags li {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #fff0c6;
+  color: #4a390e;
+  font-size: 12px;
+}
+.catalog-edit {
+  margin-left: auto;
+  color: #514010;
+  font-weight: 600;
+}
+.catalog-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+}
+.catalog-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.catalog-filters button,
+.catalog-controls select {
+  min-height: 36px;
+  padding: 6px 11px;
+  border: 1px solid #dfdfdd;
+  border-radius: 8px;
+  color: #2e2e2d;
+  background: #fff;
+  font-size: 13px;
+}
+.catalog-filters button:hover {
+  background: #f3f3f2;
+}
+.catalog-filters button[aria-pressed="true"] {
+  border-color: #dfbd60;
+  background: #fff1c8;
+  color: #332800;
+  font-weight: 600;
+}
+.catalog-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px 12px;
+}
+.catalog-count {
+  color: #4d4d4b;
+  font-size: 13px;
+}
+.catalog-demo {
+  color: #535351;
+  font-size: 11px;
+}
+.catalog-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 12px 0 15px;
+  color: #535351;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 16px;
+  margin-top: 14px;
+}
+.result-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  border: 1px solid #e1e1de;
+  border-radius: 14px;
+  background: #fff;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.result-card:is(:hover, :focus-within) {
+  border-color: #dbc178;
+  box-shadow: 0 8px 22px #17171712;
+}
+.result-photo {
+  position: relative;
+  background: #f4f4f2;
+  border-bottom: 1px solid #ecece9;
+}
+.result-photo .car-art {
+  height: 154px;
+  container-type: size;
+  aspect-ratio: auto;
+}
+.result-photo .car-art::before {
+  width: min(100%, 245px, calc((100cqh - 13px) * 1.6));
+  transform: translate(-50%, -54%);
+}
+.result-class {
+  position: absolute;
+  top: 9px;
+  left: 10px;
+  padding: 4px 8px;
+  border: 1px solid #e4e4e1;
+  border-radius: 6px;
+  background: #fff;
+  color: #424240;
+  font-size: 11px;
+  font-weight: 600;
+}
+.result-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 11px;
+  padding: 13px 14px 14px;
+}
+.result-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 8px;
+}
+.result-title h3 {
+  font-size: 19px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+.result-title > span {
+  color: #555553;
+  font-size: 12px;
+}
+.result-specs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 11px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  color: #454543;
+  font-size: 13px;
+}
+.result-specs li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.result-specs .result-limit {
+  flex-basis: 100%;
+  color: #4b3b0c;
+  font-weight: 550;
+}
+.result-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 4px 10px;
+  border-top: 1px solid #e9e9e6;
+  padding-top: 10px;
+  margin-top: auto;
+}
+.result-duration {
+  display: block;
+  color: #4d4d4b;
+  font-size: 12px;
+}
+.result-price strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 25px;
+  font-weight: 670;
+  letter-spacing: -0.04em;
+  white-space: nowrap;
+}
+.result-daily {
+  padding-bottom: 3px;
+  color: #525250;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.result-details {
+  width: 100%;
+  min-height: 42px;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border: 1px solid #d9d9d5;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+.result-details:is(:hover, :focus-visible) {
+  border-color: var(--yellow);
+  background: var(--yellow);
+}
+.catalog-empty {
+  display: grid;
+  justify-items: center;
   gap: 10px;
+  padding: 28px 15px;
+  margin-top: 15px;
+  border: 1px solid #e1e1de;
+  border-radius: 12px;
+  background: #f5f5f4;
+  text-align: center;
 }
-.catalog-content .result-car strong {
+.catalog-empty h3 {
+  font-size: 18px;
+}
+.catalog-empty p {
+  color: #535351;
   font-size: 14px;
 }
-.catalog-content .result-price strong {
-  font-size: 19px;
+.detail-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px 12px;
+}
+.detail-navigation button {
+  color: #514010;
+}
+@media (max-width: 760px) {
+  .modal:has(.catalog-content) {
+    padding: 14px;
+    scrollbar-gutter: auto;
+  }
+  .modal:has(.catalog-content) .modal-heading {
+    margin-bottom: 7px;
+  }
+  .catalog-trip {
+    padding: 8px 10px 6px;
+  }
+  .catalog-trip dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+  .catalog-trip dl > div:nth-child(2) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .catalog-trip dt {
+    font-size: 11px;
+  }
+  .catalog-trip dd {
+    margin-top: 3px;
+    font-size: 13px;
+  }
+  .catalog-trip-actions {
+    margin-top: 7px;
+    padding-top: 3px;
+  }
+  .catalog-toolbar {
+    gap: 6px;
+    margin-top: 9px;
+  }
+  .catalog-filters {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 4px;
+    scrollbar-width: thin;
+  }
+  .catalog-filters button {
+    flex-shrink: 0;
+  }
+  .catalog-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .catalog-grid {
+    margin-top: 9px;
+  }
 }
 .context-tags {
   display: flex;
@@ -2317,43 +2634,6 @@ h2 {
   .estimate {
     padding: 17px;
   }
-  .catalog-content .section-top {
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-  .catalog-toolbar {
-    font-size: 10px;
-    gap: 10px;
-    align-items: flex-start;
-  }
-  .catalog-toolbar > label {
-    font-size: 0;
-  }
-  .catalog-toolbar select {
-    font-size: 10px;
-    max-width: 120px;
-  }
-  .catalog-content .result-row {
-    grid-template-columns: 1fr auto;
-    gap: 12px;
-  }
-  .result-car {
-    grid-column: 1/-1;
-  }
-  .catalog-content .result-car > .car-art {
-    width: 130px;
-    height: 85px;
-  }
-  .result-mileage {
-    display: none;
-  }
-  .result-price {
-    padding-left: 4px;
-  }
-  .result-row .button {
-    padding: 10px 14px;
-    font-size: 11px;
-  }
   .data-disclaimer {
     font-size: 10px;
   }
@@ -2642,8 +2922,7 @@ h2 {
 }
 .estimate-trip p,
 .request-trip p,
-.demo-success p,
-.catalog-content .section-top p {
+.demo-success p {
   overflow-wrap: anywhere;
 }
 @media (max-width: 760px) {

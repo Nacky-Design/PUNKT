@@ -81,10 +81,35 @@ test("class selection supports keyboard and search has an honest empty state", a
     .click();
   await expect(page.getByText("В этом классе пока нет примеров")).toBeVisible();
   await page
-    .locator(".empty-state")
+    .locator(".catalog-empty")
     .getByRole("button", { name: "Все классы" })
     .click();
-  await expect(page.locator(".result-row")).toHaveCount(6);
+  await expect(page.locator(".result-card")).toHaveCount(6);
+});
+
+test("results compare costs, sort and return from vehicle details", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Найти автомобиль", exact: true }).click();
+  const results = page.getByRole("dialog", { name: "Подбор автомобилей" });
+  const filter = results.getByRole("group", { name: "Фильтр по классу" });
+  await filter.getByRole("button", { name: "Эконом", exact: true }).click();
+  await expect(results.getByText("2 автомобиля", { exact: true })).toBeVisible();
+  await expect(results.getByRole("article")).toHaveCount(2);
+  await results.getByRole("combobox", { name: "Сортировка автомобилей" }).selectOption("Сначала дороже");
+  const kia = results.getByRole("article").first();
+  await expect(kia.getByRole("heading")).toHaveText("Kia Rio");
+  await expect(kia).toContainText("5 мест");
+  await expect(kia).toContainText("100 км / сутки включено");
+  await expect(kia).toContainText(/16\s000 ₽/);
+  const trigger = kia.getByRole("button", { name: "Подробнее: Kia Rio" });
+  await trigger.click();
+  await page.getByRole("button", { name: "К результатам" }).click();
+  await expect(trigger).toBeFocused();
+  await expect(filter.getByRole("button", { name: "Эконом", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await results.getByRole("button", { name: "Изменить параметры" }).click();
+  await expect(page.getByRole("region", { name: "Подбор автомобиля" })).toBeFocused();
+  await expect(page.getByRole("button", { name: "Класс автомобиля: Эконом" })).toBeVisible();
 });
 
 test("dates reject past days and require return after collection", async ({
@@ -112,7 +137,7 @@ test("dates reject past days and require return after collection", async ({
   await page
     .getByRole("button", { name: "Найти автомобиль", exact: true })
     .click();
-  await expect(page.locator("#catalog .section-top")).not.toContainText("NaN");
+  await expect(page.locator("#catalog .catalog-trip")).not.toContainText("NaN");
 });
 
 test("vehicle details, rental calculation and request form", async ({

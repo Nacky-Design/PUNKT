@@ -27,7 +27,6 @@ import {
   MessageCircle,
   CheckCircle2,
   Info,
-  RotateCcw,
   Mail,
 } from "lucide-vue-next";
 import SelectField from "./components/SelectField.vue";
@@ -133,8 +132,9 @@ const name = ref(""),
   submitted = ref(false),
   errors = ref<Record<string, string>>({}),
   requestSnapshot = ref("");
-const searchStatus = ref(""),
-  sort = ref("По цене");
+const sort = ref("По цене");
+const carFromCatalog = ref(false);
+let catalogScroll = 0;
 const days = computed(() =>
   Math.max(
     1,
@@ -169,18 +169,23 @@ const filteredCars = computed(() => {
   const list = cars.filter(
     (c) => category.value === "Все классы" || c.category === category.value,
   );
-  return sort.value === "По цене"
-    ? list.sort((a, b) => a.price - b.price)
-    : list.sort((a, b) => a.name.localeCompare(b.name));
+  if (sort.value === "По названию") {
+    return list.sort((a, b) => a.name.localeCompare(b.name, "ru"));
+  }
+  const direction = sort.value === "Сначала дороже" ? -1 : 1;
+  return list.sort((a, b) => direction * (rate(a) - rate(b)));
+});
+const numberForms = new Intl.PluralRules("ru");
+const carCount = computed(() => {
+  const count = filteredCars.value.length;
+  const form = numberForms.select(count);
+  return `${count} ${form === "one" ? "автомобиль" : form === "few" ? "автомобиля" : "автомобилей"}`;
 });
 const renterContext = computed(() =>
   [
     business.value ? "Для юридического лица" : "",
     foreign.value ? "Иностранный гражданин" : "",
   ].filter(Boolean),
-);
-const context = computed(() =>
-  delivery.value ? [...renterContext.value, "Нужна доставка"] : renterContext.value,
 );
 const dateText = computed(
   () =>
@@ -258,8 +263,29 @@ function chooseDelivery() {
   nextTick(() => searchPanel.value?.focus());
 }
 function showCar(car: Car) {
+  carFromCatalog.value = modal.value === "catalog";
+  if (carFromCatalog.value) {
+    catalogScroll = document.getElementById("catalog")?.closest(".modal")?.scrollTop ?? 0;
+  }
   selected.value = car;
   modal.value = "car";
+}
+function closeCar() {
+  if (!carFromCatalog.value) {
+    modal.value = null;
+    return;
+  }
+  modal.value = "catalog";
+  nextTick(() => {
+    const button = document.getElementById(`catalog-car-${selected.value.id}`);
+    const dialog = button?.closest(".modal");
+    if (dialog) dialog.scrollTop = catalogScroll;
+    button?.focus({ preventScroll: true });
+  });
+}
+function editSearch() {
+  modal.value = null;
+  nextTick(() => searchPanel.value?.focus());
 }
 function request(withMileageDiscussion = false) {
   discussMileage.value = withMileageDiscussion;
@@ -309,7 +335,6 @@ function searchWithAddress() {
   search();
 }
 function search() {
-  searchStatus.value = `${dateText.value} · ${days.value} ${dayLabel.value}`;
   modal.value = "catalog";
 }
 
@@ -338,12 +363,6 @@ function scrollRail(direction: number) {
     left: direction * (rail.value.clientWidth * 0.65),
     behavior: "smooth",
   });
-}
-function reset() {
-  category.value = "Все классы";
-  mileage.value = "100 км / сутки";
-  protection.value = delivery.value = business.value = foreign.value = false;
-  searchAddressErrors.value = false;
 }
 function account() {
   modal.value = "account";
@@ -775,78 +794,105 @@ function account() {
     wide
     @close="modal = null"
   >
-    <section
-      id="catalog"
-      class="catalog-content"
-      aria-label="Результаты подбора"
-    >
-      <div class="section-top">
-        <div>
-          <p class="muted">
-            {{ searchStatus }} · {{ mileageLabel }} · {{ pickupLabel }}
-          </p>
+    <section id="catalog" class="catalog-content" aria-label="Результаты подбора">
+      <div class="catalog-trip">
+        <dl>
+          <div>
+            <dt><CalendarRange :size="17" aria-hidden="true" />Срок аренды</dt>
+            <dd>{{ dateText }} <span>· {{ days }} {{ dayLabel }}</span></dd>
+          </div>
+          <div>
+            <dt><MapPin :size="17" aria-hidden="true" />Место получения</dt>
+            <dd>{{ pickupLabel }}</dd>
+          </div>
+          <div>
+            <dt><Gauge :size="17" aria-hidden="true" />Пробег</dt>
+            <dd>{{ mileageLabel }}</dd>
+          </div>
+        </dl>
+        <div class="catalog-trip-actions">
+          <ul v-if="protection || renterContext.length" class="catalog-tags" aria-label="Дополнительные условия">
+            <li v-if="protection">Защита+ включена</li>
+            <li v-for="tag in renterContext" :key="tag">{{ tag }}</li>
+          </ul>
+          <button class="text-button catalog-edit" type="button" @click="editSearch">
+            Изменить параметры<ArrowUpRight :size="16" aria-hidden="true" />
+          </button>
         </div>
-        <button class="text-button" @click="reset">
-          <RotateCcw :size="15" />Сбросить фильтры
-        </button>
       </div>
-      <div v-if="context.length" class="context-tags">
-        <span v-for="tag in context" :key="tag"
-          ><Check :size="12" />{{ tag }}</span
-        >
-      </div>
+
       <div class="catalog-toolbar">
-        <span
-          >{{ filteredCars.length }}
-          {{ filteredCars.length === 1 ? "автомобиль" : "автомобиля" }} ·
-          демонстрационные тарифы</span
-        ><label
-          >Сортировать
-          <select v-model="sort" aria-label="Сортировка автомобилей">
-            <option>По цене</option>
+        <div class="catalog-filters" role="group" aria-label="Фильтр по классу">
+          <button
+            v-for="item in categories"
+            :key="item"
+            type="button"
+            :aria-pressed="category === item"
+            @click="category = item"
+          >{{ item }}</button>
+        </div>
+        <div class="catalog-controls">
+          <div>
+            <p class="catalog-count" aria-live="polite">{{ carCount }}</p>
+            <p v-if="filteredCars.length" class="catalog-demo">Демонстрационные цены</p>
+          </div>
+          <select v-if="filteredCars.length" v-model="sort" aria-label="Сортировка автомобилей">
+            <option value="По цене">Сначала дешевле</option>
+            <option>Сначала дороже</option>
             <option>По названию</option>
-          </select></label
-        >
+          </select>
+        </div>
       </div>
-      <div v-if="!filteredCars.length" class="empty-state">
-        <CarFront :size="36" />
+
+      <div v-if="!filteredCars.length" class="catalog-empty">
+        <CarFront :size="32" aria-hidden="true" />
         <h3>В этом классе пока нет примеров</h3>
         <p>Выберите другой класс или посмотрите все автомобили.</p>
-        <button class="button button-primary" @click="category = 'Все классы'">
-          Все классы<ArrowRight :size="18" />
+        <button type="button" class="button button-primary" @click="category = 'Все классы'">
+          Все классы<ArrowRight :size="17" aria-hidden="true" />
         </button>
       </div>
-      <article v-for="car in filteredCars" :key="car.id" class="result-row">
-        <button class="result-car" @click="showCar(car)">
-          <CarArt :index="car.image" :name="car.name" /><span
-            ><small>{{ car.category }} · {{ car.year }}</small
-            ><strong>{{ car.name }}</strong
-            ><span>Автомат · {{ car.power }} л.с.</span></span
-          >
-        </button>
-        <div class="result-mileage">
-          <Gauge :size="18" /><span
-            >{{ mileage
-            }}<small>{{
-              protection ? "С опцией «Защита+»" : "Без опции «Защита+»"
-            }}</small></span
-          >
+      <template v-else>
+        <div class="catalog-grid">
+          <article v-for="car in filteredCars" :key="car.id" class="result-card" :aria-labelledby="'catalog-name-' + car.id">
+            <div class="result-photo">
+              <CarArt :index="car.image" :name="car.name" />
+              <span class="result-class">{{ car.category }}</span>
+            </div>
+            <div class="result-body">
+              <div class="result-title">
+                <h3 :id="'catalog-name-' + car.id">{{ car.name }}</h3>
+                <span>{{ car.year }} г.</span>
+              </div>
+              <ul class="result-specs" aria-label="Характеристики и условия">
+                <li><UsersRound :size="16" aria-hidden="true" />{{ car.seats }} мест</li>
+                <li><Settings2 :size="16" aria-hidden="true" />Автомат</li>
+                <li class="result-limit"><Gauge :size="17" aria-hidden="true" />{{ mileageLabel }}</li>
+              </ul>
+              <div class="result-price">
+                <div>
+                  <span class="result-duration">За {{ days }} {{ dayLabel }}</span>
+                  <strong>{{ money(rate(car) * days) }} ₽</strong>
+                </div>
+                <span class="result-daily">{{ money(rate(car)) }} ₽ / сутки</span>
+              </div>
+              <button
+                :id="'catalog-car-' + car.id"
+                type="button"
+                class="button result-details"
+                :aria-label="'Подробнее: ' + car.name"
+                @click="showCar(car)"
+              >
+                Подробнее<ArrowUpRight :size="17" aria-hidden="true" />
+              </button>
+            </div>
+          </article>
         </div>
-        <div class="result-price">
-          <strong>{{ money(rate(car)) }} ₽<small> / сутки</small></strong
-          ><span
-            >{{ money(rate(car) * days) }} ₽ за {{ days }} {{ dayLabel }}</span
-          >
-        </div>
-        <button class="button button-soft" @click="showCar(car)">
-          Подробнее<ArrowUpRight :size="18" />
-        </button>
-      </article>
-      <p class="data-disclaimer">
-        <Info :size="16" /> Расчёт показывает механику интерфейса. Наличие,
-        тарифы, залог и стоимость доставки подтверждаются отдельно. Заявка не
-        означает бронирование.
-      </p>
+        <p class="catalog-note">
+          <Info :size="16" aria-hidden="true" />
+          <span>Наличие, залог и стоимость доставки уточняются отдельно.</span>
+        </p>
+      </template>
     </section>
   </BaseModal>
   <BaseModal
@@ -869,9 +915,14 @@ function account() {
     v-if="modal === 'car'"
     :title="selected.name"
     wide
-    @close="modal = null"
-    >
-    <p class="detail-meta">{{ selected.category }} · {{ selected.year }} г.</p>
+    @close="closeCar"
+  >
+    <div class="detail-meta detail-navigation">
+      <p>{{ selected.category }} · {{ selected.year }} г.</p>
+      <button v-if="carFromCatalog" class="text-button" type="button" @click="closeCar">
+        <ChevronLeft :size="16" aria-hidden="true" />К результатам
+      </button>
+    </div>
     <div class="car-detail-grid">
       <figure class="detail-photo">
         <div class="detail-photo-frame">
