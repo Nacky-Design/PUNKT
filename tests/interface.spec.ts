@@ -226,10 +226,25 @@ test("UI kit and delivery announcement disclose provisional state", async ({
   await expect(offer.locator("img")).toHaveJSProperty("complete", true);
   await expect(offer.locator("img")).toHaveJSProperty("naturalWidth", 660);
   await offer.click();
-  await expect(page.getByRole("dialog")).toContainText(
+  const dialog = page.getByRole("dialog", { name: "Доставим бесплатно" });
+  await expect(dialog).toContainText(
     "Даты, территория и ограничения ещё уточняются",
   );
+  await expect(dialog.getByRole("img", { name: "Передача ключей от автомобиля клиенту" }))
+    .toHaveJSProperty("naturalWidth", 900);
+  const nextStep = dialog.getByRole("button", { name: "Следующий шаг доставки" });
+  await nextStep.click();
+  await expect(dialog.getByRole("img", { name: "Осмотр кузова автомобиля перед получением" })).toBeVisible();
+  await nextStep.press("Enter");
+  await expect(dialog.getByRole("img", { name: "Автомобиль на загородной дороге" })).toBeVisible();
+  await dialog.getByRole("button", { name: "Предыдущий шаг доставки" }).click();
+  await expect(dialog.getByRole("heading", { name: "Осмотрите автомобиль вместе" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(offer).toBeFocused();
+  await offer.click();
+  await expect(dialog.getByRole("heading", { name: "Получите ключи в удобном месте" })).toBeVisible();
   await page.getByRole("button", { name: "Подобрать автомобиль" }).click();
+  await expect(page.getByRole("region", { name: "Подбор автомобиля" })).toBeFocused();
   await expect(
     page.getByRole("checkbox", { name: "Доставка", exact: true }),
   ).toBeChecked();

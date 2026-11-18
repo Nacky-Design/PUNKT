@@ -58,6 +58,7 @@ const quickOpen = ref(false),
   rail = ref<HTMLElement>();
 const canScrollBack = ref(false);
 const canScrollForward = ref(false);
+const searchPanel = ref<HTMLElement>();
 const navItems = ["Цены", "Услуги", "Условия", "Акции", "Новости", "Контакты"];
 const guidePhotos = {
   delivery: "Передача ключей от автомобиля клиенту",
@@ -65,6 +66,25 @@ const guidePhotos = {
   protection: "Осмотр кузова автомобиля перед получением",
 };
 const offerDate = "10 января";
+const offerSteps = [
+  {
+    photo: "delivery",
+    title: "Получите ключи в удобном месте",
+    description: "Выберите автомобиль и место получения. После проверки документов команда согласует время и привезёт автомобиль с договором.",
+  },
+  {
+    photo: "protection",
+    title: "Осмотрите автомобиль вместе",
+    description: "Сотрудник покажет автомобиль. Перед подписанием договора осмотрите кузов и зафиксируйте состояние машины.",
+  },
+  {
+    photo: "mileage",
+    title: "Отправляйтесь по своим делам",
+    description: "После передачи ключей можно выезжать. Время и место возврата согласуем при оформлении.",
+  },
+] as const;
+const offerIndex = ref(0);
+const offerStep = computed(() => offerSteps[offerIndex.value]!);
 const modal = ref<
     | "car"
     | "request"
@@ -188,7 +208,7 @@ watch(delivery, (enabled) => {
 function nav(item: string) {
   mobileMenu.value = false;
   if (item === "Цены") search();
-  else if (item === "Акции") modal.value = "offer";
+  else if (item === "Акции") openOffer();
   else if (item === "Контакты") modal.value = "contacts";
   else if (item === "Условия")
     openInfo(
@@ -200,6 +220,20 @@ function nav(item: string) {
       "Новости «Пункта»",
       "Готовимся к запуску нового сайта. Здесь появятся новости компании, полезные материалы и истории поездок. Сейчас вы смотрите интерактивный прототип главного экрана.",
     );
+}
+function openOffer() {
+  offerIndex.value = 0;
+  modal.value = "offer";
+}
+function changeOfferStep(direction: number) {
+  const count = offerSteps.length;
+  offerIndex.value = (offerIndex.value + direction + count) % count;
+}
+function chooseDelivery() {
+  modal.value = null;
+  delivery.value = true;
+  location.value = "Доставка по Москве";
+  nextTick(() => searchPanel.value?.focus());
 }
 function showCar(car: Car) {
   selected.value = car;
@@ -370,7 +404,7 @@ function account() {
         <div class="hero-copy">
           <h1 id="hero-title" class="headline">
             Автомобиль<br />под ваши
-            <span>планы<span class="headline-dot">.</span></span>
+            <em>планы<span class="headline-dot">.</span></em>
           </h1>
           <p class="hero-description">
             Аренда автомобилей в Москве.<br />
@@ -391,7 +425,7 @@ function account() {
             </span>
           </div>
         </div>
-        <button class="delivery-offer" @click="modal = 'offer'">
+        <button class="delivery-offer" @click="openOffer">
           <span class="offer-copy">
             <strong>Доставим<br />бесплатно</strong>
             <span>Акция до {{ offerDate }}</span>
@@ -407,6 +441,8 @@ function account() {
         </button>
         <section
           id="search"
+          ref="searchPanel"
+          tabindex="-1"
           class="search-panel"
           aria-label="Подбор автомобиля"
         >
@@ -1010,38 +1046,54 @@ function account() {
   >
   <BaseModal
     v-if="modal === 'offer'"
-    title="Ваш автомобиль. С доставкой."
+    title="Доставим бесплатно"
     @close="modal = null"
   >
-    <p class="modal-lead">
-      Готовим акцию на доставку автомобиля.
-    </p>
-    <ol class="offer-steps">
-      <li><span>1</span>Выберите автомобиль и свяжитесь с нами.</li>
-      <li>
-        <span>2</span>Передайте документы в согласованный чат и дождитесь
-        одобрения.
-      </li>
-      <li>
-        <span>3</span>Согласуйте время. Водитель привезёт автомобиль и печатный
-        договор.
-      </li>
-    </ol>
+    <section class="offer-gallery" aria-label="Как проходит доставка">
+      <div class="offer-slide" aria-live="polite" aria-atomic="true">
+        <img
+          class="guide-photo"
+          :class="'guide-photo-' + offerStep.photo"
+          src="/assets/rental-guides.webp"
+          :alt="guidePhotos[offerStep.photo]"
+          width="900"
+          height="1350"
+        />
+        <h3>{{ offerStep.title }}</h3>
+        <p>{{ offerStep.description }}</p>
+      </div>
+      <div class="offer-gallery-controls">
+        <span>{{ offerIndex + 1 }} / {{ offerSteps.length }}</span>
+        <button
+          class="icon-button"
+          type="button"
+          aria-label="Предыдущий шаг доставки"
+          @click="changeOfferStep(-1)"
+        >
+          <ChevronLeft :size="18" aria-hidden="true" />
+        </button>
+        <button
+          class="icon-button"
+          type="button"
+          aria-label="Следующий шаг доставки"
+          @click="changeOfferStep(1)"
+        >
+          <ChevronRight :size="18" aria-hidden="true" />
+        </button>
+      </div>
+    </section>
     <p class="prototype-note">
       <Info :size="17" />
       <span>Рабочая дата акции — {{ offerDate }}. Даты, территория и ограничения ещё
       уточняются. Бесплатная доставка не применяется в расчёте автоматически.</span>
     </p>
     <button
-      class="button button-primary full-width"
-      @click="
-        modal = null;
-        delivery = true;
-        location = 'Доставка по Москве';
-      "
+      class="button button-primary full-width offer-action"
+      @click="chooseDelivery"
     >
-      Подобрать автомобиль<ArrowRight :size="19" /></button
-  ></BaseModal>
+      Подобрать автомобиль<ArrowRight :size="19" aria-hidden="true" />
+    </button>
+  </BaseModal>
   <BaseModal v-if="modal === 'info'" :title="infoTitle" @close="modal = null">
     <img
       v-if="infoPhoto"
