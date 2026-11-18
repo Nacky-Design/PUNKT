@@ -11,13 +11,11 @@ import {
   MapPin,
   ShieldCheck,
   Gauge,
-  Truck,
   UserRound,
   Phone,
   Menu,
   X,
   Check,
-  Sparkles,
   Fuel,
   Zap,
   CircleHelp,
@@ -32,6 +30,7 @@ import SelectField from "./components/SelectField.vue";
 import DateRange from "./components/DateRange.vue";
 import BaseModal from "./components/BaseModal.vue";
 import CarArt from "./components/CarArt.vue";
+import ServicesMenu from "./components/ServicesMenu.vue";
 import {
   cars,
   categories,
@@ -53,7 +52,15 @@ const protection = ref(false),
 const quickOpen = ref(false),
   quickCategory = ref("Все классы"),
   mobileMenu = ref(false),
+  mobileMenuButton = ref<HTMLButtonElement>(),
   rail = ref<HTMLElement>();
+const navItems = ["Цены", "Услуги", "Условия", "Акции", "Новости", "Контакты"];
+const guidePhotos = {
+  delivery: "Передача ключей от автомобиля клиенту",
+  mileage: "Автомобиль на загородной дороге",
+  protection: "Осмотр кузова автомобиля перед получением",
+};
+const offerDate = "10 января";
 const modal = ref<
     | "car"
     | "request"
@@ -68,6 +75,7 @@ const modal = ref<
   gallery = ref(0);
 const infoTitle = ref(""),
   infoBody = ref(""),
+  infoPhoto = ref<keyof typeof guidePhotos>(),
   showKit = ref(new URLSearchParams(window.location.search).has("ui-kit"));
 const name = ref(""),
   phone = ref(""),
@@ -130,23 +138,37 @@ const dayLabel = computed(() =>
       ? "дня"
       : "дней",
 );
-function openInfo(title: string, body: string) {
+function openInfo(title: string, body: string, photo?: keyof typeof guidePhotos) {
   infoTitle.value = title;
   infoBody.value = body;
+  infoPhoto.value = photo;
   modal.value = "info";
   mobileMenu.value = false;
+}
+function openService(title: string, description: string) {
+  if (mobileMenu.value) mobileMenuButton.value?.focus();
+  openInfo(title, description);
 }
 function explainMileage() {
   const limit = Number.parseInt(mileage.value, 10);
   openInfo(
     "Что означает лимит пробега",
-    `Это расстояние, включённое в тариф, а не пробег самого автомобиля.\n\nПри аренде на одни сутки с пакетом ${limit} км можно проехать ${limit} км без доплаты за километры. Если проехать ${limit + 20} км, 20 км будут сверх лимита.\n\nДля более длинных поездок выберите больший пакет — он меняет предварительную стоимость. Ставку за перепробег и правила расчёта за несколько суток подтвердим до оформления.`,
+    `Лимит — расстояние, включённое в тариф, а не пробег самого автомобиля.\n\nС пакетом ${limit} км за сутки можно проехать ${limit} км по тарифу. При поездке на ${limit + 20} км доплата будет за 20 км. Цену за километр и правила для аренды на несколько суток уточним до оформления.`,
+    "mileage",
   );
 }
 function explainDelivery() {
   openInfo(
     "Как работает доставка",
-    "Привезём автомобиль в согласованное место и время. Выберите место в поле «Место получения».\n\nСначала свяжемся с вами и проверим документы в согласованном чате. После одобрения договоримся о времени; водитель привезёт автомобиль и печатный договор.\n\nОтметка «Доставка» — пожелание к заявке, не подтверждение выдачи. Стоимость согласуется отдельно; даты и территория акции бесплатной доставки ещё уточняются.",
+    "Выберите адрес в Москве или аэропорт в поле «Место получения». После проверки документов согласуем точку и время встречи. Водитель привезёт автомобиль и печатный договор.\n\nНапример, при выборе Шереметьево мы согласуем терминал и стоимость подачи до оформления.",
+    "delivery",
+  );
+}
+function explainProtection() {
+  openInfo(
+    "Защита+",
+    `«Защита+» добавляет к предварительному расчёту 490 ₽ за сутки. Например, за трое суток доплата составит ${money(490 * 3)} ₽.\n\nПокрытие, исключения и ответственность согласуем до оформления. При получении осмотрите автомобиль вместе с сотрудником и зафиксируйте его состояние.`,
+    "protection",
   );
 }
 // Receiving the car in the office and requesting delivery are mutually exclusive.
@@ -168,11 +190,6 @@ function nav(item: string) {
     openInfo(
       "Условия аренды",
       "Возраст — от 21 года, водительский стаж — от 1 года. Для оформления потребуются паспорт и водительское удостоверение. Договор подписывается при получении автомобиля. Условия залога, «Защиты+» и допустимых поездок уточняются до подтверждения. Действующий юридический PDF будет подключён перед запуском сайта.",
-    );
-  else if (item === "Услуги")
-    openInfo(
-      "Получите автомобиль удобным способом",
-      "Доставка: свяжитесь с командой, передайте документы в согласованный чат и дождитесь одобрения. После согласования времени водитель привезёт автомобиль и печатный договор. В офисе: приезжайте с паспортом и водительским удостоверением, подпишите договор и получите автомобиль.",
     );
   else
     openInfo(
@@ -278,58 +295,52 @@ function account() {
       ><span class="brand-image"></span
     ></a>
     <nav class="desktop-nav" aria-label="Главное меню">
-      <button
-        v-for="item in [
-          'Цены',
-          'Услуги',
-          'Условия',
-          'Акции',
-          'Новости',
-          'Контакты',
-        ]"
-        :key="item"
-        @click="nav(item)"
-      >
-        {{ item }}<ChevronDown v-if="item === 'Услуги'" :size="12" />
-      </button>
+      <template v-for="item in navItems" :key="item">
+        <ServicesMenu v-if="item === 'Услуги'" @select="openService" />
+        <button v-else class="nav-label" type="button" @click="nav(item)">
+          {{ item }}
+        </button>
+      </template>
     </nav>
     <div class="header-actions">
-      <a class="header-phone" href="tel:+74951041010"
-        ><Phone :size="16" /><span>8 495 104-10-10</span></a
-      ><button
+      <a
+        class="header-phone phone-label"
+        href="tel:+74951041010"
+        aria-label="Позвонить: 8 495 104-10-10"
+      >
+        <Phone :size="16" /><span>8 495 104-10-10</span>
+      </a>
+      <button
         class="account-button"
         aria-label="Личный кабинет"
         @click="account"
       >
-        <UserRound :size="19" /><span>Войти</span></button
-      ><button
+        <UserRound :size="19" /><span>Войти</span>
+      </button>
+      <button
+        ref="mobileMenuButton"
         class="mobile-menu-button icon-button"
         :aria-expanded="mobileMenu"
+        :aria-controls="mobileMenu ? 'mobile-nav' : undefined"
         :aria-label="mobileMenu ? 'Закрыть меню' : 'Открыть меню'"
         @click="mobileMenu = !mobileMenu"
       >
         <X v-if="mobileMenu" /><Menu v-else />
       </button>
     </div>
-    <Transition name="popover"
-      ><nav v-if="mobileMenu" class="mobile-nav" aria-label="Мобильное меню">
-        <button
-          v-for="item in [
-            'Цены',
-            'Услуги',
-            'Условия',
-            'Акции',
-            'Новости',
-            'Контакты',
-          ]"
-          :key="item"
-          @click="nav(item)"
-        >
-          {{ item }}<ArrowUpRight :size="17" /></button
-        ><button @click="account">
+    <Transition name="popover">
+      <nav v-if="mobileMenu" id="mobile-nav" class="mobile-nav" aria-label="Мобильное меню">
+        <template v-for="item in navItems" :key="item">
+          <ServicesMenu v-if="item === 'Услуги'" mobile @select="openService" />
+          <button v-else type="button" @click="nav(item)">
+            {{ item }}<ArrowUpRight :size="17" />
+          </button>
+        </template>
+        <button @click="account">
           Личный кабинет<UserRound :size="17" />
-        </button></nav
-    ></Transition>
+        </button>
+      </nav>
+    </Transition>
   </header>
   <main>
     <section class="hero" aria-labelledby="hero-title">
@@ -337,31 +348,42 @@ function account() {
       <div class="hero-shade" aria-hidden="true"></div>
       <div class="hero-content">
         <div class="hero-copy">
-          <h1 id="hero-title">
+          <h1 id="hero-title" class="headline">
             Автомобиль<br />под ваши
             <span>планы<span class="headline-dot">.</span></span>
           </h1>
           <p class="hero-description">
-            Ваш маршрут. Ваш ритм. Ваш автомобиль.<br />Выберите машину —
-            остальное обсудим.
+            Аренда автомобилей в Москве.<br />
+            Выберите машину — заберите в офисе или закажите доставку.
           </p>
           <div class="hero-benefits">
-            <span><CalendarDays />Гибкие сроки<br />аренды</span
-            ><span><ShieldCheck />Понятные<br />условия</span
-            ><span><MapPin />В офисе<br />или с доставкой</span>
+            <span>
+              <MapPin aria-hidden="true" />
+              <span>В офисе или<br />с доставкой</span>
+            </span>
+            <span>
+              <CalendarDays aria-hidden="true" />
+              <span>На сутки<br />или надолго</span>
+            </span>
+            <span>
+              <ShieldCheck aria-hidden="true" />
+              <span>Условия до<br />оформления</span>
+            </span>
           </div>
         </div>
-        <button
-          class="delivery-offer"
-          @click="modal = 'offer'"
-          aria-label="Бесплатная доставка к открытию сайта — подробнее"
-        >
-          <span class="offer-icon"><Truck :size="25" /></span>
-          <span class="offer-copy"
-            ><strong>Доставим<br />бесплатно</strong
-            ><span>В честь открытия сайта</span></span
-          >
-          <ArrowUpRight class="offer-arrow" :size="20" />
+        <button class="delivery-offer" @click="modal = 'offer'">
+          <span class="offer-copy">
+            <strong>Доставим<br />бесплатно</strong>
+            <span>Акция до {{ offerDate }}</span>
+          </span>
+          <img
+            class="offer-car"
+            src="/assets/delivery-car.webp"
+            alt=""
+            width="660"
+            height="312"
+          />
+          <ArrowUpRight class="offer-arrow" :size="20" aria-hidden="true" />
         </button>
         <section
           id="search"
@@ -427,12 +449,7 @@ function account() {
                   type="button"
                   class="help-button"
                   aria-label="Что такое Защита+"
-                  @click="
-                    openInfo(
-                      'Защита+',
-                      'Дополнительная опция защиты. В прототипе используется демонстрационная стоимость 490 ₽/сутки. Объём покрытия, исключения и условия ответственности нужно подтвердить перед оформлением. Это не обещание отсутствия ответственности за любые повреждения.',
-                    )
-                  "
+                  @click="explainProtection"
                 >
                   <CircleHelp :size="14" />
                 </button>
@@ -568,9 +585,6 @@ function account() {
     </section>
     <section v-if="showKit" id="ui-kit" class="ui-kit section-container">
       <h2>Одна система. Все состояния.</h2>
-      <p class="muted">
-        Компоненты главного экрана. Golos Text · сетка 4 px · жёлтый акцент.
-      </p>
       <div class="swatches">
         <div
           v-for="color in ['#FFC107', '#171717', '#FFFFFF', '#F5F5F5']"
@@ -578,6 +592,48 @@ function account() {
         >
           <span :style="{ background: color }"></span><code>{{ color }}</code>
         </div>
+      </div>
+      <div class="type-specimens">
+        <article
+          v-for="font in ['Onest', 'Manrope']"
+          :key="font"
+          :style="{ fontFamily: font + ' Variable, sans-serif' }"
+        >
+          <h3>{{ font }}{{ font === 'Onest' ? ' · основной' : '' }}</h3>
+          <dl>
+            <div>
+              <dt>Главный заголовок</dt>
+              <dd class="headline">Автомобиль под ваши планы<span class="headline-dot">.</span></dd>
+            </div>
+            <div>
+              <dt>Подстрочник</dt>
+              <dd class="hero-description">Аренда автомобилей в Москве.</dd>
+            </div>
+            <div>
+              <dt>Навигация</dt>
+              <dd class="nav-label">Цены · Услуги · Условия</dd>
+            </div>
+            <div>
+              <dt>Телефон</dt>
+              <dd class="phone-label">8 495 104-10-10</dd>
+            </div>
+            <div>
+              <dt>Поля</dt>
+              <dd>
+                <span class="field-caption">Место получения</span>
+                <span class="field-value">Офис на Авиационной</span>
+              </dd>
+            </div>
+            <div>
+              <dt>Справка</dt>
+              <dd class="info-body">Выберите место и время получения.</dd>
+            </div>
+            <div>
+              <dt>Служебное сообщение</dt>
+              <dd class="prototype-note"><Info :size="16" />Данные не отправляются</dd>
+            </div>
+          </dl>
+        </article>
       </div>
       <div class="kit-grid">
         <article>
@@ -940,13 +996,9 @@ function account() {
     v-if="modal === 'offer'"
     title="Ваш автомобиль. С доставкой."
     @close="modal = null"
-    ><div class="offer-modal-icon">
-      <Truck :size="38" /><Sparkles :size="20" />
-    </div>
-
-    <h3 class="offer-title">Хорошие поездки<br />начинаются у вашей двери.</h3>
+  >
     <p class="modal-lead">
-      Готовим бесплатную доставку автомобиля к запуску сайта.
+      Готовим акцию на доставку автомобиля.
     </p>
     <ol class="offer-steps">
       <li><span>1</span>Выберите автомобиль и свяжитесь с нами.</li>
@@ -960,8 +1012,9 @@ function account() {
       </li>
     </ol>
     <p class="prototype-note">
-      <Info :size="17" />Анонс акции. Даты, территория и ограничения ещё
-      уточняются. Бесплатная доставка не применяется в расчёте автоматически.
+      <Info :size="17" />
+      <span>Рабочая дата акции — {{ offerDate }}. Даты, территория и ограничения ещё
+      уточняются. Бесплатная доставка не применяется в расчёте автоматически.</span>
     </p>
     <button
       class="button button-primary full-width"
@@ -973,8 +1026,17 @@ function account() {
     >
       Подобрать автомобиль<ArrowRight :size="19" /></button
   ></BaseModal>
-  <BaseModal v-if="modal === 'info'" :title="infoTitle" @close="modal = null"
-    ><p class="info-body">{{ infoBody }}</p>
+  <BaseModal v-if="modal === 'info'" :title="infoTitle" @close="modal = null">
+    <img
+      v-if="infoPhoto"
+      class="guide-photo"
+      :class="'guide-photo-' + infoPhoto"
+      src="/assets/rental-guides.webp"
+      :alt="guidePhotos[infoPhoto]"
+      width="900"
+      height="1350"
+    />
+    <p class="info-body">{{ infoBody }}</p>
     <button class="button button-soft" @click="modal = null">
       Понятно<Check :size="17" /></button
   ></BaseModal>

@@ -173,6 +173,14 @@ for (const width of [320, 430, 768, 1024, 1440, 1536, 2048]) {
     const offer = await page.locator(".delivery-offer").boundingBox(),
       panel = await page.locator(".search-panel").boundingBox(),
       benefits = await page.locator(".hero-benefits").boundingBox();
+    for (const selector of [".brand", "#hero-title", ".hero-description", ".hero-benefits"]) {
+      const bounds = await page.locator(selector).boundingBox();
+      expect(bounds!.x).toBeCloseTo(panel!.x, 1);
+    }
+    const headerActions = (await page.locator(".header-actions").boundingBox())!;
+    expect(headerActions.x + headerActions.width).toBeLessThanOrEqual(
+      panel!.x + panel!.width + 1,
+    );
     expect(offer!.y + offer!.height).toBeLessThanOrEqual(panel!.y);
     expect(benefits!.y + benefits!.height).toBeLessThanOrEqual(panel!.y);
     await page
@@ -198,7 +206,10 @@ test("UI kit and delivery announcement disclose provisional state", async ({
   await expect(
     page.getByRole("button", { name: "Недоступно", exact: true }),
   ).toBeDisabled();
-  await page.locator(".delivery-offer").click();
+  const offer = page.getByRole("button", { name: /Доставим бесплатно.*10 января/ });
+  await expect(offer.locator("img")).toHaveJSProperty("complete", true);
+  await expect(offer.locator("img")).toHaveJSProperty("naturalWidth", 660);
+  await offer.click();
   await expect(page.getByRole("dialog")).toContainText(
     "Даты, территория и ограничения ещё уточняются",
   );
@@ -209,6 +220,53 @@ test("UI kit and delivery announcement disclose provisional state", async ({
   await expect(
     page.getByRole("button", { name: "Место получения: Доставка по Москве" }),
   ).toBeVisible();
+});
+
+test("desktop services open on hover, click and keyboard, then restore focus", async ({ page }) => {
+  await page.goto("/");
+  const trigger = page.getByRole("button", { name: "Услуги", exact: true });
+  const panel = page.locator("#services-panel");
+  await expect(panel).toBeHidden();
+  await trigger.hover();
+  await expect(panel).toBeVisible();
+  await expect(panel.getByRole("button")).toHaveCount(14);
+  await panel.getByRole("button", { name: "Техпомощь" }).hover();
+  await expect(panel).toBeVisible();
+  await page.mouse.move(0, 0);
+  await expect(panel).toBeHidden();
+  await trigger.click();
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  await page.locator("#hero-title").click();
+  await expect(panel).toBeHidden();
+  await trigger.focus();
+  await page.keyboard.press("ArrowDown");
+  const daily = panel.getByRole("button", { name: "На сутки", exact: true });
+  await expect(daily).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(trigger).toBeFocused();
+  await expect(panel).toBeHidden();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("dialog", { name: "На сутки" })).toBeVisible();
+  await expect(panel).toBeHidden();
+  await page.keyboard.press("Escape");
+  await expect(trigger).toBeFocused();
+});
+
+test("mobile services expand by group and open an explanation", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Открыть меню" }).click();
+  const nav = page.getByRole("navigation", { name: "Мобильное меню" });
+  await nav.locator("summary").getByText("Услуги", { exact: true }).click();
+  const airport = nav.getByRole("button", { name: "В аэропорт" });
+  await expect(airport).toBeHidden();
+  await nav.locator("summary").getByText("Поездки и события").click();
+  await airport.click();
+  await expect(page.getByRole("dialog", { name: "В аэропорт" })).toBeVisible();
+  await expect(nav).toBeHidden();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("button", { name: "Открыть меню" })).toBeFocused();
 });
 
 for (const [width, height] of [
@@ -273,6 +331,8 @@ test("mileage explanation distinguishes allowance from odometer and follows sele
     .getByRole("button", { name: "Как работает лимит пробега" })
     .click();
   const info = page.getByRole("dialog", { name: "Что означает лимит пробега" });
+  await expect(info.getByRole("img", { name: "Автомобиль на загородной дороге" }))
+    .toHaveJSProperty("naturalWidth", 900);
   await expect(info).toContainText("не пробег самого автомобиля");
   await expect(info).toContainText("120 км");
   await page.keyboard.press("Escape");
@@ -295,9 +355,10 @@ test("delivery help does not toggle the checkbox; pickup and delivery stay consi
   await page.goto("/");
   const box = page.getByRole("checkbox", { name: "Доставка", exact: true });
   await page.getByRole("button", { name: "Как работает доставка" }).click();
-  await expect(
-    page.getByRole("dialog", { name: "Как работает доставка" }),
-  ).toContainText("печатный договор");
+  const guide = page.getByRole("dialog", { name: "Как работает доставка" });
+  await expect(guide).toContainText("печатный договор");
+  await expect(guide.getByRole("img", { name: "Передача ключей от автомобиля клиенту" }))
+    .toHaveJSProperty("naturalWidth", 900);
   await expect(box).not.toBeChecked();
   await page.keyboard.press("Escape");
   await box.check();
@@ -320,6 +381,16 @@ test("delivery help does not toggle the checkbox; pickup and delivery stay consi
   await expect(
     page.getByRole("button", { name: "Место получения: Офис на Авиационной" }),
   ).toBeVisible();
+});
+
+test("protection guide shows the inspection photo and a cost example", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Что такое Защита+" }).click();
+  const guide = page.getByRole("dialog", { name: "Защита+" });
+  await expect(guide.getByRole("img", { name: "Осмотр кузова автомобиля перед получением" }))
+    .toHaveJSProperty("naturalWidth", 900);
+  await expect(guide).toContainText(/1\s470 ₽/);
+  await expect(page.getByRole("checkbox", { name: "Защита+", exact: true })).not.toBeChecked();
 });
 
 for (const [width, height] of [
