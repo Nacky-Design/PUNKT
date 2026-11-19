@@ -74,8 +74,9 @@ for (const [width, height] of [[320, 568], [390, 844]]) {
 
     await expect(page.getByRole("button", { name: "Быстрый выбор автомобиля" })).toBeHidden();
     await expect(page.getByRole("button", { name: "Весь автопарк" })).toBeHidden();
-    await expect(page.getByRole("region", { name: "Автопарк" })).toBeVisible();
-    const cards = page.locator(".car-card");
+    const fleet = page.getByRole("region", { name: "Автопарк" });
+    await expect(fleet.getByRole("heading", { name: "Автопарк" })).toBeInViewport({ ratio: 1 });
+    const cards = fleet.locator(".car-card");
     await expect(cards).toHaveCount(7);
     const bounds = await Promise.all(
       (await cards.all()).map((card) => card.boundingBox()),
@@ -94,6 +95,10 @@ for (const [width, height] of [[320, 568], [390, 844]]) {
     for (const photo of await photos.all()) {
       await expect.poll(() => photo.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
     }
+    const specs = cards.first().locator(".car-card-specs");
+    await expect(specs).toContainText("Автомат");
+    await expect(specs).toContainText("5 мест");
+    await expect(specs).toContainText("Бензин");
     const polo = cards.filter({ hasText: "Volkswagen Polo" });
     await polo.click();
     await expect(page.getByRole("dialog", { name: /Volkswagen Polo/ })).toBeVisible();

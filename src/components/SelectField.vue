@@ -70,7 +70,11 @@ onBeforeUnmount(() => document.removeEventListener("click", close));
         ><span v-if="!displayValue" class="field-caption">{{ label }}</span
         ><span class="field-value">{{ displayValue ?? modelValue }}</span></span
       ><span v-if="actionLabel" class="field-action">{{ actionLabel }}</span>
-      <ChevronDown v-else :size="16" :class="{ rotated: open }" /></button
+      <ChevronDown
+        :size="16"
+        :class="{ 'field-action-icon': actionLabel, rotated: open }"
+        aria-hidden="true"
+      /></button
     ><Transition name="popover"
       ><div
         v-if="open"

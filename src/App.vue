@@ -514,7 +514,7 @@ function account() {
           aria-label="Подбор автомобиля"
         >
           <form @submit.prevent="searchWithAddress">
-            <div class="search-primary">
+            <div class="search-primary" :class="{ 'search-address-mode': addressSelected }">
               <SelectField
                 v-model="category"
                 label="Класс автомобиля"
@@ -672,7 +672,11 @@ function account() {
                     /><span
                       class="car-card-bottom"
                       ><strong>{{ car.name }}</strong
-                      ><span
+                      ><span v-if="mobile" class="car-card-specs">
+                        <span><Settings2 :size="15" aria-hidden="true" />Автомат</span>
+                        <span><UsersRound :size="15" aria-hidden="true" />{{ car.seats }} мест</span>
+                        <span><Fuel :size="15" aria-hidden="true" />{{ car.fuel }}</span>
+                      </span><span
                         >от <b>{{ money(car.price) }} ₽</b
                         ><small> / сутки</small></span
                       ></span
