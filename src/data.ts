@@ -11,6 +11,7 @@ export type Car = {
   drive: string;
   body: "Седан" | "Кроссовер" | "Лифтбек";
   image: number | string;
+  fleetImage?: string;
   photos?: CarPhoto[];
   extraSpecs?: { label: string; value: string }[];
   trim?: { name: string; features: string[] };
@@ -28,6 +29,7 @@ export const cars: Car[] = [
     drive: "Передний",
     body: "Седан",
     image: 0,
+    fleetImage: "fleet-solaris.webp",
     photos: [
       { label: "Общий вид", file: "solaris-exterior.webp" },
       { label: "Место водителя", file: "solaris-interior.webp" },
@@ -63,6 +65,7 @@ export const cars: Car[] = [
     drive: "Передний",
     body: "Седан",
     image: 1,
+    fleetImage: "fleet-rio.webp",
   },
   {
     id: 3,
@@ -76,6 +79,7 @@ export const cars: Car[] = [
     drive: "Задний",
     body: "Седан",
     image: 2,
+    fleetImage: "fleet-bmw-3.webp",
   },
   {
     id: 4,
@@ -89,6 +93,7 @@ export const cars: Car[] = [
     drive: "Передний",
     body: "Седан",
     image: 3,
+    fleetImage: "fleet-camry.webp",
   },
   {
     id: 5,
@@ -102,6 +107,7 @@ export const cars: Car[] = [
     drive: "Передний",
     body: "Кроссовер",
     image: 4,
+    fleetImage: "fleet-coolray.webp",
   },
   {
     id: 6,
@@ -115,6 +121,7 @@ export const cars: Car[] = [
     drive: "Передний",
     body: "Кроссовер",
     image: 5,
+    fleetImage: "fleet-jolion.webp",
   },
   {
     id: 7,

@@ -12,12 +12,11 @@ test("hero video starts muted, respects pause and supports reduced motion", asyn
   await expect(video).toHaveJSProperty("paused", false);
 
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
-  await expect(video).toHaveAttribute("poster", /hero-delivery-mobile\.webp$/);
+  await expect(video).toHaveAttribute("poster", /hero-delivery\.webp$/);
   await expect(video).not.toHaveAttribute("src", /.+/);
   await page.getByRole("button", { name: "Воспроизвести фоновое видео" }).click();
-  await expect(video).toHaveAttribute("src", /hero-delivery-mobile\.mp4(?:\?.*)?$/);
+  await expect(video).toHaveAttribute("src", /hero-delivery\.mp4(?:\?.*)?$/);
   await expect.poll(() => video.evaluate((el: HTMLVideoElement) => el.currentTime)).toBeGreaterThan(0);
 });
 
@@ -62,7 +61,7 @@ test("quick selection preserves hero geometry, filters cars and scrolls the rail
 });
 
 for (const [width, height] of [[320, 568], [390, 844]]) {
-  test(`mobile ${width}x${height}: search fits above the fold and seven cars appear inline`, async ({ page }) => {
+  test(`mobile ${width}x${height}: search fits above the fold and seven full-width car cards appear in order`, async ({ page }) => {
     await page.setViewportSize({ width, height });
     await page.goto("/");
     await page.evaluate(() => document.fonts.ready);
@@ -81,43 +80,42 @@ for (const [width, height] of [[320, 568], [390, 844]]) {
     const bounds = await Promise.all(
       (await cards.all()).map((card) => card.boundingBox()),
     );
-    expect(bounds[0]!.y).toBe(bounds[2]!.y);
-    expect(bounds[3]!.y).toBe(bounds[5]!.y);
-    expect(bounds[3]!.y).toBeGreaterThan(bounds[0]!.y);
-    expect(bounds[0]!.x).toBeCloseTo(bounds[3]!.x);
-    expect(bounds[6]!.y).toBeGreaterThan(bounds[5]!.y);
-    expect(bounds[5]!.x + bounds[5]!.width).toBeLessThan(width);
+    const form = (await panel.boundingBox())!;
+    for (const [index, card] of bounds.entries()) {
+      expect(card!.x).toBeCloseTo(form.x);
+      expect(card!.width).toBeCloseTo(form.width);
+      const prev = bounds[index - 1];
+      if (prev) expect(card!.y).toBeGreaterThan(prev.y + prev.height);
+    }
     await expect(page.getByRole("button", { name: "Следующие автомобили" })).toBeHidden();
 
-    const imageLoaded = await cards.first().locator(".car-art").evaluate(async (art) => {
-      const image = new Image();
-      image.src = getComputedStyle(art, "::before").backgroundImage.slice(5, -2);
-      await image.decode();
-      return image.naturalWidth > 0;
-    });
-    expect(imageLoaded).toBe(true);
+    const photos = cards.locator("img");
+    await expect(photos).toHaveCount(7);
+    for (const photo of await photos.all()) {
+      await expect.poll(() => photo.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+    }
     const polo = cards.filter({ hasText: "Volkswagen Polo" });
-    await expect(polo.getByRole("img")).toHaveJSProperty("complete", true);
-    await expect.poll(() => polo.getByRole("img").evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
     await polo.click();
     await expect(page.getByRole("dialog", { name: /Volkswagen Polo/ })).toBeVisible();
   });
 }
 
-test("mobile hero starts on a still and loads video only on request, with retry", async ({ page }) => {
+test("mobile hero has a loaded still and no playback control", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  const videoURL = /hero-delivery-mobile\.mp4/;
-  await page.route(videoURL, (route) => route.abort(), { times: 1 });
   await page.goto("/");
-  const video = page.locator(".hero-visual video");
-  await expect(video).toHaveAttribute("poster", /hero-delivery-mobile\.webp$/);
-  await expect(video).not.toHaveAttribute("src", /.+/);
-  await expect(video).toHaveJSProperty("paused", true);
-  await expect(page.locator(".hero-visual")).toHaveClass(/hero-still/);
-  await page.getByRole("button", { name: "Воспроизвести фоновое видео" }).click();
-  await expect.poll(() => video.evaluate((el: HTMLVideoElement) => el.error?.code)).toBeTruthy();
-  await page.getByRole("button", { name: "Воспроизвести фоновое видео" }).click();
-  await expect.poll(() => video.evaluate((el: HTMLVideoElement) => el.currentTime)).toBeGreaterThan(0);
+  await expect(page.locator(".hero video, .hero-playback")).toHaveCount(0);
+  await expect(page.locator(".hero-description")).toBeVisible();
+  await expect(page.locator(".hero-benefits svg")).toHaveCount(3);
+  const hasPoster = await page.locator(".hero-intro").evaluate(async (intro) => {
+    const backgrounds = getComputedStyle(intro, "::before").backgroundImage;
+    const url = backgrounds.match(/url\("([^"]+hero-delivery-mobile\.webp)"\)/)?.[1];
+    if (!url) return false;
+    const image = new Image();
+    image.src = url;
+    await image.decode();
+    return image.naturalWidth > 0;
+  });
+  expect(hasPoster).toBe(true);
 });
 
 test("class selection supports keyboard and search has an honest empty state", async ({

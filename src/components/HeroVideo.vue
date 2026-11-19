@@ -1,24 +1,14 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { Pause, Play } from "lucide-vue-next";
 
-const mobileQuery = window.matchMedia("(max-width: 760px)");
 const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-const mobile = ref(mobileQuery.matches);
-const wantsPlayback = ref(!mobile.value && !motionQuery.matches);
+const wantsPlayback = ref(!motionQuery.matches);
 const loadVideo = ref(wantsPlayback.value);
 const playing = ref(false);
 const video = ref<HTMLVideoElement>();
 
-const asset = computed(
-  () => `${import.meta.env.BASE_URL}assets/hero-delivery${mobile.value ? "-mobile" : ""}`,
-);
-
-function updateViewport(event: MediaQueryListEvent) {
-  mobile.value = event.matches;
-  wantsPlayback.value = !event.matches && !motionQuery.matches;
-  loadVideo.value = wantsPlayback.value;
-}
+const asset = `${import.meta.env.BASE_URL}assets/hero-delivery`;
 
 function stopForReducedMotion(event: MediaQueryListEvent) {
   if (event.matches) wantsPlayback.value = false;
@@ -42,16 +32,14 @@ function togglePlayback() {
   wantsPlayback.value = !wantsPlayback.value;
 }
 
-watch([wantsPlayback, asset], applyPlayback, { flush: "post" });
+watch(wantsPlayback, applyPlayback, { flush: "post" });
 
 onMounted(() => {
-  mobileQuery.addEventListener("change", updateViewport);
   motionQuery.addEventListener("change", stopForReducedMotion);
   applyPlayback();
 });
 
 onBeforeUnmount(() => {
-  mobileQuery.removeEventListener("change", updateViewport);
   motionQuery.removeEventListener("change", stopForReducedMotion);
 });
 </script>
@@ -59,13 +47,12 @@ onBeforeUnmount(() => {
 <template>
   <div
     class="hero-visual"
-    :class="{ 'hero-still': mobile && !playing }"
     aria-hidden="true"
     :style="{ backgroundImage: `url('${asset}.webp')` }"
   >
     <video
       ref="video"
-      :src="loadVideo ? asset + (mobile ? '.mp4?v=13' : '.mp4?v=08') : undefined"
+      :src="loadVideo ? asset + '.mp4?v=08' : undefined"
       :poster="asset + '.webp'"
       muted
       loop

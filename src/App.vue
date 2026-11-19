@@ -460,45 +460,50 @@ function account() {
   </header>
   <main>
     <section class="hero" aria-labelledby="hero-title">
-      <HeroVideo />
-      <div class="hero-shade" aria-hidden="true"></div>
+      <HeroVideo v-if="!mobile" />
+      <div v-if="!mobile" class="hero-shade" aria-hidden="true"></div>
       <div class="hero-content">
-        <button class="delivery-offer" @click="openOffer">
-          <span class="offer-copy">
-            <strong>Доставим<br class="offer-break" /> бесплатно</strong>
-            <span>Акция до {{ offerDate }}</span>
-          </span>
-          <img
-            class="offer-car"
-            src="/assets/delivery-car.webp"
-            alt=""
-            width="660"
-            height="312"
-          />
-          <ArrowUpRight class="offer-arrow" :size="20" aria-hidden="true" />
-        </button>
-        <div class="hero-copy">
-          <h1 id="hero-title" class="headline">
-            Автомобиль<br />под ваши
-            <em>планы<span class="headline-dot">.</span></em>
-          </h1>
-          <p class="hero-description">
-            Аренда автомобилей в Москве. <br />
-            Выберите машину — заберите в офисе или закажите доставку.
-          </p>
-          <div class="hero-benefits">
-            <span>
-              <span class="benefit-icon" aria-hidden="true"><KeyRound /></span>
-              <span>В офисе или<br />с доставкой</span>
+        <div class="hero-intro">
+          <button class="delivery-offer" @click="openOffer">
+            <span class="offer-copy">
+              <strong>Доставим<br class="offer-break" /> бесплатно</strong>
+              <span>Акция до {{ offerDate }}</span>
             </span>
-            <span>
-              <span class="benefit-icon" aria-hidden="true"><CalendarRange /></span>
-              <span>На сутки<br />или надолго</span>
-            </span>
-            <span>
-              <span class="benefit-icon" aria-hidden="true"><ClipboardCheck /></span>
-              <span>Условия до<br />оформления</span>
-            </span>
+            <img
+              class="offer-car"
+              src="/assets/delivery-car.webp"
+              alt=""
+              width="660"
+              height="312"
+            />
+            <ArrowUpRight class="offer-arrow" :size="20" aria-hidden="true" />
+          </button>
+          <div class="hero-copy">
+            <h1 id="hero-title" class="headline">
+              Автомобиль<br />под ваши
+              <em>планы<span class="headline-dot">.</span></em>
+            </h1>
+            <p class="hero-description">
+              Аренда автомобилей в Москве. <br />
+              <span class="hero-description-detail">Выберите машину — заберите в офисе или закажите доставку.</span>
+            </p>
+            <div class="hero-benefits">
+              <span>
+                <span class="benefit-icon" aria-hidden="true"><KeyRound /></span>
+                <span v-if="mobile">Доставка</span>
+                <span v-else>В офисе или<br />с доставкой</span>
+              </span>
+              <span>
+                <span class="benefit-icon" aria-hidden="true"><CalendarRange /></span>
+                <span v-if="mobile">От суток</span>
+                <span v-else>На сутки<br />или надолго</span>
+              </span>
+              <span>
+                <span class="benefit-icon" aria-hidden="true"><ClipboardCheck /></span>
+                <span v-if="mobile">Условия заранее</span>
+                <span v-else>Условия до<br />оформления</span>
+              </span>
+            </div>
           </div>
         </div>
         <section
@@ -661,7 +666,10 @@ function account() {
                     @click="showCar(car)"
                   >
                     <span class="card-class">{{ car.category }}</span
-                    ><CarArt :image="car.image" :name="car.name" /><span
+                    ><CarArt
+                      :image="mobile ? car.fleetImage ?? car.image : car.image"
+                      :name="car.name"
+                    /><span
                       class="car-card-bottom"
                       ><strong>{{ car.name }}</strong
                       ><span
