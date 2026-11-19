@@ -1,0 +1,234 @@
+.ui-kit {
+  background: var(--surface);
+  color: var(--ink);
+  padding: 56px max(var(--page-gutter), calc((100% - 1040px) / 2));
+}
+
+.kit-header h2 {
+  font-size: clamp(36px, 6vw, 62px);
+  line-height: 1.06;
+  letter-spacing: -0.055em;
+  font-weight: 650;
+}
+
+.kit-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 16px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid #dcdcd7;
+}
+
+.kit-nav a {
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.kit-section {
+  margin-top: 38px;
+}
+
+.kit-section > h3 {
+  font-size: var(--section-title-size);
+  margin-bottom: 14px;
+  letter-spacing: -0.03em;
+}
+
+.kit-swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.kit-swatch,
+.kit-type,
+.kit-panel {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.kit-swatch {
+  padding: 8px;
+  font-size: 12px;
+}
+
+.kit-swatch dt {
+  margin-bottom: 5px;
+  font-weight: 600;
+}
+
+.kit-swatch dd,
+.kit-type dd {
+  margin: 0;
+}
+
+.kit-swatch-color {
+  display: block;
+  height: 46px;
+  margin-bottom: 5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.kit-type {
+  display: grid;
+  gap: 14px;
+  padding: clamp(14px, 3vw, 25px);
+}
+
+.kit-type > div + div {
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.kit-type dt,
+.kit-field-caption {
+  display: block;
+  color: #575752;
+  font-size: var(--field-caption-size);
+  margin-bottom: 4px;
+}
+
+.kit-type .headline {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 5vw, 54px);
+  font-weight: 680;
+  letter-spacing: -0.025em;
+}
+
+.kit-type-section {
+  font-size: var(--section-title-size);
+  font-weight: 600;
+}
+
+.kit-field-value {
+  font-size: var(--field-value-size);
+  font-weight: 600;
+}
+
+.kit-panel {
+  padding: clamp(12px, 2.5vw, 20px);
+}
+
+.kit-controls,
+.kit-control-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.kit-controls {
+  max-width: 560px;
+}
+
+.kit-controls .field {
+  height: 50px;
+  padding: 7px 10px;
+  gap: 7px;
+}
+
+.kit-controls .field > svg {
+  flex-shrink: 0;
+}
+
+.kit-controls .field-caption {
+  color: #575752;
+  font-size: var(--field-caption-size);
+  font-weight: 500;
+}
+
+.kit-controls .field-value {
+  font-size: var(--field-value-size);
+  font-weight: 600;
+}
+
+.kit-controls .mileage-control .field-value {
+  font-size: 13px;
+}
+
+.kit-controls .help-button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 36px;
+}
+
+.kit-checks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 10px;
+  margin-top: 4px;
+}
+
+.kit-checks .check-label {
+  min-height: 30px;
+  font-size: var(--option-label-size);
+  font-weight: 550;
+  line-height: 1.25;
+}
+
+.kit-filters {
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.kit-filters > button {
+  font-size: 12px;
+}
+
+.kit-fleet,
+.kit-state-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 12px;
+}
+
+.kit-fleet .car-card {
+  align-content: start;
+}
+
+.kit-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kit-actions .button {
+  align-self: start;
+}
+
+@media (max-width: 374px) {
+  .kit-controls .dates {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .kit-controls .dates .field {
+    gap: 5px;
+    padding-inline: 7px;
+  }
+
+  .kit-controls .dates .field > svg:first-child {
+    width: 16px;
+  }
+
+  .kit-controls .dates .field-caption {
+    font-size: 11px;
+  }
+
+  .kit-controls .mileage-control .field {
+    padding-inline: 8px;
+    gap: 5px;
+  }
+
+  .kit-controls .help-button {
+    width: 24px;
+  }
+
+  .kit-checks .check-label {
+    font-size: 13px;
+  }
+}

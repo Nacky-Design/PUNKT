@@ -1,0 +1,148 @@
+#app:has(.rental-main) {
+  display: flex;
+  min-height: 100svh;
+  flex-direction: column;
+}
+
+.rental-main {
+  flex: 1;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.rental-header {
+  background: var(--ink);
+}
+
+.rental-header .site-header {
+  position: relative;
+  left: auto;
+  transform: none;
+  margin-inline: auto;
+  border-bottom: 0;
+}
+
+.rental-header [aria-current="page"] {
+  color: var(--yellow);
+}
+
+.rental-page {
+  width: min(1120px, calc(100% - var(--page-gutter) * 2));
+  margin-inline: auto;
+  padding-block: clamp(24px, 4vw, 52px) 52px;
+}
+
+.rental-page-heading {
+  margin-bottom: 22px;
+}
+
+.rental-page-heading h1 {
+  font-family: var(--font-display);
+  font-weight: 680;
+  font-size: clamp(34px, 5vw, 60px);
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+}
+
+.rental-page-heading .detail-meta {
+  margin: 9px 0 0;
+}
+
+.rental-back {
+  margin-bottom: 10px;
+  color: #5b470c;
+  font-size: 13px;
+}
+
+.rental-page .catalog-trip {
+  padding: clamp(12px, 2vw, 20px);
+  border-color: var(--line);
+  background: var(--paper);
+  border-radius: 16px;
+}
+
+.rental-page .catalog-trip dt {
+  font-size: var(--field-caption-size);
+}
+
+.rental-page .catalog-trip dd {
+  font-size: var(--field-value-size);
+}
+
+.rental-page .catalog-edit {
+  min-height: 38px;
+  font-size: 13px;
+}
+
+.rental-page .catalog-controls select {
+  min-height: 40px;
+}
+
+.rental-page .catalog-filters button {
+  min-height: 38px;
+  border-radius: 20px;
+}
+
+.rental-page .catalog-filters button[aria-pressed="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.rental-page .catalog-demo {
+  font-size: 12px;
+}
+
+.rental-page .result-card {
+  border-color: var(--line);
+  border-radius: 16px;
+}
+
+.rental-page .result-photo {
+  padding-top: 17px;
+  background: #fff;
+}
+
+.rental-page .result-photo .car-art {
+  height: clamp(154px, 30vw, 210px);
+}
+
+.rental-page .result-title h3 {
+  font-size: 20px;
+}
+
+.rental-page .request-page-panel {
+  max-width: 580px;
+  padding: clamp(16px, 3vw, 28px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper);
+}
+
+.request-page .modal-lead {
+  color: #535353;
+  font-size: 15px;
+}
+
+@media (min-width: 900px) {
+  .rental-page .estimate {
+    position: sticky;
+    top: 24px;
+  }
+}
+
+@media (max-width: 760px) {
+  .rental-page-heading {
+    margin-bottom: 16px;
+  }
+
+  .rental-page .catalog-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rental-page .catalog-filters {
+    flex-wrap: wrap;
+    overflow: visible;
+    padding-inline: 0;
+  }
+}

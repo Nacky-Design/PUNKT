@@ -144,6 +144,7 @@ export const categories = [
   "Бизнес",
   "Кроссовер",
 ];
+export const fleetCategories = ["Все классы", "Эконом", "Бизнес", "Кроссовер"];
 export const serviceGroups = [
   {
     title: "Срок и формат",

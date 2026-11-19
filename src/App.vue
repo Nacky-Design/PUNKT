@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onBeforeUnmount, watchEffect } from "vue";
+import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch, watchEffect } from "vue";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -36,10 +36,14 @@ import CarArt from "./components/CarArt.vue";
 import VehicleGallery from "./components/VehicleGallery.vue";
 import ServicesMenu from "./components/ServicesMenu.vue";
 import HeroVideo from "./components/HeroVideo.vue";
+import FleetCard from "./components/FleetCard.vue";
+import UiKit from "./components/UiKit.vue";
 import DeliveryAddress from "./components/DeliveryAddress.vue";
+import { readRentalRoute, rentalHref, type RentalRoute } from "./rental-route";
 import {
   cars,
   categories,
+  fleetCategories,
   money,
   todayISO,
   addDays,
@@ -120,16 +124,17 @@ const offerSteps = [
 const offerIndex = ref(0);
 const offerStep = computed(() => offerSteps[offerIndex.value]!);
 const modal = ref<
-    | "car"
-    | "request"
     | "account"
     | "offer"
     | "info"
-    | "catalog"
     | "contacts"
     | null
-  >(null),
-  selected = ref<Car>(cars[0]!);
+  >(null);
+const route = ref<RentalRoute>(readRentalRoute());
+const selected = computed(() => {
+  const current = route.value;
+  return "carId" in current ? cars.find((car) => car.id === current.carId)! : cars[0]!;
+});
 const infoTitle = ref(""),
   infoBody = ref(""),
   infoPhoto = ref<keyof typeof guidePhotos>(),
@@ -141,8 +146,71 @@ const name = ref(""),
   errors = ref<Record<string, string>>({}),
   requestSnapshot = ref("");
 const sort = ref("По цене");
-const carFromCatalog = ref(false);
+const carFromCatalog = ref<boolean>(history.state?.fromPrices ?? true);
 let catalogScroll = 0;
+
+watch(route, () => {
+  const titles = {
+    home: "Пункт — автомобиль под ваши планы",
+    prices: "Цены на аренду — Пункт",
+    car: selected.value.name + " — Пункт",
+    request: "Заявка на аренду — Пункт",
+  };
+  document.title = titles[route.value.page];
+}, { immediate: true });
+
+function focusPage(id: string, scroll = 0, reveal = false) {
+  nextTick(() => {
+    const target = document.getElementById(id);
+    if (reveal) target?.scrollIntoView({ block: "start", behavior: "instant" });
+    else window.scrollTo({ top: scroll, behavior: "instant" });
+    target?.focus({ preventScroll: true });
+  });
+}
+
+function applyRoute(next: RentalRoute, focusId?: string, scroll = 0) {
+  route.value = next;
+  mobileMenu.value = false;
+  modal.value = null;
+  carFromCatalog.value = history.state?.fromPrices ?? true;
+  if (next.page === "request") submitted.value = false;
+  const hash = next.page === "home" ? window.location.hash : "";
+  const anchor = hash === "#search" || hash === "#quick-selection" ? hash.slice(1) : "";
+  if (anchor === "quick-selection") quickOpen.value = true;
+  focusPage(focusId ?? (anchor || (next.page === "home" ? "hero-title" : "page-title")), scroll, !!anchor);
+}
+
+function navigate(next: RentalRoute, options: { hash?: string; focusId?: string; scroll?: number; fromPrices?: boolean } = {}) {
+  if (next.page === "car" && route.value.page === "prices") catalogScroll = window.scrollY;
+  const href = rentalHref(next, options.hash);
+  if (href !== locationHref()) {
+    history.pushState({ fromPrices: options.fromPrices }, "", href);
+  }
+  applyRoute(next, options.focusId, options.scroll);
+}
+
+function locationHref() {
+  return window.location.pathname + window.location.search + window.location.hash;
+}
+
+function follow(event: MouseEvent, next: RentalRoute, options?: Parameters<typeof navigate>[1]) {
+  if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0) return;
+  event.preventDefault();
+  navigate(next, options);
+}
+
+function onPopState() {
+  const previous = route.value;
+  const next = readRentalRoute();
+  if (next.page === previous.page && !("carId" in previous)) return;
+  if (next.page === "prices" && previous.page === "car") {
+    applyRoute(next, "catalog-car-" + previous.carId, catalogScroll);
+  } else {
+    applyRoute(next);
+  }
+}
+onMounted(() => window.addEventListener("popstate", onPopState));
+onBeforeUnmount(() => window.removeEventListener("popstate", onPopState));
 const days = computed(() =>
   Math.max(
     1,
@@ -243,8 +311,7 @@ function explainProtection() {
 }
 function nav(item: string) {
   mobileMenu.value = false;
-  if (item === "Цены") search();
-  else if (item === "Акции") openOffer();
+  if (item === "Акции") openOffer();
   else if (item === "Контакты") modal.value = "contacts";
   else if (item === "Условия")
     openInfo(
@@ -266,40 +333,31 @@ function changeOfferStep(direction: number) {
   offerIndex.value = (offerIndex.value + direction + count) % count;
 }
 function chooseDelivery() {
-  modal.value = null;
   location.value = addressDelivery;
-  nextTick(() => searchPanel.value?.focus());
+  editSearch();
 }
 function showCar(car: Car) {
-  carFromCatalog.value = modal.value === "catalog";
-  if (carFromCatalog.value) {
-    catalogScroll = document.getElementById("catalog")?.closest(".modal")?.scrollTop ?? 0;
-  }
-  selected.value = car;
-  modal.value = "car";
+  navigate({ page: "car", carId: car.id }, { fromPrices: route.value.page === "prices" });
 }
-function closeCar() {
-  if (!carFromCatalog.value) {
-    modal.value = null;
-    return;
-  }
-  modal.value = "catalog";
-  nextTick(() => {
-    const button = document.getElementById(`catalog-car-${selected.value.id}`);
-    const dialog = button?.closest(".modal");
-    if (dialog) dialog.scrollTop = catalogScroll;
-    button?.focus({ preventScroll: true });
+function returnToPrices(event: MouseEvent) {
+  follow(event, { page: "prices" }, {
+    focusId: "catalog-car-" + selected.value.id,
+    scroll: catalogScroll,
   });
 }
 function editSearch() {
-  modal.value = null;
-  nextTick(() => searchPanel.value?.focus());
+  if (route.value.page === "home") {
+    modal.value = null;
+    nextTick(() => searchPanel.value?.focus());
+    return;
+  }
+  navigate({ page: "home" }, { hash: "#search" });
 }
 function request(withMileageDiscussion = false) {
   discussMileage.value = withMileageDiscussion;
-  modal.value = "request";
   submitted.value = false;
   errors.value = {};
+  navigate({ page: "request", carId: selected.value.id }, { fromPrices: carFromCatalog.value });
 }
 function formatPhone(e: Event) {
   const input = e.target as HTMLInputElement;
@@ -330,6 +388,7 @@ function submitRequest() {
     discussMileage.value ? "Пробег — обсудить перед оформлением" : "",
   ].filter(Boolean).join(" · ");
   submitted.value = true;
+  focusPage("page-title");
   name.value = "";
   phone.value = "";
   consent.value = false;
@@ -343,7 +402,7 @@ function searchWithAddress() {
   search();
 }
 function search() {
-  modal.value = "catalog";
+  navigate({ page: "prices" });
 }
 
 function selectQuick(value: string) {
@@ -405,14 +464,20 @@ function account() {
       </filter>
     </defs>
   </svg>
-  <a href="#search" class="skip-link">Перейти к подбору автомобиля</a>
+  <a :href="route.page === 'home' ? '#search' : '#page-title'" class="skip-link">
+    {{ route.page === 'home' ? 'Перейти к подбору автомобиля' : 'Перейти к содержимому' }}
+  </a>
+  <div :class="{ 'rental-header': route.page !== 'home' }">
   <header class="site-header">
-    <a class="brand" href="#" aria-label="Пункт — на главную"
+    <a class="brand" :href="rentalHref({ page: 'home' })" aria-label="Пункт — на главную"
+      @click="follow($event, { page: 'home' })"
       ><span class="brand-image"></span
     ></a>
     <nav class="desktop-nav" aria-label="Главное меню">
       <template v-for="item in navItems" :key="item">
         <ServicesMenu v-if="item === 'Услуги'" @select="openService" />
+        <a v-else-if="item === 'Цены'" class="nav-label" :href="rentalHref({ page: 'prices' })"
+          :aria-current="route.page === 'prices' ? 'page' : undefined" @click="follow($event, { page: 'prices' })">{{ item }}</a>
         <button v-else class="nav-label" type="button" @click="nav(item)">
           {{ item }}
         </button>
@@ -448,6 +513,10 @@ function account() {
       <nav v-if="mobileMenu" id="mobile-nav" class="mobile-nav" aria-label="Мобильное меню">
         <template v-for="item in navItems" :key="item">
           <ServicesMenu v-if="item === 'Услуги'" mobile @select="openService" />
+          <a v-else-if="item === 'Цены'" :href="rentalHref({ page: 'prices' })"
+            :aria-current="route.page === 'prices' ? 'page' : undefined" @click="follow($event, { page: 'prices' })">
+            {{ item }}<ArrowUpRight :size="17" aria-hidden="true" />
+          </a>
           <button v-else type="button" @click="nav(item)">
             {{ item }}<ArrowUpRight :size="17" />
           </button>
@@ -458,7 +527,9 @@ function account() {
       </nav>
     </Transition>
   </header>
-  <main>
+  </div>
+  <main :class="{ 'rental-main': route.page !== 'home' }">
+    <template v-if="route.page === 'home'">
     <section class="hero" aria-labelledby="hero-title">
       <HeroVideo v-if="!mobile" />
       <div v-if="!mobile" class="hero-shade" aria-hidden="true"></div>
@@ -479,7 +550,7 @@ function account() {
             <ArrowUpRight class="offer-arrow" :size="20" aria-hidden="true" />
           </button>
           <div class="hero-copy">
-            <h1 id="hero-title" class="headline">
+            <h1 id="hero-title" class="headline" tabindex="-1">
               Автомобиль<br />под ваши
               <em>планы<span class="headline-dot">.</span></em>
             </h1>
@@ -619,6 +690,7 @@ function account() {
           </div>
           <div
             id="quick-selection"
+            tabindex="-1"
             class="quick-expand"
             :class="{ 'quick-hidden': !mobile && !quickOpen }"
             :inert="!mobile && !quickOpen"
@@ -634,12 +706,7 @@ function account() {
                   aria-label="Класс быстрого выбора"
                 >
                   <button
-                    v-for="item in [
-                      'Все классы',
-                      'Эконом',
-                      'Бизнес',
-                      'Кроссовер',
-                    ]"
+                    v-for="item in fleetCategories"
                     :key="item"
                     :aria-pressed="quickCategory === item"
                     :class="{ active: quickCategory === item }"
@@ -659,29 +726,13 @@ function account() {
                   <ChevronLeft :size="20" />
                 </button>
                 <div ref="rail" class="car-rail" @scroll.passive="updateRailArrows">
-                  <button
+                  <FleetCard
                     v-for="car in filteredQuick"
                     :key="car.id"
-                    class="car-card"
-                    @click="showCar(car)"
-                  >
-                    <span class="card-class">{{ car.category }}</span
-                    ><CarArt
-                      :image="mobile ? car.fleetImage ?? car.image : car.image"
-                      :name="car.name"
-                    /><span
-                      class="car-card-bottom"
-                      ><strong>{{ car.name }}</strong
-                      ><span v-if="mobile" class="car-card-specs">
-                        <span><Settings2 :size="15" aria-hidden="true" />Автомат</span>
-                        <span><UsersRound :size="15" aria-hidden="true" />{{ car.seats }} мест</span>
-                        <span><Fuel :size="15" aria-hidden="true" />{{ car.fuel }}</span>
-                      </span><span
-                        >от <b>{{ money(car.price) }} ₽</b
-                        ><small> / сутки</small></span
-                      ></span
-                    ><span class="card-arrow"><ArrowUpRight :size="16" /></span>
-                  </button>
+                    :car="car"
+                    :detailed="mobile"
+                    @select="showCar"
+                  />
                 </div>
                 <button
                   v-show="canScrollForward"
@@ -706,118 +757,19 @@ function account() {
         </section>
       </div>
     </section>
-    <section v-if="showKit" id="ui-kit" class="ui-kit section-container">
-      <h2>Одна система. Все состояния.</h2>
-      <div class="swatches">
-        <div
-          v-for="color in ['#FFC107', '#171717', '#FFFFFF', '#F5F5F5']"
-          :key="color"
-        >
-          <span :style="{ background: color }"></span><code>{{ color }}</code>
-        </div>
-      </div>
-      <div class="type-specimens">
-        <article
-          v-for="font in ['Onest', 'Manrope']"
-          :key="font"
-          :style="{ fontFamily: font + ' Variable, sans-serif' }"
-        >
-          <h3>{{ font }}{{ font === 'Onest' ? ' · основной' : '' }}</h3>
-          <dl>
-            <div>
-              <dt>Главный заголовок</dt>
-              <dd class="headline">Автомобиль под ваши планы<span class="headline-dot">.</span></dd>
-            </div>
-            <div>
-              <dt>Подстрочник</dt>
-              <dd class="hero-description">Аренда автомобилей в Москве.</dd>
-            </div>
-            <div>
-              <dt>Навигация</dt>
-              <dd class="nav-label">Цены · Услуги · Условия</dd>
-            </div>
-            <div>
-              <dt>Телефон</dt>
-              <dd class="phone-label">8 495 104-10-10</dd>
-            </div>
-            <div>
-              <dt>Поля</dt>
-              <dd>
-                <span class="field-caption">Место получения</span>
-                <span class="field-value">Офис на Авиационной</span>
-              </dd>
-            </div>
-            <div>
-              <dt>Справка</dt>
-              <dd class="info-body">Выберите место и время получения.</dd>
-            </div>
-            <div>
-              <dt>Служебное сообщение</dt>
-              <dd class="prototype-note"><Info :size="16" />Данные не отправляются</dd>
-            </div>
-          </dl>
-        </article>
-      </div>
-      <div class="kit-grid">
-        <article>
-          <h3>Кнопки</h3>
-          <div class="kit-stack">
-            <button class="button button-primary">
-              Найти автомобиль<ArrowRight :size="18" /></button
-            ><button class="button button-dark">
-              Основное действие<ArrowRight :size="18" /></button
-            ><button class="button button-soft">Вторичное действие</button
-            ><button class="button button-primary" disabled>Недоступно</button>
-          </div>
-        </article>
-        <article>
-          <h3>Поля и состояния</h3>
-          <div class="kit-stack">
-            <label class="text-field"
-              >Имя<input placeholder="Как к вам обращаться" /></label
-            ><label class="text-field"
-              >Фокус<input class="force-focus" value="Александр" /></label
-            ><label class="text-field"
-              >Ошибка<input class="input-error" value="+7 (999)" /><small
-                class="error-text"
-                >Введите телефон полностью</small
-              ></label
-            >
-          </div>
-        </article>
-        <article>
-          <h3>Выбор и обратная связь</h3>
-          <label class="check-label"
-            ><input type="checkbox" checked /><span class="check-visual"
-              ><Check :size="13" /></span
-            >Выбрано</label
-          ><label class="check-label"
-            ><input type="checkbox" /><span class="check-visual"
-              ><Check :size="13" /></span
-            >Не выбрано</label
-          ><label class="check-label"
-            ><input type="checkbox" disabled /><span class="check-visual"
-              ><Check :size="13" /></span
-            >Недоступно</label
-          >
-          <p class="status-chip">
-            <CheckCircle2 :size="15" />Параметры выбраны
-          </p>
-          <p class="data-disclaimer">
-            Hover — мягкая тень и смена тона. Focus — видимое кольцо. Reduced
-            motion — без анимации.
-          </p>
-        </article>
-      </div>
-    </section>
-  </main>
-  <BaseModal
-    v-if="modal === 'catalog'"
-    title="Подбор автомобилей"
-    wide
-    @close="modal = null"
-  >
-    <section id="catalog" class="catalog-content" aria-label="Результаты подбора">
+    <UiKit
+      v-if="showKit"
+      :pickup-presets="pickupPresets"
+      :address-mode="addressDelivery"
+      :mileage-options="mileageOptions"
+      :mileage-details="mileageOptionDetails"
+      @select-car="showCar"
+    />
+    </template>
+    <section v-else-if="route.page === 'prices'" id="catalog" class="rental-page catalog-content" aria-labelledby="page-title">
+      <header class="rental-page-heading">
+        <h1 id="page-title" tabindex="-1">Цены на аренду</h1>
+      </header>
       <div class="catalog-trip">
         <dl>
           <div>
@@ -879,7 +831,7 @@ function account() {
         <div class="catalog-grid">
           <article v-for="car in filteredCars" :key="car.id" class="result-card" :aria-labelledby="'catalog-name-' + car.id">
             <div class="result-photo">
-              <CarArt :image="car.image" :name="car.name" />
+              <CarArt :image="car.fleetImage ?? car.image" :name="car.name" />
               <span class="result-class">{{ car.category }}</span>
             </div>
             <div class="result-body">
@@ -899,15 +851,15 @@ function account() {
                 </div>
                 <span class="result-daily">{{ money(rate(car)) }} ₽ / сутки</span>
               </div>
-              <button
+              <a
                 :id="'catalog-car-' + car.id"
-                type="button"
+                :href="rentalHref({ page: 'car', carId: car.id })"
                 class="button result-details"
                 :aria-label="'Подробнее: ' + car.name"
-                @click="showCar(car)"
+                @click="follow($event, { page: 'car', carId: car.id }, { fromPrices: true })"
               >
                 Подробнее<ArrowUpRight :size="17" aria-hidden="true" />
-              </button>
+              </a>
             </div>
           </article>
         </div>
@@ -917,7 +869,226 @@ function account() {
         </p>
       </template>
     </section>
-  </BaseModal>
+    <section v-else-if="route.page === 'car'" class="rental-page" aria-labelledby="page-title">
+      <header class="rental-page-heading">
+        <a v-if="carFromCatalog" :href="rentalHref({ page: 'prices' })" class="text-button rental-back" @click="returnToPrices">
+          <ChevronLeft :size="16" aria-hidden="true" />К результатам
+        </a>
+        <a v-else :href="rentalHref({ page: 'home' }, '#quick-selection')" class="text-button rental-back" @click="follow($event, { page: 'home' }, { hash: '#quick-selection' })">
+          <ChevronLeft :size="16" aria-hidden="true" />К автопарку
+        </a>
+        <h1 id="page-title" tabindex="-1">{{ selected.name }}</h1>
+        <p class="detail-meta">{{ selected.category }} · {{ selected.year }} г. · {{ selected.body }}</p>
+      </header>
+      <div class="car-detail-grid">
+        <VehicleGallery :key="selected.id" :car="selected" />
+
+        <aside class="estimate" aria-label="Расчёт аренды">
+          <div class="estimate-total">
+            <span>Итого за {{ days }} {{ dayLabel }}</span>
+            <strong>{{ money(rate(selected) * days) }} ₽</strong>
+          </div>
+          <p class="detail-daily">{{ money(rate(selected)) }} ₽ <span>/ сутки</span></p>
+          <div class="vehicle-mileage" role="group" aria-label="Выбор тарифа по пробегу">
+            <p>Лимит в сутки</p>
+            <div class="vehicle-mileage-options">
+              <button
+                v-for="(price, option) in mileagePrices"
+                :key="option"
+                type="button"
+                :aria-pressed="mileage === option"
+                @click="mileage = option"
+              >
+                <strong>{{ option }}</strong>
+                <small>{{ price ? '+' + money(price) + ' ₽ / сутки' : 'Включено' }}</small>
+              </button>
+            </div>
+          </div>
+          <div class="estimate-trip">
+            <p><CalendarRange :size="17" aria-hidden="true" />{{ dateText }}</p>
+            <p><MapPin :size="17" aria-hidden="true" />{{ pickupLabel }}</p>
+            <div class="estimate-mileage">
+              <p><Gauge :size="17" aria-hidden="true" /><span>Пробег · <strong>{{ mileageLabel }}</strong></span></p>
+              <small>Сверх лимита — доплата. Ставку уточним до оформления.</small>
+            </div>
+          </div>
+          <div v-if="renterContext.length" class="context-tags">
+            <span v-for="tag in renterContext" :key="tag">{{ tag }}</span>
+          </div>
+          <dl v-if="mileageExtra || protection">
+            <div>
+              <dt>Аренда</dt>
+              <dd>{{ money(selected.price * days) }} ₽</dd>
+            </div>
+            <div v-if="mileageExtra">
+              <dt>Пакет {{ mileage }}</dt>
+              <dd>{{ money(mileageExtra * days) }} ₽</dd>
+            </div>
+            <div v-if="protection">
+              <dt>Защита+</dt>
+              <dd>{{ money(490 * days) }} ₽</dd>
+            </div>
+          </dl>
+          <button class="mileage-discuss text-button" type="button" @click="request(true)">
+            Обсудить пробег<ArrowUpRight :size="15" aria-hidden="true" />
+          </button>
+          <button class="button button-primary full-width" @click="request()">
+            Оставить заявку<ArrowRight :size="18" />
+          </button>
+        </aside>
+
+        <div class="vehicle-sections">
+          <section class="vehicle-section" aria-labelledby="vehicle-specs-title">
+            <h3 id="vehicle-specs-title">Характеристики</h3>
+            <dl class="spec-grid">
+              <div>
+                <dt><span class="spec-icon"><UsersRound :size="18" aria-hidden="true" /></span>Посадочные места</dt>
+                <dd>{{ selected.seats }}</dd>
+              </div>
+              <div>
+                <dt><span class="spec-icon"><Settings2 :size="18" aria-hidden="true" /></span>Коробка передач</dt>
+                <dd>Автомат</dd>
+              </div>
+              <div>
+                <dt><span class="spec-icon"><Fuel :size="18" aria-hidden="true" /></span>Топливо</dt>
+                <dd>{{ selected.fuel }}</dd>
+              </div>
+              <div>
+                <dt><span class="spec-icon"><CarFront :size="18" aria-hidden="true" /></span>Привод</dt>
+                <dd>{{ selected.drive }}</dd>
+              </div>
+              <div>
+                <dt><span class="spec-icon"><Zap :size="18" aria-hidden="true" /></span>Мощность</dt>
+                <dd>{{ selected.power }} л.с.</dd>
+              </div>
+              <div>
+                <dt><span class="spec-icon"><CarFront :size="18" aria-hidden="true" /></span>Тип кузова</dt>
+                <dd>{{ selected.body }}</dd>
+              </div>
+            </dl>
+            <dl v-if="selected.extraSpecs?.length" class="vehicle-tech">
+              <div v-for="spec in selected.extraSpecs" :key="spec.label">
+                <dt>{{ spec.label }}</dt>
+                <dd>{{ spec.value }}</dd>
+              </div>
+            </dl>
+          </section>
+          <section v-if="selected.trim" class="vehicle-section" aria-labelledby="vehicle-trim-title">
+            <h3 id="vehicle-trim-title">Комплектация {{ selected.trim.name }}</h3>
+            <ul class="vehicle-features">
+              <li v-for="feature in selected.trim.features" :key="feature"><Check :size="16" aria-hidden="true" />{{ feature }}</li>
+            </ul>
+          </section>
+          <section class="vehicle-section" aria-labelledby="vehicle-terms-title">
+            <h3 id="vehicle-terms-title">Что учесть в стоимости</h3>
+            <dl class="vehicle-terms">
+              <div><dt>Пробег сверх лимита</dt><dd>Оплачивается отдельно. Ставку за километр и правила расчёта за несколько суток согласуем до оформления.</dd></div>
+              <div><dt>Залог</dt><dd>Размер и применимость зависят от условий аренды и маршрута. Уточним до подтверждения.</dd></div>
+              <div v-if="delivery"><dt>Доставка</dt><dd>Стоимость подачи согласуем по выбранному месту получения.</dd></div>
+              <div><dt>Мойка и топливо</dt><dd>Машину возвращают чистой и с тем же уровнем топлива. При необходимости мойка и дозаправка оплачиваются отдельно.</dd></div>
+              <div><dt>Защита+</dt><dd>Дополнительная опция. Покрытие и исключения уточняются перед заключением договора.</dd></div>
+            </dl>
+          </section>
+          <section class="vehicle-section" aria-labelledby="vehicle-pickup-title">
+            <h3 id="vehicle-pickup-title">Что будет после заявки</h3>
+            <p>Подтвердим наличие автомобиля, итоговую цену и время выдачи. Для оформления понадобятся паспорт и водительское удостоверение.</p>
+            <p v-if="delivery">Согласуем место встречи. При передаче автомобиля водитель привезёт печатный договор.</p>
+            <p v-else>В офисе на Авиационной вы подпишете договор и получите автомобиль.</p>
+          </section>
+        </div>
+      </div>
+    </section>
+    <section v-else class="rental-page request-page" aria-labelledby="page-title">
+      <header class="rental-page-heading">
+        <a :href="rentalHref({ page: 'car', carId: selected.id })" class="text-button rental-back"
+          @click="follow($event, { page: 'car', carId: selected.id }, { fromPrices: carFromCatalog })">
+          <ChevronLeft :size="16" aria-hidden="true" />К автомобилю
+        </a>
+        <h1 id="page-title" tabindex="-1">{{ submitted ? 'Всё готово к следующему шагу' : 'Заявка на аренду' }}</h1>
+      </header>
+      <div class="request-page-panel">
+        <template v-if="!submitted">
+          <p class="modal-lead">{{ selected.name }} · {{ dateText }}</p>
+          <form class="request-form" novalidate @submit.prevent="submitRequest">
+            <div class="request-trip">
+              <p v-if="!addressSelected"><MapPin :size="16" aria-hidden="true" />{{ pickupLabel }}</p>
+              <p><Gauge :size="16" aria-hidden="true" />Пробег · {{ mileageLabel }}</p>
+              <label class="check-label">
+                <input v-model="discussMileage" type="checkbox" />
+                <span class="check-visual"><Check :size="13" /></span>
+                Хочу обсудить пробег
+              </label>
+              <small v-if="discussMileage">В расчёте пока используется выбранный лимит.</small>
+            </div>
+            <DeliveryAddress
+              v-if="addressSelected"
+              v-model="location"
+              v-model:address="address"
+              :presets="pickupPresets"
+              :address-mode="addressDelivery"
+              :invalid="!!errors.address && incompleteAddress"
+              address-only
+            />
+            <label class="text-field"
+              >Ваше имя<input
+                aria-label="Ваше имя"
+                v-model="name"
+                autocomplete="given-name"
+                placeholder="Как к вам обращаться"
+                :aria-invalid="!!errors.name"
+                :class="{ 'input-error': errors.name }"
+                :aria-describedby="errors.name ? 'name-error' : undefined"
+              /><small v-if="errors.name" id="name-error" class="error-text">{{
+                errors.name
+              }}</small></label
+            ><label class="text-field"
+              >Телефон<input
+                aria-label="Телефон"
+                :value="phone"
+                @input="formatPhone"
+                type="tel"
+                inputmode="tel"
+                autocomplete="tel"
+                placeholder="+7 (___) ___-__-__"
+                :aria-invalid="!!errors.phone"
+                :class="{ 'input-error': errors.phone }"
+                :aria-describedby="errors.phone ? 'phone-error' : undefined"
+              /><small v-if="errors.phone" id="phone-error" class="error-text">{{
+                errors.phone
+              }}</small></label
+            ><label class="check-label consent"
+              ><input v-model="consent" type="checkbox" /><span class="check-visual"
+                ><Check :size="13" /></span
+              ><span
+                >Согласен на обработку персональных данных для обратной связи</span
+              ></label
+            ><small v-if="errors.consent" class="error-text">{{
+              errors.consent
+            }}</small
+            ><button type="submit" class="button button-primary full-width">
+              Проверить заявку<ArrowRight :size="18" />
+            </button>
+            <p class="prototype-note">
+              <Info :size="16" />Демонстрация: данные не отправляются и не
+              сохраняются. Для реальной заявки позвоните нам.
+            </p>
+          </form></template
+        >
+        <div v-else class="demo-success">
+          <CheckCircle2 :size="44" />
+          <h3>Форма заполнена корректно</h3>
+          <p>{{ requestSnapshot }}</p>
+          <p class="muted">
+            В рабочей версии заявка поступит команде. Сейчас данные не отправлены.
+            Автомобиль не забронирован.
+          </p>
+          <a href="tel:+74951041010" class="button button-primary"
+            ><Phone :size="18" />Позвонить в «Пункт»</a
+          >
+        </div>
+      </div>
+    </section>
+  </main>
   <BaseModal
     v-if="modal === 'contacts'"
     title="На связи с вашими планами"
@@ -934,224 +1105,6 @@ function account() {
       >
     </div>
   </BaseModal>
-  <BaseModal
-    v-if="modal === 'car'"
-    :title="selected.name"
-    wide
-    @close="closeCar"
-  >
-    <div class="detail-meta detail-navigation">
-      <p>{{ selected.category }} · {{ selected.year }} г. · {{ selected.body }}</p>
-      <button v-if="carFromCatalog" class="text-button" type="button" @click="closeCar">
-        <ChevronLeft :size="16" aria-hidden="true" />К результатам
-      </button>
-    </div>
-    <div class="car-detail-grid">
-      <VehicleGallery :key="selected.id" :car="selected" />
-
-      <aside class="estimate" aria-label="Расчёт аренды">
-        <div class="estimate-total">
-          <span>Итого за {{ days }} {{ dayLabel }}</span>
-          <strong>{{ money(rate(selected) * days) }} ₽</strong>
-        </div>
-        <p class="detail-daily">{{ money(rate(selected)) }} ₽ <span>/ сутки</span></p>
-        <div class="vehicle-mileage" role="group" aria-label="Выбор тарифа по пробегу">
-          <p>Лимит в сутки</p>
-          <div class="vehicle-mileage-options">
-            <button
-              v-for="(price, option) in mileagePrices"
-              :key="option"
-              type="button"
-              :aria-pressed="mileage === option"
-              @click="mileage = option"
-            >
-              <strong>{{ option }}</strong>
-              <small>{{ price ? '+' + money(price) + ' ₽ / сутки' : 'Включено' }}</small>
-            </button>
-          </div>
-        </div>
-        <div class="estimate-trip">
-          <p><CalendarRange :size="17" aria-hidden="true" />{{ dateText }}</p>
-          <p><MapPin :size="17" aria-hidden="true" />{{ pickupLabel }}</p>
-          <div class="estimate-mileage">
-            <p><Gauge :size="17" aria-hidden="true" /><span>Пробег · <strong>{{ mileageLabel }}</strong></span></p>
-            <small>Сверх лимита — доплата. Ставку уточним до оформления.</small>
-          </div>
-        </div>
-        <div v-if="renterContext.length" class="context-tags">
-          <span v-for="tag in renterContext" :key="tag">{{ tag }}</span>
-        </div>
-        <dl v-if="mileageExtra || protection">
-          <div>
-            <dt>Аренда</dt>
-            <dd>{{ money(selected.price * days) }} ₽</dd>
-          </div>
-          <div v-if="mileageExtra">
-            <dt>Пакет {{ mileage }}</dt>
-            <dd>{{ money(mileageExtra * days) }} ₽</dd>
-          </div>
-          <div v-if="protection">
-            <dt>Защита+</dt>
-            <dd>{{ money(490 * days) }} ₽</dd>
-          </div>
-        </dl>
-        <button class="mileage-discuss text-button" type="button" @click="request(true)">
-          Обсудить пробег<ArrowUpRight :size="15" aria-hidden="true" />
-        </button>
-        <button class="button button-primary full-width" @click="request()">
-          Оставить заявку<ArrowRight :size="18" />
-        </button>
-      </aside>
-
-      <div class="vehicle-sections">
-        <section class="vehicle-section" aria-labelledby="vehicle-specs-title">
-          <h3 id="vehicle-specs-title">Характеристики</h3>
-          <dl class="spec-grid">
-            <div>
-              <dt><span class="spec-icon"><UsersRound :size="18" aria-hidden="true" /></span>Посадочные места</dt>
-              <dd>{{ selected.seats }}</dd>
-            </div>
-            <div>
-              <dt><span class="spec-icon"><Settings2 :size="18" aria-hidden="true" /></span>Коробка передач</dt>
-              <dd>Автомат</dd>
-            </div>
-            <div>
-              <dt><span class="spec-icon"><Fuel :size="18" aria-hidden="true" /></span>Топливо</dt>
-              <dd>{{ selected.fuel }}</dd>
-            </div>
-            <div>
-              <dt><span class="spec-icon"><CarFront :size="18" aria-hidden="true" /></span>Привод</dt>
-              <dd>{{ selected.drive }}</dd>
-            </div>
-            <div>
-              <dt><span class="spec-icon"><Zap :size="18" aria-hidden="true" /></span>Мощность</dt>
-              <dd>{{ selected.power }} л.с.</dd>
-            </div>
-            <div>
-              <dt><span class="spec-icon"><CarFront :size="18" aria-hidden="true" /></span>Тип кузова</dt>
-              <dd>{{ selected.body }}</dd>
-            </div>
-          </dl>
-          <dl v-if="selected.extraSpecs?.length" class="vehicle-tech">
-            <div v-for="spec in selected.extraSpecs" :key="spec.label">
-              <dt>{{ spec.label }}</dt>
-              <dd>{{ spec.value }}</dd>
-            </div>
-          </dl>
-        </section>
-        <section v-if="selected.trim" class="vehicle-section" aria-labelledby="vehicle-trim-title">
-          <h3 id="vehicle-trim-title">Комплектация {{ selected.trim.name }}</h3>
-          <ul class="vehicle-features">
-            <li v-for="feature in selected.trim.features" :key="feature"><Check :size="16" aria-hidden="true" />{{ feature }}</li>
-          </ul>
-        </section>
-        <section class="vehicle-section" aria-labelledby="vehicle-terms-title">
-          <h3 id="vehicle-terms-title">Что учесть в стоимости</h3>
-          <dl class="vehicle-terms">
-            <div><dt>Пробег сверх лимита</dt><dd>Оплачивается отдельно. Ставку за километр и правила расчёта за несколько суток согласуем до оформления.</dd></div>
-            <div><dt>Залог</dt><dd>Размер и применимость зависят от условий аренды и маршрута. Уточним до подтверждения.</dd></div>
-            <div v-if="delivery"><dt>Доставка</dt><dd>Стоимость подачи согласуем по выбранному месту получения.</dd></div>
-            <div><dt>Мойка и топливо</dt><dd>Машину возвращают чистой и с тем же уровнем топлива. При необходимости мойка и дозаправка оплачиваются отдельно.</dd></div>
-            <div><dt>Защита+</dt><dd>Дополнительная опция. Покрытие и исключения уточняются перед заключением договора.</dd></div>
-          </dl>
-        </section>
-        <section class="vehicle-section" aria-labelledby="vehicle-pickup-title">
-          <h3 id="vehicle-pickup-title">Что будет после заявки</h3>
-          <p>Подтвердим наличие автомобиля, итоговую цену и время выдачи. Для оформления понадобятся паспорт и водительское удостоверение.</p>
-          <p v-if="delivery">Согласуем место встречи. При передаче автомобиля водитель привезёт печатный договор.</p>
-          <p v-else>В офисе на Авиационной вы подпишете договор и получите автомобиль.</p>
-        </section>
-      </div>
-    </div>
-  </BaseModal>
-  <BaseModal
-    v-if="modal === 'request'"
-    :title="
-      submitted
-        ? 'Всё готово к следующему шагу'
-        : 'Давайте обсудим вашу поездку'
-    "
-    @close="modal = null"
-    ><template v-if="!submitted"
-      ><p class="modal-lead">{{ selected.name }} · {{ dateText }}</p>
-      <form class="request-form" novalidate @submit.prevent="submitRequest">
-        <div class="request-trip">
-          <p v-if="!addressSelected"><MapPin :size="16" aria-hidden="true" />{{ pickupLabel }}</p>
-          <p><Gauge :size="16" aria-hidden="true" />Пробег · {{ mileageLabel }}</p>
-          <label class="check-label">
-            <input v-model="discussMileage" type="checkbox" />
-            <span class="check-visual"><Check :size="13" /></span>
-            Хочу обсудить пробег
-          </label>
-          <small v-if="discussMileage">В расчёте пока используется выбранный лимит.</small>
-        </div>
-        <DeliveryAddress
-          v-if="addressSelected"
-          v-model="location"
-          v-model:address="address"
-          :presets="pickupPresets"
-          :address-mode="addressDelivery"
-          :invalid="!!errors.address && incompleteAddress"
-          address-only
-        />
-        <label class="text-field"
-          >Ваше имя<input
-            aria-label="Ваше имя"
-            v-model="name"
-            autocomplete="given-name"
-            placeholder="Как к вам обращаться"
-            :aria-invalid="!!errors.name"
-            :class="{ 'input-error': errors.name }"
-            :aria-describedby="errors.name ? 'name-error' : undefined"
-          /><small v-if="errors.name" id="name-error" class="error-text">{{
-            errors.name
-          }}</small></label
-        ><label class="text-field"
-          >Телефон<input
-            aria-label="Телефон"
-            :value="phone"
-            @input="formatPhone"
-            type="tel"
-            inputmode="tel"
-            autocomplete="tel"
-            placeholder="+7 (___) ___-__-__"
-            :aria-invalid="!!errors.phone"
-            :class="{ 'input-error': errors.phone }"
-            :aria-describedby="errors.phone ? 'phone-error' : undefined"
-          /><small v-if="errors.phone" id="phone-error" class="error-text">{{
-            errors.phone
-          }}</small></label
-        ><label class="check-label consent"
-          ><input v-model="consent" type="checkbox" /><span class="check-visual"
-            ><Check :size="13" /></span
-          ><span
-            >Согласен на обработку персональных данных для обратной связи</span
-          ></label
-        ><small v-if="errors.consent" class="error-text">{{
-          errors.consent
-        }}</small
-        ><button type="submit" class="button button-primary full-width">
-          Проверить заявку<ArrowRight :size="18" />
-        </button>
-        <p class="prototype-note">
-          <Info :size="16" />Демонстрация: данные не отправляются и не
-          сохраняются. Для реальной заявки позвоните нам.
-        </p>
-      </form></template
-    >
-    <div v-else class="demo-success">
-      <CheckCircle2 :size="44" />
-      <h3>Форма заполнена корректно</h3>
-      <p>{{ requestSnapshot }}</p>
-      <p class="muted">
-        В рабочей версии заявка поступит команде. Сейчас данные не отправлены.
-        Автомобиль не забронирован.
-      </p>
-      <a href="tel:+74951041010" class="button button-primary"
-        ><Phone :size="18" />Позвонить в «Пункт»</a
-      >
-    </div></BaseModal
-  >
   <BaseModal
     v-if="modal === 'account'"
     title="Ваш личный «Пункт»"
