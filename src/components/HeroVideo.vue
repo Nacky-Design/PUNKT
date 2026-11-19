@@ -5,7 +5,7 @@ import { Pause, Play } from "lucide-vue-next";
 const mobileQuery = window.matchMedia("(max-width: 760px)");
 const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 const mobile = ref(mobileQuery.matches);
-const wantsPlayback = ref(!motionQuery.matches);
+const wantsPlayback = ref(!mobile.value && !motionQuery.matches);
 const loadVideo = ref(wantsPlayback.value);
 const playing = ref(false);
 const video = ref<HTMLVideoElement>();
@@ -16,6 +16,8 @@ const asset = computed(
 
 function updateViewport(event: MediaQueryListEvent) {
   mobile.value = event.matches;
+  wantsPlayback.value = !event.matches && !motionQuery.matches;
+  loadVideo.value = wantsPlayback.value;
 }
 
 function stopForReducedMotion(event: MediaQueryListEvent) {
@@ -36,6 +38,7 @@ function applyPlayback() {
 
 function togglePlayback() {
   if (!wantsPlayback.value) loadVideo.value = true;
+  if (video.value?.error) video.value.load();
   wantsPlayback.value = !wantsPlayback.value;
 }
 
@@ -54,10 +57,15 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="hero-visual" aria-hidden="true" :style="{ backgroundImage: `url('${asset}.webp')` }">
+  <div
+    class="hero-visual"
+    :class="{ 'hero-still': mobile && !playing }"
+    aria-hidden="true"
+    :style="{ backgroundImage: `url('${asset}.webp')` }"
+  >
     <video
       ref="video"
-      :src="loadVideo ? asset + '.mp4?v=08' : undefined"
+      :src="loadVideo ? asset + (mobile ? '.mp4?v=13' : '.mp4?v=08') : undefined"
       :poster="asset + '.webp'"
       muted
       loop
@@ -66,6 +74,7 @@ onBeforeUnmount(() => {
       @playing="playing = true"
       @pause="playing = false"
       @emptied="playing = false"
+      @error="playing = wantsPlayback = false"
     />
   </div>
   <button

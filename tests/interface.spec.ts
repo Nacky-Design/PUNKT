@@ -61,6 +61,65 @@ test("quick selection preserves hero geometry, filters cars and scrolls the rail
   await expect(next).toBeHidden();
 });
 
+for (const [width, height] of [[320, 568], [390, 844]]) {
+  test(`mobile ${width}x${height}: search fits above the fold and seven cars appear inline`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await page.goto("/");
+    await page.evaluate(() => document.fonts.ready);
+
+    const panel = page.locator(".search-panel > form");
+    await expect(panel).toBeInViewport({ ratio: 1 });
+    const offer = (await page.locator(".delivery-offer").boundingBox())!;
+    const title = (await page.locator("#hero-title").boundingBox())!;
+    expect(offer.y + offer.height).toBeLessThan(title.y);
+
+    await expect(page.getByRole("button", { name: "Быстрый выбор автомобиля" })).toBeHidden();
+    await expect(page.getByRole("button", { name: "Весь автопарк" })).toBeHidden();
+    await expect(page.getByRole("region", { name: "Автопарк" })).toBeVisible();
+    const cards = page.locator(".car-card");
+    await expect(cards).toHaveCount(7);
+    const bounds = await Promise.all(
+      (await cards.all()).map((card) => card.boundingBox()),
+    );
+    expect(bounds[0]!.y).toBe(bounds[2]!.y);
+    expect(bounds[3]!.y).toBe(bounds[5]!.y);
+    expect(bounds[3]!.y).toBeGreaterThan(bounds[0]!.y);
+    expect(bounds[0]!.x).toBeCloseTo(bounds[3]!.x);
+    expect(bounds[6]!.y).toBeGreaterThan(bounds[5]!.y);
+    expect(bounds[5]!.x + bounds[5]!.width).toBeLessThan(width);
+    await expect(page.getByRole("button", { name: "Следующие автомобили" })).toBeHidden();
+
+    const imageLoaded = await cards.first().locator(".car-art").evaluate(async (art) => {
+      const image = new Image();
+      image.src = getComputedStyle(art, "::before").backgroundImage.slice(5, -2);
+      await image.decode();
+      return image.naturalWidth > 0;
+    });
+    expect(imageLoaded).toBe(true);
+    const polo = cards.filter({ hasText: "Volkswagen Polo" });
+    await expect(polo.getByRole("img")).toHaveJSProperty("complete", true);
+    await expect.poll(() => polo.getByRole("img").evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+    await polo.click();
+    await expect(page.getByRole("dialog", { name: /Volkswagen Polo/ })).toBeVisible();
+  });
+}
+
+test("mobile hero starts on a still and loads video only on request, with retry", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const videoURL = /hero-delivery-mobile\.mp4/;
+  await page.route(videoURL, (route) => route.abort(), { times: 1 });
+  await page.goto("/");
+  const video = page.locator(".hero-visual video");
+  await expect(video).toHaveAttribute("poster", /hero-delivery-mobile\.webp$/);
+  await expect(video).not.toHaveAttribute("src", /.+/);
+  await expect(video).toHaveJSProperty("paused", true);
+  await expect(page.locator(".hero-visual")).toHaveClass(/hero-still/);
+  await page.getByRole("button", { name: "Воспроизвести фоновое видео" }).click();
+  await expect.poll(() => video.evaluate((el: HTMLVideoElement) => el.error?.code)).toBeTruthy();
+  await page.getByRole("button", { name: "Воспроизвести фоновое видео" }).click();
+  await expect.poll(() => video.evaluate((el: HTMLVideoElement) => el.currentTime)).toBeGreaterThan(0);
+});
+
 test("class selection supports keyboard and search has an honest empty state", async ({
   page,
 }) => {
@@ -84,7 +143,7 @@ test("class selection supports keyboard and search has an honest empty state", a
     .locator(".catalog-empty")
     .getByRole("button", { name: "Все классы" })
     .click();
-  await expect(page.locator(".result-card")).toHaveCount(6);
+  await expect(page.locator(".result-card")).toHaveCount(7);
 });
 
 test("results compare costs, sort and return from vehicle details", async ({ page }) => {
@@ -94,10 +153,11 @@ test("results compare costs, sort and return from vehicle details", async ({ pag
   const results = page.getByRole("dialog", { name: "Подбор автомобилей" });
   const filter = results.getByRole("group", { name: "Фильтр по классу" });
   await filter.getByRole("button", { name: "Эконом", exact: true }).click();
-  await expect(results.getByText("2 автомобиля", { exact: true })).toBeVisible();
-  await expect(results.getByRole("article")).toHaveCount(2);
+  await expect(results.getByText("3 автомобиля", { exact: true })).toBeVisible();
+  await expect(results.getByRole("article")).toHaveCount(3);
   await results.getByRole("combobox", { name: "Сортировка автомобилей" }).selectOption("Сначала дороже");
-  const kia = results.getByRole("article").first();
+  await expect(results.getByRole("article").first().getByRole("heading")).toHaveText("Volkswagen Polo");
+  const kia = results.getByRole("article").nth(1);
   await expect(kia.getByRole("heading")).toHaveText("Kia Rio");
   await expect(kia).toContainText("5 мест");
   await expect(kia).toContainText("100 км / сутки включено");
@@ -251,25 +311,16 @@ for (const width of [320, 430, 768, 1024, 1440, 1536, 2048]) {
     );
     expect(offer!.y + offer!.height).toBeLessThanOrEqual(panel!.y);
     expect(benefits!.y + benefits!.height).toBeLessThanOrEqual(panel!.y);
-    await page
-      .getByRole("button", { name: "Быстрый выбор автомобиля" })
-      .click();
-    const hero = page.locator(".hero");
     if (width < 761) {
-      await expect.poll(async () => (await hero.boundingBox())!.height).toBeGreaterThan(before);
-      const openPanel = (await page.locator(".search-panel").boundingBox())!;
-      const visibleOffer = (await page.locator(".delivery-offer").boundingBox())!;
-      expect(openPanel.y - visibleOffer.y).toBeCloseTo(panel!.y - offer!.y, 1);
-      const allCars = page.getByRole("button", { name: "Весь автопарк" });
-      await expect(allCars).toBeVisible();
-      await allCars.click();
-      await expect(page.getByRole("dialog", { name: "Подбор автомобилей" })).toBeVisible();
-      await page.keyboard.press("Escape");
+      await expect(page.getByRole("region", { name: "Автопарк" }).locator(".car-card")).toHaveCount(7);
       await page.getByRole("button", { name: "Открыть меню" }).click();
       await expect(
         page.getByRole("navigation", { name: "Мобильное меню" }),
       ).toBeVisible();
-    } else expect((await hero.boundingBox())!.height).toBe(before);
+    } else {
+      await page.getByRole("button", { name: "Быстрый выбор автомобиля" }).click();
+      expect((await page.locator(".hero").boundingBox())!.height).toBe(before);
+    }
   });
 }
 
@@ -392,7 +443,9 @@ for (const [width, height] of [
       await page
         .getByRole("button", { name: "Быстрый выбор автомобиля" })
         .click();
-      await page.waitForTimeout(450);
+      await page.locator(".quick-expand").evaluate(async (element) => {
+        await Promise.all(element.getAnimations().map((animation) => animation.finished));
+      });
       const after = await panel.boundingBox();
       expect(after!.y + after!.height).toBeCloseTo(
         before!.y + before!.height,

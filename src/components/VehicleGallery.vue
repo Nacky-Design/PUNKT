@@ -29,7 +29,7 @@ function move(direction: number) {
       <img v-if="slide.file" class="gallery-image" :src="asset(slide.file)" :alt="car.name + ' — ' + slide.label" />
       <CarArt
         v-else
-        :index="car.image"
+        :image="car.image"
         :name="car.name + ' — ' + slide.label"
         :class="'vehicle-view-' + current"
       />
@@ -52,7 +52,7 @@ function move(direction: number) {
         @click="current = index"
       >
         <img v-if="item.file" :src="asset(item.file)" alt="" loading="lazy" />
-        <CarArt v-else :index="car.image" :name="car.name" :class="'vehicle-view-' + index" aria-hidden="true" />
+        <CarArt v-else :image="car.image" :name="car.name" :class="'vehicle-view-' + index" aria-hidden="true" />
       </button>
     </div>
   </figure>

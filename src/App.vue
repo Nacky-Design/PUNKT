@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, watchEffect } from "vue";
+import { ref, computed, nextTick, onMounted, onBeforeUnmount, watchEffect } from "vue";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -78,6 +78,13 @@ const start = ref(addDays(todayISO(), 2)),
 const protection = ref(false),
   business = ref(false),
   foreign = ref(false);
+const mobileQuery = window.matchMedia("(max-width: 760px)");
+const mobile = ref(mobileQuery.matches);
+function updateViewport(event: MediaQueryListEvent) {
+  mobile.value = event.matches;
+}
+onMounted(() => mobileQuery.addEventListener("change", updateViewport));
+onBeforeUnmount(() => mobileQuery.removeEventListener("change", updateViewport));
 const quickOpen = ref(false),
   quickCategory = ref("Все классы"),
   mobileMenu = ref(false),
@@ -354,7 +361,7 @@ function updateRailArrows() {
     element.scrollLeft + element.clientWidth < element.scrollWidth - 1;
 }
 watchEffect((onCleanup) => {
-  if (!rail.value || !quickOpen.value) return;
+  if (!rail.value || mobile.value || !quickOpen.value) return;
   const observer = new ResizeObserver(updateRailArrows);
   observer.observe(rail.value);
   onCleanup(() => observer.disconnect());
@@ -456,13 +463,27 @@ function account() {
       <HeroVideo />
       <div class="hero-shade" aria-hidden="true"></div>
       <div class="hero-content">
+        <button class="delivery-offer" @click="openOffer">
+          <span class="offer-copy">
+            <strong>Доставим<br class="offer-break" /> бесплатно</strong>
+            <span>Акция до {{ offerDate }}</span>
+          </span>
+          <img
+            class="offer-car"
+            src="/assets/delivery-car.webp"
+            alt=""
+            width="660"
+            height="312"
+          />
+          <ArrowUpRight class="offer-arrow" :size="20" aria-hidden="true" />
+        </button>
         <div class="hero-copy">
           <h1 id="hero-title" class="headline">
             Автомобиль<br />под ваши
             <em>планы<span class="headline-dot">.</span></em>
           </h1>
           <p class="hero-description">
-            Аренда автомобилей в Москве.<br />
+            Аренда автомобилей в Москве. <br />
             Выберите машину — заберите в офисе или закажите доставку.
           </p>
           <div class="hero-benefits">
@@ -480,20 +501,6 @@ function account() {
             </span>
           </div>
         </div>
-        <button class="delivery-offer" @click="openOffer">
-          <span class="offer-copy">
-            <strong>Доставим<br />бесплатно</strong>
-            <span>Акция до {{ offerDate }}</span>
-          </span>
-          <img
-            class="offer-car"
-            src="/assets/delivery-car.webp"
-            alt=""
-            width="660"
-            height="312"
-          />
-          <ArrowUpRight class="offer-arrow" :size="20" aria-hidden="true" />
-        </button>
         <section
           id="search"
           ref="searchPanel"
@@ -608,10 +615,13 @@ function account() {
           <div
             id="quick-selection"
             class="quick-expand"
-            :class="{ 'quick-hidden': !quickOpen }"
-            :inert="!quickOpen"
+            :class="{ 'quick-hidden': !mobile && !quickOpen }"
+            :inert="!mobile && !quickOpen"
+            role="region"
+            :aria-label="mobile ? 'Автопарк' : 'Быстрый выбор'"
           >
             <div class="quick-inner">
+              <h2 class="mobile-fleet-title">Автопарк</h2>
               <div class="quick-toolbar">
                 <div
                   class="category-tabs"
@@ -651,7 +661,7 @@ function account() {
                     @click="showCar(car)"
                   >
                     <span class="card-class">{{ car.category }}</span
-                    ><CarArt :index="car.image" :name="car.name" /><span
+                    ><CarArt :image="car.image" :name="car.name" /><span
                       class="car-card-bottom"
                       ><strong>{{ car.name }}</strong
                       ><span
@@ -857,7 +867,7 @@ function account() {
         <div class="catalog-grid">
           <article v-for="car in filteredCars" :key="car.id" class="result-card" :aria-labelledby="'catalog-name-' + car.id">
             <div class="result-photo">
-              <CarArt :index="car.image" :name="car.name" />
+              <CarArt :image="car.image" :name="car.name" />
               <span class="result-class">{{ car.category }}</span>
             </div>
             <div class="result-body">

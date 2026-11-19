@@ -9,8 +9,8 @@ export type Car = {
   seats: number;
   fuel: string;
   drive: string;
-  body: "Седан" | "Кроссовер";
-  image: number;
+  body: "Седан" | "Кроссовер" | "Лифтбек";
+  image: number | string;
   photos?: CarPhoto[];
   extraSpecs?: { label: string; value: string }[];
   trim?: { name: string; features: string[] };
@@ -115,6 +115,19 @@ export const cars: Car[] = [
     drive: "Передний",
     body: "Кроссовер",
     image: 5,
+  },
+  {
+    id: 7,
+    name: "Volkswagen Polo",
+    year: 2022,
+    category: "Эконом",
+    price: 3400,
+    power: 110,
+    seats: 5,
+    fuel: "Бензин",
+    drive: "Передний",
+    body: "Лифтбек",
+    image: "polo.webp",
   },
 ];
 export const categories = [
