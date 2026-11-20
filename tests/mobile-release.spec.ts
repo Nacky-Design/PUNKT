@@ -74,6 +74,12 @@ for (const [width, height] of [[320, 568], [390, 844], [430, 932], [667, 375]]) 
     await expect(gallery.getByRole("img", { name: "Hyundai Solaris — Вид спереди" })).toBeVisible();
     await noOverflow(page, width);
 
+    const period = page.getByRole("region", { name: "Даты аренды" });
+    await period.getByRole("button", { name: /^Получение/ }).tap();
+    const periodCalendar = page.getByRole("dialog", { name: "Даты и время аренды" });
+    await fitsViewport(periodCalendar, width, height);
+    await expect(periodCalendar.getByLabel("Время получения")).toHaveValue("10:00");
+    await periodCalendar.getByRole("button", { name: "Подтвердить период" }).tap();
     await page.getByRole("button", { name: "Подготовить заявку" }).tap();
     const request = page.getByRole("dialog", { name: "Запрос на аренду" });
     await fitsViewport(request, width, height);

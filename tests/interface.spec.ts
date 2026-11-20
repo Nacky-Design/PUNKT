@@ -165,13 +165,21 @@ test("vehicle details, cover, mileage and request form use the same rental detai
   await expect(car.locator(".vehicle-heading-price")).toContainText("4 890");
   await packages.getByRole("button", { name: /250 км/ }).click();
   await expect(car.locator(".vehicle-heading-price")).toContainText("4 090");
-  const period = car.getByRole("region", { name: "Период аренды" });
+  const period = car.getByRole("region", { name: "Даты аренды" });
   const prepare = car.getByRole("button", { name: "Подготовить заявку" });
-  const returnTime = period.getByLabel("Время возврата");
-  await returnTime.fill("");
+  await expect(period.getByRole("button", { name: "Получение Выберите дату" })).toBeVisible();
+  await expect(period.getByRole("button", { name: "Возврат Выберите дату" })).toBeVisible();
+  await expect(period.locator("input")).toHaveCount(0);
   await expect(prepare).toBeDisabled();
-  await expect(period.getByRole("alert")).toContainText("Укажите время");
+  await period.getByRole("button", { name: /^Получение/ }).click();
+  const calendar = page.getByRole("dialog", { name: "Даты и время аренды" });
+  const confirmPeriod = calendar.getByRole("button", { name: "Подтвердить период" });
+  const returnTime = calendar.getByLabel("Время возврата");
+  await returnTime.fill("");
+  await expect(confirmPeriod).toBeDisabled();
+  await expect(calendar.getByRole("alert")).toContainText("Укажите время");
   await returnTime.fill("10:00");
+  await confirmPeriod.click();
 
   await prepare.click();
   const request = page.getByRole("dialog", { name: "Запрос на аренду" });
@@ -181,10 +189,11 @@ test("vehicle details, cover, mileage and request form use the same rental detai
   await request.getByRole("button", { name: "Закрыть окно" }).click();
 
   await period.getByRole("button", { name: /^Получение/ }).click();
-  const calendar = page.getByRole("dialog", { name: "Выбор дат аренды" });
   await calendar.getByRole("button", { name: "22 ноября 2026 г.", exact: true }).click();
   await calendar.getByRole("button", { name: "25 ноября 2026 г.", exact: true }).click();
-  await period.getByLabel("Время получения").fill("0930");
+  await calendar.getByLabel("Время получения").fill("0930");
+  await confirmPeriod.click();
+  await expect(period.getByRole("button", { name: /^Получение/ })).toContainText("09:30");
   await prepare.click();
   await expect(summary).toContainText("09:30");
   await expect(summary).toContainText("25 ноября 2026 г., 10:00");
@@ -206,6 +215,8 @@ test("vehicle details, cover, mileage and request form use the same rental detai
 
 test("request modal traps focus and restores the opener", async ({ page }) => {
   await page.goto("/#car/1");
+  await page.getByRole("region", { name: "Даты аренды" }).getByRole("button", { name: /^Получение/ }).click();
+  await page.getByRole("dialog", { name: "Даты и время аренды" }).getByRole("button", { name: "Подтвердить период" }).click();
   const trigger = page.getByRole("button", { name: "Подготовить заявку" });
   await trigger.click();
   const dialog = page.getByRole("dialog", { name: "Запрос на аренду" });
@@ -431,6 +442,8 @@ test("editable pickup suggests houses and preserves a manual address and mileage
   await expect(car.getByRole("group", { name: "Выбор тарифа по пробегу" })
     .getByRole("button", { name: /^100 км/ })).toHaveAttribute("aria-pressed", "true");
   await expect(car.locator(".estimate-trip")).toContainText("Москва, Сиреневый бульвар, 24с1");
+  await car.getByRole("region", { name: "Даты аренды" }).getByRole("button", { name: /^Получение/ }).click();
+  await page.getByRole("dialog", { name: "Даты и время аренды" }).getByRole("button", { name: "Подтвердить период" }).click();
   await car.getByRole("button", { name: "Обсудить пробег" }).click();
   const request = page.getByRole("dialog");
   const summary = request.getByRole("group", { name: "Условия аренды" });

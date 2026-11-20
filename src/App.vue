@@ -49,8 +49,9 @@ import {
   todayISO,
   addDays,
   localDate,
-  rentalTime,
+  checkRentalPeriod,
   type Car,
+  type RentalPeriod,
 } from "./data";
 const office = "Офис на Авиационной";
 const currentTime = ref(new Date());
@@ -93,8 +94,7 @@ const delivery = computed({
 });
 const start = ref(addDays(todayISO(), 2)),
   end = ref(addDays(start.value, 1));
-const startTime = ref("10:00");
-const endTime = ref("10:00");
+const confirmedPeriod = ref<RentalPeriod>();
 const protection = ref(false),
   business = ref(false),
   foreign = ref(false);
@@ -211,17 +211,19 @@ window.addEventListener("hashchange", readRoute);
 readRoute();
 const sort = ref("Сначала дешевле");
 const catalogFilters = ref<CatalogFilterState>({ brand: "", fuel: "", drive: "", transmission: "", seats: null, extras: [] });
-const pickupTime = computed(() => rentalTime(startTime.value));
-const returnTime = computed(() => rentalTime(endTime.value));
-const pickupInstant = computed(() => Date.parse(`${start.value}T${pickupTime.value}:00+03:00`));
-const returnInstant = computed(() => Date.parse(`${end.value}T${returnTime.value}:00+03:00`));
-const periodError = computed(() => {
-  if (!Number.isFinite(pickupInstant.value) || !Number.isFinite(returnInstant.value)) return "Укажите время получения и возврата в формате ЧЧ:ММ.";
-  const currentMinute = Math.floor(currentTime.value.getTime() / 60000) * 60000;
-  if (pickupInstant.value < currentMinute) return "Выберите дату и время получения в будущем.";
-  if (returnInstant.value <= pickupInstant.value) return "Возврат должен быть позже получения.";
-  return "";
-});
+const rentalPeriod = computed<RentalPeriod>(() => ({
+  start: start.value,
+  end: end.value,
+  startTime: confirmedPeriod.value?.startTime ?? "10:00",
+  endTime: confirmedPeriod.value?.endTime ?? "10:00",
+}));
+const periodConfirmed = computed(() => confirmedPeriod.value?.start === start.value && confirmedPeriod.value?.end === end.value);
+const periodError = computed(() => periodConfirmed.value ? checkRentalPeriod(rentalPeriod.value, currentTime.value).error : "");
+function applyRentalPeriod(period: RentalPeriod) {
+  start.value = period.start;
+  end.value = period.end;
+  confirmedPeriod.value = period;
+}
 const mileagePrices: Record<string, number> = {
   [baseMileage]: 0,
   "250 км / сутки": 700,
@@ -347,12 +349,13 @@ function editSearch() {
 }
 function request(withMileageDiscussion = false) {
   currentTime.value = new Date();
-  if (periodError.value || incompleteAddress.value) return;
+  if (!periodConfirmed.value || periodError.value || incompleteAddress.value) return;
 
-  const days = Math.ceil((returnInstant.value - pickupInstant.value) / 86400000);
+  const period = rentalPeriod.value;
+  const { days } = checkRentalPeriod(period, currentTime.value);
   requestDetails.value = {
     car: selected.value.name,
-    period: `${rentalMoment(start.value, pickupTime.value)} — ${rentalMoment(end.value, returnTime.value)} (МСК)`,
+    period: `${rentalMoment(period.start, period.startTime)} — ${rentalMoment(period.end, period.endTime)} (МСК)`,
     pickup: pickupLabel.value,
     mileage: mileageLabel.value,
     protection: protection.value
@@ -757,11 +760,10 @@ function logoutDemo() {
     @apply-search="search" @edit-search="editSearch" @show-car="showCar" />
   <VehiclePage v-if="page === 'car'"
     :car="selected" :back-label="carReturnPage === 'prices' ? 'К ценам' : 'Все автомобили'" :pickup-label="pickupLabel"
-    v-model:start="start" v-model:end="end" v-model:start-time="startTime" v-model:end-time="endTime"
-    :period-error="periodError" :pickup-incomplete="incompleteAddress"
+    :period="rentalPeriod" :period-confirmed="periodConfirmed" :period-error="periodError" :pickup-incomplete="incompleteAddress"
     v-model:mileage="mileage" :mileage-prices="mileagePrices" v-model:protection="protection"
     :renter-context="renterContext" :extras="catalogFilters.extras" :delivery="delivery" :rate="rate(selected)"
-    @back="closeCar" @edit-search="editSearch" @request="request" @explain-protection="explainProtection" />
+    @back="closeCar" @edit-search="editSearch" @apply-period="applyRentalPeriod" @request="request" @explain-protection="explainProtection" />
   <PricesPage v-if="page === 'prices'" v-model:tab="priceTab" :cars="cars" v-model:mileage="pricesMileage" :mileage-prices="mileagePrices"
     @show-car="showPriceCar" @explain-protection="explainProtection" @open-terms="nav('Условия')" />
   <ServicesPage v-if="page === 'services'" :detail-id="detailId" :start="start" :end="end" @find-cars="searchWithDates" />

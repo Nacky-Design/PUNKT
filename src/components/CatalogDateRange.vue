@@ -4,10 +4,18 @@ import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import { useMobileSheet } from '../composables/useMobileSheet';
 import { usePopoverPlacement } from '../composables/usePopoverPlacement';
 import BaseModal from './BaseModal.vue';
-import { isoDate, localDate, todayISO } from '../data';
+import { checkRentalPeriod, isoDate, localDate, rentalTime, todayISO, type RentalPeriod } from '../data';
 
-const props = defineProps<{ start: string; end: string }>();
-const emit = defineEmits<{ 'update:start': [value: string]; 'update:end': [value: string] }>();
+const props = defineProps<{
+  start: string;
+  end: string;
+  times?: { start: string; end: string; confirmed: boolean };
+}>();
+const emit = defineEmits<{
+  'update:start': [value: string];
+  'update:end': [value: string];
+  'apply-period': [value: RentalPeriod];
+}>();
 const root = ref<HTMLElement>();
 const open = ref(false);
 const sheet = useMobileSheet();
@@ -15,6 +23,21 @@ const above = usePopoverPlacement(root, () => open.value && !sheet.value, '.rang
 const selectingEnd = ref(false);
 const chosenStart = ref('');
 const chosenEnd = ref('');
+const chosenStartTime = ref('');
+const chosenEndTime = ref('');
+const openedAt = ref(new Date());
+const draft = computed<RentalPeriod>(() => ({
+  start: chosenStart.value,
+  end: chosenEnd.value,
+  startTime: rentalTime(chosenStartTime.value),
+  endTime: rentalTime(chosenEndTime.value),
+}));
+const draftError = computed(() => checkRentalPeriod(draft.value, openedAt.value).error);
+const dialogTitle = computed(() => props.times ? 'Даты и время аренды' : 'Выбор дат аренды');
+const fields = [
+  { key: 'start', label: 'Получение' },
+  { key: 'end', label: 'Возврат' },
+] as const;
 const month = ref(firstOfMonth(props.start));
 let returnFocus: HTMLElement | null = null;
 const today = todayISO();
@@ -29,8 +52,15 @@ function shiftMonth(base: Date, delta: number) {
 }
 const months = computed(() => [month.value, shiftMonth(month.value, 1)]);
 const previousDisabled = computed(() => month.value <= firstOfMonth(today));
-const displayedStart = computed(() => selectingEnd.value ? chosenStart.value : props.start);
-const displayedEnd = computed(() => selectingEnd.value ? '' : props.end);
+const displayedStart = computed(() => props.times || selectingEnd.value ? chosenStart.value : props.start);
+const displayedEnd = computed(() => props.times ? chosenEnd.value : (selectingEnd.value ? '' : props.end));
+const selectionHint = computed(() => {
+  if (selectingEnd.value) {
+    if (!props.times || !chosenEnd.value) return 'Теперь выберите дату возврата';
+    return 'Настройте дату и время';
+  }
+  return props.times ? 'Выберите дату получения' : 'Выберите дату получения, затем возврата';
+});
 function monthLabel(d: Date) {
   return d.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }).replace(' г.', '');
 }
@@ -39,6 +69,12 @@ function dateLabel(s: string) {
 }
 function fullDate(s: string) {
   return localDate(s).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+function fieldValue(which: 'start' | 'end') {
+  if (!props.times) return dateLabel(props[which]);
+  if (!props.times.confirmed) return 'Выберите дату';
+  const day = localDate(props[which]).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+  return `${day}, ${props.times[which]}`;
 }
 function daysOfMonth(d: Date) {
   const offset = (d.getDay() + 6) % 7;
@@ -54,7 +90,10 @@ function toggle(which: 'start' | 'end', event: MouseEvent) {
   if (sheet.value) returnFocus.focus({ preventScroll: true });
   chosenStart.value = props.start;
   chosenEnd.value = props.end;
-  selectingEnd.value = false;
+  chosenStartTime.value = props.times?.start ?? '';
+  chosenEndTime.value = props.times?.end ?? '';
+  openedAt.value = new Date();
+  selectingEnd.value = !!props.times && which === 'end';
   month.value = firstOfMonth(props[which]);
   if (month.value < firstOfMonth(today)) month.value = firstOfMonth(today);
   open.value = true;
@@ -67,8 +106,15 @@ function choose(date: string) {
     return;
   }
   chosenEnd.value = date;
+  if (props.times) return;
   emit('update:start', chosenStart.value);
   emit('update:end', chosenEnd.value);
+  close(true);
+}
+function applyPeriod() {
+  openedAt.value = new Date();
+  if (draftError.value) return;
+  emit('apply-period', draft.value);
   close(true);
 }
 function close(restore: boolean) {
@@ -87,20 +133,22 @@ onBeforeUnmount(() => { document.removeEventListener('pointerdown', onOutside); 
 </script>
 
 <template>
-  <div ref="root" class="range-picker">
-    <button type="button" class="date-field" :aria-expanded="open" :aria-controls="open ? 'catalog-date-calendar' : undefined" :aria-haspopup="sheet ? 'dialog' : undefined" @click="toggle('start', $event)">
-      <span class="date-caption">Получение</span><span class="date-value"><CalendarDays :size="16" aria-hidden="true" />{{ dateLabel(start) }}</span>
-    </button>
-    <button type="button" class="date-field" :aria-expanded="open" :aria-controls="open ? 'catalog-date-calendar' : undefined" :aria-haspopup="sheet ? 'dialog' : undefined" @click="toggle('end', $event)">
-      <span class="date-caption">Возврат</span><span class="date-value"><CalendarDays :size="16" aria-hidden="true" />{{ dateLabel(end) }}</span>
+  <div ref="root" class="range-picker" :class="{ 'range-picker--timed': times }">
+    <button v-for="field in fields" :key="field.key" type="button" class="date-field"
+      :aria-expanded="open" :aria-controls="open ? 'catalog-date-calendar' : undefined"
+      :aria-haspopup="times || sheet ? 'dialog' : undefined"
+      :aria-label="times?.confirmed ? `${field.label}, ${fullDate(field.key === 'start' ? start : end)}, ${times[field.key]}` : undefined"
+      @click="toggle(field.key, $event)">
+      <span class="date-caption">{{ field.label }}<CalendarDays v-if="times" :size="15" aria-hidden="true" /></span>
+      <span class="date-value"><CalendarDays v-if="!times" :size="16" aria-hidden="true" />{{ fieldValue(field.key) }}</span>
     </button>
     <component v-if="open" :is="sheet ? BaseModal : 'div'"
-      v-bind="sheet ? { title: 'Выбор дат аренды', sheet: true }
-        : { class: ['range-popover', { 'range-popover--above': above }], role: 'dialog', 'aria-label': 'Выбор дат аренды' }"
+      v-bind="sheet ? { title: dialogTitle, sheet: true }
+        : { class: ['range-popover', { 'range-popover--above': above }], role: 'dialog', 'aria-label': dialogTitle }"
       @close="close(true)">
-      <div id="catalog-date-calendar">
+      <div id="catalog-date-calendar" :class="{ 'range-calendar--timed': times }">
         <div class="range-top">
-          <div><strong v-if="!sheet">Даты аренды</strong><p aria-live="polite">{{ selectingEnd ? 'Теперь выберите дату возврата' : 'Выберите дату получения, затем возврата' }}</p></div>
+          <div><strong v-if="!sheet">{{ times ? dialogTitle : 'Даты аренды' }}</strong><p aria-live="polite">{{ selectionHint }}</p></div>
           <div class="month-navigation">
             <button type="button" aria-label="Предыдущий месяц" :disabled="previousDisabled" @click="month = shiftMonth(month, -1)"><ChevronLeft :size="19" aria-hidden="true" /></button>
             <button type="button" aria-label="Следующий месяц" @click="month = shiftMonth(month, 1)"><ChevronRight :size="19" aria-hidden="true" /></button>
@@ -118,7 +166,22 @@ onBeforeUnmount(() => { document.removeEventListener('pointerdown', onOutside); 
             </div>
           </section>
         </div>
-        <p class="range-help">Возврат — не ранее следующего дня после получения</p>
+        <div v-if="times" class="range-times">
+          <p>Время по Москве</p>
+          <div class="range-time-fields">
+            <label>Время получения
+              <input v-model="chosenStartTime" type="text" inputmode="numeric" maxlength="5" placeholder="ЧЧ:ММ"
+                @blur="chosenStartTime = rentalTime(chosenStartTime) || chosenStartTime" />
+            </label>
+            <label>Время возврата
+              <input v-model="chosenEndTime" type="text" inputmode="numeric" maxlength="5" placeholder="ЧЧ:ММ"
+                @blur="chosenEndTime = rentalTime(chosenEndTime) || chosenEndTime" />
+            </label>
+          </div>
+          <p v-if="chosenEnd && draftError" class="error-text" role="alert">{{ draftError }}</p>
+          <button type="button" class="interior-action" :disabled="!!draftError" @click="applyPeriod">Подтвердить период</button>
+        </div>
+        <p v-else class="range-help">Возврат — не ранее следующего дня после получения</p>
       </div>
     </component>
   </div>
@@ -136,6 +199,23 @@ onBeforeUnmount(() => { document.removeEventListener('pointerdown', onOutside); 
 
 .date-field { min-height: 48px; }
 .date-field[aria-expanded="true"], .date-field:hover { background: #f5f5f3; }
+.range-picker--timed .date-caption { display: flex; align-items: center; justify-content: space-between; gap: 4px; width: 100%; }
+.range-picker--timed .date-caption svg { flex: none; color: #777b74; }
+.range-picker--timed .date-value { font-size: clamp(14px, 3.8vw, 16px); }
+.range-times { display: grid; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e8e8e5; }
+.range-times > p { color: #5d5f5a; font-size: var(--type-secondary); }
+.range-times > p.error-text { color: #9b3733; }
+.range-time-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.range-time-fields label { display: grid; gap: 5px; color: #5d5f5a; font-size: var(--type-secondary); }
+.range-time-fields input { width: 100%; min-width: 0; min-height: 40px; padding: 7px 10px; border: 1px solid #dededb; border-radius: 8px; background: #fafaf8; color: #222; font-size: var(--type-control); }
+.range-times .interior-action { justify-self: stretch; }
+@media (max-width: 760px) {
+  .range-calendar--timed .range-top { margin-bottom: 10px; }
+  .range-calendar--timed .month h3 { margin-bottom: 7px; }
+  .range-calendar--timed .weekday { height: 22px; }
+  .range-calendar--timed .date-grid button { height: 34px; aspect-ratio: auto; }
+  .range-times { margin-top: 9px; padding-top: 9px; }
+}
 @media (min-width: 701px) and (max-width: 1270px) {
   .date-field { padding-inline: 9px; }
   .date-value svg { display: none; }

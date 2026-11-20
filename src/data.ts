@@ -183,6 +183,19 @@ export function rentalTime(value: string) {
   const time = value.trim().replace(/^(\d):/, "0$1:").replace(/^(\d{2})(\d{2})$/, "$1:$2");
   return /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time) ? time : "";
 }
+export type RentalPeriod = { start: string; end: string; startTime: string; endTime: string };
+export function checkRentalPeriod(period: RentalPeriod, now: Date) {
+  if (!period.start || !period.end) return { days: 0, error: "Выберите даты получения и возврата." };
+  const pickup = Date.parse(`${period.start}T${rentalTime(period.startTime)}:00+03:00`);
+  const dropoff = Date.parse(`${period.end}T${rentalTime(period.endTime)}:00+03:00`);
+  if (!Number.isFinite(pickup) || !Number.isFinite(dropoff)) {
+    return { days: 0, error: "Укажите время получения и возврата в формате ЧЧ:ММ." };
+  }
+  const currentMinute = Math.floor(now.getTime() / 60000) * 60000;
+  if (pickup < currentMinute) return { days: 0, error: "Выберите дату и время получения в будущем." };
+  if (dropoff <= pickup) return { days: 0, error: "Возврат должен быть позже получения." };
+  return { days: Math.ceil((dropoff - pickup) / 86400000), error: "" };
+}
 export const todayISO = (date = new Date()) =>
   new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Moscow",
