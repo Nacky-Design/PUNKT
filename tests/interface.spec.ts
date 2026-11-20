@@ -356,6 +356,14 @@ test("mobile services expand by group and open a shareable detail", async ({ pag
   await page.reload();
   await expect(page.getByRole("heading", { name: "Поездки по России." })).toBeVisible();
   await expect(page.getByRole("link", { name: "Уточнить условия" })).toHaveAttribute("href", /^tel:/);
+
+  await page.goto("/#services");
+  const menu = page.getByRole("button", { name: "Открыть меню" });
+  await menu.click();
+  await nav.locator("summary").getByText("Услуги", { exact: true }).click();
+  await nav.getByRole("link", { name: "Все услуги", exact: true }).click();
+  await expect(nav).toBeHidden();
+  await expect(menu).toBeFocused();
 });
 
 test("mobile support and service links keep the right contact and rental context", async ({ page }) => {

@@ -328,6 +328,10 @@ function closeMobileMenu(event?: KeyboardEvent) {
   mobileMenu.value = false;
   mobileMenuButton.value?.focus();
 }
+function followMobileMenuLink(event: MouseEvent) {
+  if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  if (event.target instanceof Element && event.target.closest('a[href]')) closeMobileMenu();
+}
 const carReturnPage = ref<"catalog" | "prices">("catalog");
 function showCar(car: Car) {
   carReturnPage.value = page.value === "prices" ? "prices" : "catalog";
@@ -552,10 +556,10 @@ function logoutDemo() {
       </button>
     </div>
     <Transition name="popover">
-      <nav v-if="mobileMenu" id="mobile-nav" class="mobile-nav" aria-label="Мобильное меню">
+      <nav v-if="mobileMenu" id="mobile-nav" class="mobile-nav" aria-label="Мобильное меню" @click="followMobileMenuLink">
         <template v-for="item in navItems" :key="item.route">
           <ServicesMenu v-if="item.route === 'services'" mobile :current="page === 'services'" />
-          <a v-else :href="`#${item.route}`" @click="closeMobileMenu()" :aria-current="page === item.route ? 'page' : undefined">
+          <a v-else :href="`#${item.route}`" :aria-current="page === item.route ? 'page' : undefined">
             {{ item.label }}<ArrowUpRight :size="17" aria-hidden="true" />
           </a>
         </template>
