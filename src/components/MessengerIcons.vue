@@ -12,8 +12,8 @@ defineProps<{ channels: (keyof typeof names)[]; iconClass: string }>();
       :class="iconClass" :href="messengerLinks[channel]"
       :target="messengerLinks[channel] ? '_blank' : undefined" :rel="messengerLinks[channel] ? 'noopener noreferrer' : undefined"
       :role="messengerLinks[channel] ? undefined : 'img'"
-      :aria-label="messengerLinks[channel] ? names[channel] : names[channel] + ', ссылка уточняется'"
-      :title="messengerLinks[channel] ? names[channel] : names[channel] + ' · ссылка уточняется'">
+      :aria-label="names[channel]"
+      :title="names[channel]">
       <HeaderMessengerIcon :kind="channel" />
     </component>
   </div>

@@ -77,7 +77,7 @@ const faq = [
                   <td class="detail-cell" data-label="Залог">
                     <div v-if="car.deposit !== undefined" class="price-cell-content">
                       <strong>{{ money(car.deposit) }} ₽</strong>
-                      <small><a href="#conditions/deposit">Когда можно без залога</a></small>
+                      <small><a href="#conditions/deposit" aria-label="Без залога — условия аренды">Без залога</a></small>
                     </div>
                     <span v-else class="muted">Уточняется</span>
                   </td>
@@ -146,7 +146,7 @@ const faq = [
 @media(max-width:850px){.service-grid{grid-template-columns:1fr}.option-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.delivery-hint{max-width:240px}}
 @media(max-width:650px){.service-intro{align-items:start;flex-direction:column;gap:12px;margin-bottom:18px}.service-intro h2{font-size:27px}.service-demo{max-width:none}.service-card{padding:20px}.option-grid{gap:10px}.option-card{flex-direction:column;gap:12px;padding:17px}.option-card h3{font-size:14px}.option-card p{margin-top:10px;font-size:19px}.delivery-header{align-items:start;flex-direction:column;gap:12px}.delivery-hint{max-width:none}.delivery-table-wrap{margin-top:18px}.delivery-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}.delivery-table,.delivery-table tbody,.delivery-table tr,.delivery-table th,.delivery-table td{display:block;width:100%}.delivery-table tr{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;padding:14px 15px;border-top:1px solid #eeefea}.delivery-table tr:first-child{border-top:0}.delivery-table th:first-child{grid-column:1/-1;width:100%;padding:0 0 10px;border:0;color:#252723}.delivery-table td{padding:0;border:0;font-size:13px}.delivery-table td::before{content:attr(data-time);display:block;margin-bottom:5px;color:#92948e;font-size:11px;font-weight:500}}
 @media(max-width:380px){.option-grid{grid-template-columns:1fr}.option-card{flex-direction:row;align-items:center}.option-card p{margin-top:6px}}
-.price-table td small a { color: #595955; text-decoration: underline; text-underline-offset: 2px; }
+.price-table td small a { color: #595955; text-decoration: underline; text-underline-offset: 2px; white-space: nowrap; }
 .price-heading { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 14px 20px; }
 .price-heading .interior-action { flex: none; }
 .price-toolbar h2 { margin-bottom: 10px; font-size: clamp(20px, 2vw, 24px); }
@@ -177,6 +177,13 @@ const faq = [
 }
 @media (min-width: 851px) {
   .price-table th:last-child { width: 180px; }
+}
+@media (min-width: 1024px) {
+  .price-table th:first-child { width: 31%; }
+  .price-table th:nth-child(2) { width: 16%; }
+  .price-table th:nth-child(3) { width: 21%; }
+  .protection-rate { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 6px; }
+  .price-table .protection-rate small { margin: 0; }
 }
 @media (min-width: 701px) and (max-width: 850px) {
   .price-table th:first-child { width: 31%; }

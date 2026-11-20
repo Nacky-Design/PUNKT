@@ -3402,8 +3402,8 @@ h2 {
 
 .header-messenger { display: grid; place-items: center; }
 .header-messenger svg { width: 18px; height: 18px; }
-.header-messengers a:hover { color: #ffc107; }
 .header-messengers span { opacity: .8; }
+.header-messenger:is(:hover, :focus-visible) { color: #ffc107; opacity: 1; }
 .request-map-link { display: inline-flex; align-items: center; gap: 6px; color: #775500; text-decoration: underline; text-underline-offset: 3px; }
 @media (max-width: 380px) {
   .header-hours { font-size: 11px; }

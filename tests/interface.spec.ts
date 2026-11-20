@@ -375,7 +375,7 @@ test("mobile support and service links keep the right contact and rental context
   await expect(messengers.getByText("Telegram")).toBeVisible();
   await expect(messengers.getByText("Max")).toBeVisible();
   await expect(messengers.getByRole("link")).toHaveCount(0);
-  await expect(support.getByText("Ссылки на мессенджеры уточняются.")).toBeVisible();
+  await expect(support.getByText("Ссылки на мессенджеры уточняются.")).toHaveCount(0);
 
   const menu = page.getByRole("button", { name: /меню$/ });
   await menu.click();
@@ -390,7 +390,7 @@ test("mobile support and service links keep the right contact and rental context
   await page.getByRole("link", { name: "Подобрать автомобиль" }).click();
   await expect(page.getByRole("checkbox", { name: "Иностранный гражданин" })).toBeChecked();
   await page.goto("/#prices");
-  await page.getByRole("link", { name: "Когда можно без залога" }).first().click();
+  await page.getByRole("link", { name: "Без залога — условия аренды" }).first().click();
   await expect(page).toHaveURL(/#conditions\/deposit$/);
   await expect(page.getByRole("heading", { name: "Когда возможна аренда без залога" })).toBeFocused();
 });

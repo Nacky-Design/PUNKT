@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Clock3, MapPin, Phone } from 'lucide-vue-next';
 import MessengerIcons from './MessengerIcons.vue';
-import { messengerLinks } from '../contact';
 
 const navItems = [
   { label: 'Цены', href: '#prices' }, { label: 'Услуги', href: '#services' },
@@ -41,7 +40,6 @@ const year = new Date().getFullYear();
         <div class="footer-social">
           <p class="footer-label">МЕССЕНДЖЕРЫ</p>
           <MessengerIcons class="social-icons" icon-class="social-icon" :channels="['whatsapp', 'telegram', 'max']" />
-          <p v-if="!messengerLinks.whatsapp || !messengerLinks.telegram || !messengerLinks.max" class="social-note">Ссылки на мессенджеры уточняются.</p>
         </div>
       </div>
       <div class="footer-bottom">
@@ -75,9 +73,8 @@ const year = new Date().getFullYear();
 .social-icons { display:flex; gap:9px; align-items:center; }
 .social-icons :deep(.social-icon) { display:grid; place-items:center; width:42px; height:44px; flex:none; color:#f4f4f2; }
 .social-icons :deep(.social-icon svg) { width:22px; height:22px; }
-.social-icons :deep(a.social-icon:hover) { color:#ffc107; }
 .social-icons :deep(span.social-icon) { opacity:.8; }
-.social-note { color:#a9adab; font-size:var(--type-secondary); line-height:1.4; margin:11px 0 0; }
+.social-icons :deep(.social-icon:is(:hover, :focus-visible)) { color:#ffc107; opacity:1; }
 .footer-bottom { display:flex; justify-content:space-between; align-items:end; gap:20px; margin-top:33px; padding-top:20px; border-top:1px solid #ffffff2b; color:#a9adab; font-size:var(--type-secondary); line-height:1.5; }
 .footer-bottom p { margin:0; }
 .footer-bottom-left { min-width:0; }
