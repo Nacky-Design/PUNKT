@@ -100,6 +100,11 @@ const year = new Date().getFullYear();
   .footer-credit { flex:0 1 12ch; }
 }
 
+/* In-app browser toolbars can overlap the page even when the safe-area inset is zero. */
+@media (max-width: 760px), (hover: none) and (pointer: coarse) {
+  .site-footer { padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+}
+
 .site-footer { --focus-ring: #b7c1bc; }
 .footer-contact p svg { flex: none; }
 </style>

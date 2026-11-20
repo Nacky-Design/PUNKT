@@ -179,3 +179,19 @@ test("mobile footer stays stacked and shows the messenger icons across its break
     expect(layout).toEqual({ tracks: width <= 600 ? 1 : 2, nav: 2, divider: width <= 600 ? "0px" : "1px" });
   }
 });
+
+
+test("the footer can scroll above a floating mobile browser toolbar", async ({ page }) => {
+  for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/#catalog");
+    const footerLine = page.locator("footer .footer-bottom");
+    await expect(footerLine).toBeVisible();
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+      window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" });
+    });
+    await expect.poll(() => footerLine.evaluate(element => innerHeight - element.getBoundingClientRect().bottom)).toBeGreaterThanOrEqual(83);
+    await noOverflow(page, viewport.width);
+  }
+});
