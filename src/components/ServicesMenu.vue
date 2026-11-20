@@ -101,8 +101,29 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .desktop-services { display: flex; align-items: center; gap: 2px; }
-.services-toggle { display: grid; place-items: center; width: 26px; min-height: 40px; color: #e2e6e4; border-radius: 6px; }
-.services-toggle:hover, .services-toggle[aria-expanded="true"] { color: #fff; background: #ffffff15; }
+.services-toggle {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  min-height: 40px;
+  border-radius: 6px;
+  color: #e2e6e4;
+}
+.services-toggle::before {
+  position: absolute;
+  inset: 6px 0;
+  border: 1px solid #ffffff19;
+  border-radius: 6px;
+  background: #ffffff0d;
+  content: "";
+}
+.services-toggle svg { position: relative; }
+.services-toggle:is(:hover, :focus-visible, [aria-expanded="true"]) { color: #fff; }
+.services-toggle:is(:hover, :focus-visible, [aria-expanded="true"])::before {
+  border-color: #ffffff33;
+  background: #ffffff24;
+}
 .services-panel a, .mobile-services details a { display: block; }
 .services-panel .services-all { display: flex; }
 .mobile-services details a { display: flex; align-items: center; padding: 9px 14px; min-height: 44px; }
