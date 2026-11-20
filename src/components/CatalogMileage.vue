@@ -9,8 +9,6 @@ import BaseModal from './BaseModal.vue';
 const props = defineProps<{
   modelValue: string;
   prices: Record<string, number>;
-  days: number;
-  dayLabel: string;
 }>();
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>();
 
@@ -21,7 +19,6 @@ const trigger = ref<HTMLButtonElement>();
 const options = ref<HTMLElement>();
 const above = usePopoverPlacement(root, () => open.value && !sheet.value, '.mileage-picker');
 const current = computed(() => props.modelValue.replace(/\s*\/\s*сутки$/, ''));
-const included = computed(() => props.prices[props.modelValue] === 0);
 
 async function openPicker() {
   trigger.value?.focus({ preventScroll: true });
@@ -72,7 +69,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', outside));
       :aria-controls="open ? 'catalog-mileage-options' : undefined" :aria-haspopup="sheet ? 'dialog' : undefined"
       @click="open ? close() : openPicker()">
       <span class="mileage-label">Пробег в сутки</span>
-      <span class="mileage-value">{{ current }}<span v-if="included"> · включено</span></span>
+      <span class="mileage-value">{{ current }}</span>
       <ChevronDown :size="16" aria-hidden="true" />
     </button>
 
@@ -84,12 +81,11 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', outside));
           <span>
             <strong>{{ option }}</strong>
             <small>{{ extra ? '+' + money(extra) + ' ₽ в сутки' : 'Включено в базовую цену' }}</small>
-            <small v-if="extra && days > 1">+{{ money(extra * days) }} ₽ за {{ days }} {{ dayLabel }}</small>
           </span>
           <Check v-if="option === modelValue" :size="18" aria-hidden="true" />
         </button>
       </div>
-      <p class="mileage-terms">Километры сверх лимита оплачиваются отдельно. Ставку смотрите в карточке автомобиля. Правила расчёта на несколько суток уточняйте перед арендой.</p>
+      <p class="mileage-terms">Километры сверх лимита оплачиваются отдельно. Ставка указана в карточке автомобиля.</p>
     </component>
   </div>
 </template>
@@ -110,11 +106,10 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', outside));
   border-radius: 7px;
   text-align: left;
 }
-.mileage-trigger:hover, .mileage-trigger[aria-expanded="true"] { background: #faf5e8; }
+.mileage-trigger:hover, .mileage-trigger[aria-expanded="true"] { background: #f5f5f3; }
 .mileage-trigger svg { grid-column: 2; grid-row: 1 / 3; color: #595b55; }
-.mileage-label { grid-area: 1 / 1; color: #60615c; font-size: 11px; font-weight: 650; }
-.mileage-value { grid-area: 2 / 1; color: #222; font-size: 13px; font-weight: 700; }
-.mileage-value span { color: #5d5f5a; font-weight: 500; }
+.mileage-label { grid-area: 1 / 1; color: #60615c; font-size: var(--type-secondary); font-weight: 650; }
+.mileage-value { grid-area: 2 / 1; color: #222; font-size: var(--type-control); font-weight: 700; }
 .mileage-picker {
   position: absolute;
   top: calc(100% + 10px);
@@ -146,9 +141,9 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', outside));
 .mileage-options button[aria-pressed="true"] { border-color: #c59511; background: #fff2c7; }
 .mileage-options button:hover { border-color: #977319; }
 .mileage-options svg { flex: none; color: #735400; }
-.mileage-options strong { font-size: 14px; }
-.mileage-options small { display: block; margin-top: 3px; color: #50514c; font-size: 12px; line-height: 1.35; }
-.mileage-terms { margin: 10px 2px 0; color: #4d504b; font-size: 12px; line-height: 1.5; }
+.mileage-options strong { font-size: var(--type-control); }
+.mileage-options small { display: block; margin-top: 3px; color: #50514c; font-size: var(--type-secondary); line-height: 1.35; }
+.mileage-terms { margin: 10px 2px 0; color: #4d504b; font-size: var(--type-secondary); line-height: 1.5; }
 @media (max-width: 1179px) {
   .catalog-mileage { border-left: 0; border-top: 1px solid #e8e8e5; }
   .mileage-trigger { grid-template-columns: 1fr auto auto; grid-template-rows: auto; min-height: 40px; }
@@ -161,6 +156,5 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', outside));
 }
 @media (max-width: 760px) {
   .mileage-trigger { min-height: 44px; padding-inline: 10px; }
-  .mileage-label { font-size: 12px; }
 }
 </style>

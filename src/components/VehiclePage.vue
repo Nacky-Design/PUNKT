@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowRight, ArrowUpRight, CalendarRange, CarFront, Check, ChevronLeft, Fuel, Gauge, MapPin, Settings2, UsersRound, Zap } from "lucide-vue-next";
+import { ArrowRight, ArrowUpRight, CalendarRange, CarFront, Check, ChevronLeft, Fuel, Gauge, MapPin, Settings2, ShieldCheck, UsersRound, Zap } from "lucide-vue-next";
 import VehicleGallery from "./VehicleGallery.vue";
 import FleetFaq from "./FleetFaq.vue";
 import RentalTerms from "./RentalTerms.vue";
@@ -9,13 +9,10 @@ import { money, type Car } from "../data";
 defineProps<{
   car: Car;
   backLabel?: string;
-  days: number;
-  dayLabel: string;
   dateText: string;
   pickupLabel: string;
   mileage: string;
   mileagePrices: Record<string, number>;
-  mileageExtra: number;
   protection: boolean;
   renterContext: string[];
   extras: string[];
@@ -25,6 +22,8 @@ defineProps<{
 const emit = defineEmits<{
   back: [];
   "update:mileage": [value: string];
+  "update:protection": [value: boolean];
+  "explain-protection": [];
   request: [discussMileage: boolean];
   "edit-search": [];
 }>();
@@ -45,12 +44,7 @@ const emit = defineEmits<{
       </div>
       <div class="car-detail-grid">
         <VehicleGallery :key="car.id" :car="car" />
-        <aside class="estimate" aria-label="Расчёт аренды">
-          <div class="estimate-total">
-            <span>Предварительно за {{ days }} {{ dayLabel }}</span>
-            <strong>{{ money(rate * days) }} ₽</strong>
-          </div>
-          <p class="detail-daily">{{ money(rate) }} ₽ <span>/ сутки</span></p>
+        <aside class="estimate" aria-label="Параметры аренды">
           <div class="vehicle-mileage" role="group" aria-label="Выбор тарифа по пробегу">
             <p>Лимит пробега в сутки</p>
             <div class="vehicle-mileage-options">
@@ -65,7 +59,6 @@ const emit = defineEmits<{
             <p><MapPin :size="17" aria-hidden="true" />{{ pickupLabel }}</p>
             <div class="estimate-mileage">
               <p><Gauge :size="17" aria-hidden="true" /><span>Пробег · <strong>{{ mileage }} включено</strong></span></p>
-              <small>Сверх лимита — {{ car.overagePrice == null ? "стоимость уточняется" : money(car.overagePrice) + " ₽ / км" }}.</small>
             </div>
           </div>
           <dl class="vehicle-conditions" aria-label="Дополнительные условия расчёта">
@@ -73,18 +66,19 @@ const emit = defineEmits<{
             <div><dt>Пробег сверх лимита</dt><dd>{{ car.overagePrice == null ? 'Уточняется' : money(car.overagePrice) + ' ₽ / км' }}</dd></div>
             <div><dt>Мойка при необходимости</dt><dd>{{ car.washPrice == null ? 'Уточняется' : money(car.washPrice) + ' ₽' }}</dd></div>
           </dl>
-          <p class="vehicle-conditions-note">Залог и дополнительные услуги рассчитываются отдельно.</p>
           <button class="vehicle-edit text-button" type="button" @click="emit('edit-search')">Изменить параметры <ArrowUpRight :size="15" aria-hidden="true" /></button>
           <div v-if="extras.length" class="vehicle-extras"><strong>Пожелания к аренде</strong><p>{{ extras.join(", ") }}</p><small>Наличие и стоимость уточняются.</small></div>
           <div v-if="renterContext.length" class="context-tags"><span v-for="tag in renterContext" :key="tag">{{ tag }}</span></div>
-          <dl v-if="mileageExtra || protection">
-            <div><dt>Аренда</dt><dd>{{ money(car.price * days) }} ₽</dd></div>
-            <div v-if="mileageExtra"><dt>Пакет {{ mileage }}</dt><dd>{{ money(mileageExtra * days) }} ₽</dd></div>
-            <div v-if="protection"><dt>Защита+</dt><dd>{{ car.protectionPrice == null ? "Уточняется" : money(car.protectionPrice * days) + " ₽" }}</dd></div>
-          </dl>
+          <div class="vehicle-protection">
+            <label v-if="car.protectionPrice != null">
+              <input type="checkbox" :checked="protection" @change="emit('update:protection', ($event.target as HTMLInputElement).checked)" />
+              <span><strong>Добавить «Защиту+»</strong><small>+{{ money(car.protectionPrice) }} ₽ / сутки</small></span>
+            </label>
+            <p v-else><ShieldCheck :size="19" aria-hidden="true" /> «Защита+» · цена по запросу</p>
+            <button class="text-button" type="button" @click="emit('explain-protection')">Что покрывает «Защита+» <ArrowUpRight :size="15" aria-hidden="true" /></button>
+          </div>
           <button class="button button-primary full-width" type="button" @click="emit('request', false)">Подготовить заявку <ArrowRight :size="18" aria-hidden="true" /></button>
           <button class="mileage-discuss text-button" type="button" @click="emit('request', true)">Обсудить пробег <ArrowUpRight :size="15" aria-hidden="true" /></button>
-          <p class="vehicle-estimate-note"><span v-if="protection && car.protectionPrice == null">Стоимость Защиты+ не включена и уточняется отдельно. </span>Подтвердите наличие и полную стоимость перед оформлением.</p>
         </aside>
         <div class="vehicle-sections">
           <section v-if="car.modelDescription || car.autoUrl" class="vehicle-section vehicle-about" aria-labelledby="vehicle-about-title">
@@ -136,27 +130,40 @@ const emit = defineEmits<{
 .vehicle-page { min-height: 80vh; padding: 36px 24px 80px; background: #fff; color: #1d1d1d; }
 .vehicle-page-inner { max-width: 1280px; margin: 0 auto; }
 .vehicle-page .car-detail-grid { grid-template-columns: minmax(0, 1.7fr) minmax(330px, 1fr); grid-template-areas: "photo photo" "details estimate"; gap: 24px 28px; }
-.vehicle-back { display: inline-flex; align-items: center; gap: 5px; border: 0; padding: 0; background: transparent; color: #555; font-size: 14px; cursor: pointer; }
+.vehicle-back { display: inline-flex; align-items: center; gap: 5px; border: 0; padding: 0; background: transparent; color: #555; font-size: var(--type-secondary); cursor: pointer; }
 .vehicle-back:hover { color: #111; }
 .vehicle-heading { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin: 28px 0 24px; }
 .vehicle-heading h1 { margin: 0; font-size: clamp(32px, 4vw, 48px); line-height: 1.1; letter-spacing: -.04em; }
-.vehicle-subtitle { margin: 8px 0 0; color: #5b5b5b; font-size: 15px; }
+.vehicle-subtitle { margin: 8px 0 0; color: #5b5b5b; font-size: var(--type-body); }
 .vehicle-heading-price { display: grid; gap: 4px; text-align: right; }
-.vehicle-heading-price span { font-size: 13px; color: #777; }
-.vehicle-heading-price strong { font-size: 22px; white-space: nowrap; }
-.vehicle-heading-price small { font-size: 14px; font-weight: 400; color: #666; }
+.vehicle-heading-price span { font-size: var(--type-secondary); color: #595d56; }
+.vehicle-heading-price strong { font-size: clamp(32px, 3.6vw, 45px); letter-spacing: -.04em; line-height: 1; white-space: nowrap; }
+.vehicle-heading-price small { font-size: var(--type-body); font-weight: 500; letter-spacing: 0; color: #595d56; }
 .vehicle-section h2 { margin: 0 0 16px; font-size: 22px; line-height: 1.2; letter-spacing: -.025em; }
 .vehicle-edit { margin-top: 12px; }
 .vehicle-about p { line-height: 1.65; }
-.vehicle-auto-link { display: inline-flex; align-items: center; gap: 7px; margin-top: 13px; color: #6f5200; font-size: 13px; font-weight: 700; }
+.vehicle-auto-link { display: inline-flex; align-items: center; gap: 7px; margin-top: 13px; color: #6f5200; font-size: var(--type-control); font-weight: 700; }
 .vehicle-auto-link:hover { text-decoration: underline; }
 .estimate .vehicle-conditions { margin-top: 14px; padding-top: 14px; border-top: 1px solid #dededb; }
-.vehicle-conditions-note { margin: 9px 0 0; font-size: 11px; color: #686963; line-height: 1.45; }
-.vehicle-extras { margin-top: 14px; padding: 12px; border-radius: 8px; background: #fff; font-size: 13px; line-height: 1.45; }
+.vehicle-extras { margin-top: 14px; padding: 12px; border-radius: 8px; background: #fff; font-size: var(--type-body); line-height: 1.45; }
 .vehicle-extras p { margin: 4px 0; color: #444; }
-.vehicle-extras small { color: #666; }
-.vehicle-estimate-note { margin: 12px 0 0; color: #666; font-size: 12px; line-height: 1.5; }
+.vehicle-extras small { color: #666; font-size: var(--type-secondary); }
+.vehicle-protection { display: grid; gap: 8px; margin: 16px 0; padding: 14px; border: 1px solid #e4d79e; border-radius: 9px; background: #fff9e6; }
+.vehicle-protection label, .vehicle-protection > p { display: flex; align-items: flex-start; gap: 9px; font-size: var(--type-control); }
+.vehicle-protection input { flex: none; width: 18px; height: 18px; margin: 1px 0 0; accent-color: #ffc107; }
+.vehicle-protection small { display: block; margin-top: 4px; color: #545247; font-size: var(--type-secondary); }
+.vehicle-protection .text-button { justify-self: start; text-align: left; }
+.vehicle-page .estimate-trip p, .vehicle-page .vehicle-terms dd, .vehicle-page .vehicle-section > p { font-size: var(--type-body); }
+.vehicle-page .estimate dl, .vehicle-page .estimate-total span, .vehicle-page .estimate-mileage small,
+.vehicle-page .vehicle-mileage > p, .vehicle-page .vehicle-mileage-options small,
+.vehicle-page .spec-grid dt, .vehicle-page .context-tags span { font-size: var(--type-secondary); }
+.vehicle-page .vehicle-mileage-options button, .vehicle-page .text-button, .vehicle-page .estimate > .button { font-size: var(--type-control); }
 @media (min-width: 900px) { .vehicle-page .estimate { position: sticky; top: 24px; } }
 @media (max-width: 760px) { .vehicle-page .car-detail-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "photo" "estimate" "details"; gap: 18px; } }
-@media (max-width: 650px) { .vehicle-page { padding: 26px 16px 56px; } .vehicle-heading { align-items: start; margin: 24px 0 18px; } .vehicle-heading-price { display: none; } }
+@media (max-width: 650px) {
+  .vehicle-page { padding: 26px 16px 56px; }
+  .vehicle-heading { display: grid; gap: 15px; margin: 22px 0 16px; }
+  .vehicle-heading-price { text-align: left; }
+  .vehicle-heading-price strong { font-size: 31px; }
+}
 </style>

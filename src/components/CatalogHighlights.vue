@@ -81,7 +81,7 @@ function show(index: number) {
 .mileage-highlight { border-color: #ebdeb7; background: #fff8e4; }
 .highlight-copy { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: clamp(16px, 2.1vw, 30px); }
 .highlight h3 { font-size: clamp(21px, 2.15vw, 31px); line-height: 1.12; letter-spacing: -.04em; }
-.highlight p { margin: 9px 0 17px; color: #4c4e48; font-size: 14px; line-height: 1.45; }
+.highlight p { margin: 9px 0 17px; color: #4c4e48; font-size: var(--type-body); line-height: 1.45; }
 .highlight img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .mileage-highlight img { object-position: 66% center; }
 .highlight-action {
@@ -94,7 +94,7 @@ function show(index: number) {
   border-radius: 8px;
   background: #ffc107;
   color: #171717;
-  font-size: 13px;
+  font-size: var(--type-control);
   font-weight: 720;
   text-align: left;
 }

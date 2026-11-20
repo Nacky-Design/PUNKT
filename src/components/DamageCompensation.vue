@@ -71,4 +71,7 @@ const classes = ['Эконом', 'Стандарт', 'Бизнес', 'Кросс
   tbody th { background: #fbfbfa; }
   tbody tr:nth-child(even) th { background: #f2f3f1; }
 }
+.damage-heading p { font-size: var(--type-body); }
+.damage-card-heading p, .scroll-hint, table { font-size: var(--type-secondary); }
+.table-wrap:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 </style>

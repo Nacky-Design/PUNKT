@@ -83,7 +83,7 @@ test("catalogue compares costs, sorts and returns focus to the vehicle", async (
   const category = page.getByRole("combobox", { name: "Класс автомобиля" });
   await category.selectOption("Эконом");
   await page.getByRole("button", { name: "Применить", exact: true }).click();
-  await expect(page.getByText("2 автомобиля", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Наш автопарк", exact: true })).toBeVisible();
   const cards = page.locator(".fleet-card");
   await expect(cards).toHaveCount(2);
   await page.getByRole("combobox", { name: "Сортировка" }).selectOption("Сначала дороже");
@@ -91,7 +91,7 @@ test("catalogue compares costs, sorts and returns focus to the vehicle", async (
   await expect(first.getByRole("heading")).toHaveText("Kia Rio");
   await expect(first).toContainText("5 мест");
   await expect(first).toContainText("100 км / сутки включено");
-  await expect(first).toContainText(/16\s000 ₽/);
+  await expect(first.locator(".car-price")).toContainText(/3\s200 ₽ \/ сутки/);
   const trigger = first.getByRole("button", { name: "Подробнее: Kia Rio" });
   await trigger.click();
   await page.getByRole("button", { name: "Все автомобили" }).click();
@@ -120,10 +120,11 @@ test("catalogue dates reject past days and keep the return after pickup", async 
   await expect(start).toContainText("24.11.2026");
   await expect(end).toContainText("27.11.2026");
   await page.getByRole("button", { name: "Применить", exact: true }).click();
-  await expect(page.locator(".fleet-card .car-price small").first()).toContainText("за 3 дня");
+  await expect(page.locator(".fleet-card .car-price").first()).toContainText(/2\s900 ₽ \/ сутки/);
 });
 
 test("vehicle details, cover, mileage and request form use the same rental details", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-11-20T10:00:00+03:00"));
   await page.goto("/#search");
   await page.getByRole("button", { name: "Лимит пробега: 100 км / сутки" }).click();
   await expect(page.getByRole("option", { name: /250 км/ })).toContainText("700 ₽ / сутки");
@@ -132,26 +133,30 @@ test("vehicle details, cover, mileage and request form use the same rental detai
   await page.getByRole("button", { name: "Быстрый выбор автомобиля" }).click();
   await page.locator(".car-card").filter({ hasText: "Hyundai Solaris" }).click();
   const car = page.locator("main");
-  await expect(car.locator(".detail-daily")).toContainText("4 090");
-  await expect(car.locator(".estimate-total")).toContainText("20 450");
+  await expect(car.locator(".vehicle-heading-price")).toContainText("4 090");
   await expect(car.locator(".estimate-trip")).toContainText("Офис на Авиационной");
   await expect(car.locator(".estimate-trip")).toContainText("250 км / сутки включено");
   await expect(car.locator(".spec-grid > div").first().locator("dd")).toHaveText("5");
   await expect(car.locator(".vehicle-tech")).toContainText("480 л");
-  await car.getByRole("button", { name: /Открыть фотографию: Вид спереди/ }).click();
-  const gallery = page.getByRole("dialog", { name: "Hyundai Solaris" });
+  const gallery = car.getByRole("figure", { name: "Фотографии автомобиля" });
   await expect(gallery.getByRole("img", { name: "Hyundai Solaris — Вид спереди" })).toHaveJSProperty("naturalWidth", 1200);
-  await gallery.getByRole("button", { name: "Следующее фото" }).click();
+  const rearPhoto = gallery.getByRole("button", { name: "Вид сзади" });
+  await rearPhoto.click();
   await expect(gallery.getByRole("img", { name: "Hyundai Solaris — Вид сзади" })).toBeVisible();
-  await gallery.getByRole("button", { name: "Закрыть галерею" }).click();
+  await expect(rearPhoto).toHaveAttribute("aria-pressed", "true");
+  await rearPhoto.press("ArrowLeft");
+  await expect(gallery.getByRole("img", { name: "Hyundai Solaris — Вид спереди" })).toBeVisible();
 
   const packages = car.getByRole("group", { name: "Выбор тарифа по пробегу" });
   await packages.getByRole("button", { name: /500 км/ }).click();
-  await expect(car.locator(".estimate-total")).toContainText("24 450");
+  await expect(car.locator(".vehicle-heading-price")).toContainText("4 890");
   await packages.getByRole("button", { name: /250 км/ }).click();
-  await expect(car.locator(".estimate-total")).toContainText("20 450");
+  await expect(car.locator(".vehicle-heading-price")).toContainText("4 090");
   await car.getByRole("button", { name: "Подготовить заявку" }).click();
   const request = page.getByRole("dialog", { name: "Запрос на аренду" });
+  await expect(request.getByRole("status")).toContainText(/За 1 день\s*4\s090 ₽/);
+  await request.getByLabel("Возврат").fill("2026-11-25");
+  await expect(request.getByRole("status")).toContainText(/За 3 дня\s*12\s270 ₽/);
   await request.getByRole("button", { name: "Проверить заявку" }).click();
   await expect(request.getByText("Введите телефон полностью")).toBeVisible();
   await request.getByRole("textbox", { name: "Ваше имя" }).fill("Александр");
@@ -159,6 +164,7 @@ test("vehicle details, cover, mileage and request form use the same rental detai
   await request.getByRole("checkbox", { name: /Согласен на обработку/ }).check();
   await request.getByRole("button", { name: "Проверить заявку" }).click();
   const details = page.getByRole("dialog", { name: "Параметры аренды" });
+  await expect(details).toContainText(/Предварительно 12\s270 ₽/);
   await expect(details.getByRole("heading", { name: "Что сообщить при звонке" })).toBeVisible();
   await expect(details.getByRole("link", { name: "Позвонить в «Пункт»" })).toHaveAttribute("href", /^tel:/);
   await page.keyboard.press("Escape");

@@ -151,7 +151,7 @@ export const serviceGroups = [
     title: "Формат аренды",
     items: [
       { id: "driver", title: "С водителем", description: "Сообщите дату, маршрут и число пассажиров. Уточним возможность подачи и стоимость поездки." },
-      { id: "daily", title: "На сутки", description: "Выберите даты в подборе. До оформления согласуем время выдачи и возврата." },
+      { id: "daily", title: "На сутки", description: "Автомобиль на один день или несколько суток." },
       { id: "long-term", title: "Долгосрочная аренда", description: "Сообщите, на какой срок нужна машина. Обсудим тариф, пробег и обслуживание на весь период." },
       { id: "subscription", title: "Подписка", description: "Уточните у команды, какие автомобили доступны по подписке и что входит в ежемесячный платёж." },
       { id: "buyout", title: "С выкупом", description: "Свяжитесь с нами, чтобы узнать о доступных автомобилях, графике платежей и условиях выкупа." },
@@ -161,7 +161,7 @@ export const serviceGroups = [
     title: "Поездки и события",
     items: [
       { id: "russia", title: "Поездки по России", description: "Расскажите о маршруте до оформления, чтобы согласовать регионы поездки и подходящий лимит пробега." },
-      { id: "abroad", title: "Поездки за границу", description: "Сообщите страну и маршрут. Возможность выезда и необходимые документы уточняются заранее." },
+      { id: "abroad", title: "Поездки за границу", description: "На наших автомобилях можно поехать в Беларусь. Условия поездки и документы согласуем заранее." },
     ],
   },
   {
@@ -179,13 +179,13 @@ export const money = (n: number) => new Intl.NumberFormat("ru-RU").format(n);
 export const isoDate = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 export const localDate = (str: string) => new Date(str + "T12:00:00");
-export const todayISO = () =>
+export const todayISO = (date = new Date()) =>
   new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Moscow",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).format(new Date());
+  }).format(date);
 export const addDays = (str: string, days: number) => {
   const d = localDate(str);
   d.setDate(d.getDate() + days);

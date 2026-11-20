@@ -127,10 +127,17 @@ onBeforeUnmount(() => { document.removeEventListener('pointerdown', onOutside); 
 <style scoped>
 .range-picker{position:relative;grid-column:span 2;display:grid;grid-template-columns:1fr 1fr;min-width:0;align-self:stretch}
 .date-field{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:5px;min-width:0;text-align:left;border-left:1px solid #e8e8e5;padding:7px 14px 5px;background:transparent;cursor:pointer}
-.date-field:hover .date-value{color:#a27600}.date-caption{font-size:10px;font-weight:700;color:#777}.date-value{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:650;color:#222;white-space:nowrap}.date-value svg{color:#888}
+.date-field:hover .date-value{color:#171717}.date-caption{font-size:var(--type-secondary);font-weight:650;color:#5d5f5a}.date-value{display:flex;align-items:center;gap:6px;font-size:var(--type-control);font-weight:650;color:#222;white-space:nowrap}.date-value svg{color:#888}
 .range-popover{position:absolute;left:0;top:calc(100% + 13px);z-index:35;width:min(660px,calc(100vw - 48px));padding:20px;background:#fff;border:1px solid #e2e2de;border-radius:15px;box-shadow:0 14px 45px #17171724;color:#1d1d1d}
-.range-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.range-top strong{font-size:16px}.range-top p{margin:4px 0 0;color:#777;font-size:12px;line-height:1.4}.month-navigation{display:flex;gap:5px}.month-navigation button{width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:#f3f3f1}.month-navigation button:hover:not(:disabled){background:#ffce3d}.month-navigation button:disabled{opacity:.3;cursor:not-allowed}
+.range-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.range-top strong{font-size:16px}.range-top p{margin:4px 0 0;color:#5d5f5a;font-size:var(--type-secondary);line-height:1.4}.month-navigation{display:flex;gap:5px}.month-navigation button{width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:#f3f3f1}.month-navigation button:hover:not(:disabled){background:#ffce3d}.month-navigation button:disabled{opacity:.3;cursor:not-allowed}
 .months{display:grid;grid-template-columns:1fr 1fr;gap:22px}.month{min-width:0}.month+.month{border-left:1px solid #e8e8e5;padding-left:22px}.month h3{text-align:center;text-transform:capitalize;margin:0 0 13px;font-size:15px}.date-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}.weekday{display:grid;place-items:center;color:#888;font-size:11px;font-weight:650;height:27px}.date-grid button{aspect-ratio:1;min-width:0;border-radius:9px;font-size:13px;color:#242424}.date-grid button:hover:not(:disabled):not(.endpoint){background:#fff2c8}.date-grid button:disabled{color:#d1d1ce;cursor:not-allowed}.date-grid button.between{background:#fff6da;border-radius:3px}.date-grid button.endpoint{background:#202020;color:#fff;font-weight:700}.date-grid button.today:not(.endpoint){box-shadow:inset 0 0 0 1px #e0a800}.range-help{margin:14px 0 0;color:#777;font-size:11px}
 .range-popover--above { top: auto; bottom: calc(100% + 13px); }
 @media(max-width:760px){.date-field{padding:9px 10px}.date-field:first-child{border-left:0}.range-popover{padding:16px}.months{grid-template-columns:1fr}.second-month{display:none}.date-grid button{max-height:43px}.range-top{margin-bottom:13px}}
+
+.date-field { min-height: 48px; }
+.date-field[aria-expanded="true"], .date-field:hover { background: #f5f5f3; }
+@media (min-width: 701px) and (max-width: 1270px) {
+  .date-field { padding-inline: 9px; }
+  .date-value svg { display: none; }
+}
 </style>

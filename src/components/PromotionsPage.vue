@@ -7,27 +7,27 @@ import { daytimeDeliveryHours } from '../data';
 const props = defineProps<{ detailId: string }>();
 const offers = [
   {
-    id: 'free-delivery', title: 'Бесплатная доставка по Москве', image: 'guide-delivery.webp',
+    id: 'free-delivery', title: 'Бесплатная доставка по Москве', image: 'guide-delivery.webp', discount: null,
     summary: `Дневная подача ${daytimeDeliveryHours}.`,
     description: `Дневная доставка в пределах Москвы бесплатна в часы ${daytimeDeliveryHours}. Согласуйте адрес и время подачи до оформления. Для ночной доставки, области и аэропортов действуют отдельные тарифы.`,
   },
   {
-    id: 'families', title: 'Участникам СВО и членам их семей', image: 'hero-delivery.webp',
+    id: 'families', title: 'Участникам СВО и членам их семей', image: 'promo-families.webp', discount: '20%',
     summary: 'Условия аренды для участников СВО и членов их семей.',
     description: 'До выбора машины уточните, на какие автомобили и даты действует предложение и какие документы нужны при оформлении.',
   },
   {
-    id: 'bloggers', title: 'Для блогеров', image: 'hero-moscow.webp',
+    id: 'bloggers', title: 'Для блогеров', image: 'hero-moscow.webp', discount: '20%',
     summary: 'Аренда автомобиля для съёмки или публикации.',
     description: 'Расскажите о формате, датах съёмки и нужной модели. Условия сотрудничества можно обсудить с командой «Пункта».',
   },
   {
-    id: 'half-day', title: 'Аренда на полдня', image: 'guide-road.webp',
+    id: 'half-day', title: 'Аренда на полдня', image: 'guide-road.webp', discount: '30%',
     summary: 'Вариант для поездок на несколько часов.',
     description: 'Уточните время получения и возврата. Возможность аренды на полдня и стоимость зависят от автомобиля и даты.',
   },
   {
-    id: 'large-families', title: 'Многодетным семьям', image: 'hero-wan-hd.webp',
+    id: 'large-families', title: 'Многодетным семьям', image: 'hero-wan-hd.webp', discount: '20%',
     summary: 'Условия аренды для многодетных семей.',
     description: 'Перед оформлением уточните подходящие автомобили, сроки предложения и документы, которые понадобятся.',
   },
@@ -43,7 +43,10 @@ const asset = (file: string) => `${import.meta.env.BASE_URL}assets/${file}`;
         <ArrowLeft :size="16" aria-hidden="true" /> {{ detailId ? 'Все акции' : 'На главную' }}
       </a>
       <article v-if="selected" class="offer-detail">
-        <img :src="asset(selected.image)" alt="" width="720" height="540" />
+        <div class="offer-image">
+          <img :src="asset(selected.image)" alt="" width="720" height="540" />
+          <span v-if="selected.discount" class="offer-discount" :aria-label="`Скидка ${selected.discount}`">−{{ selected.discount }}</span>
+        </div>
         <div class="detail-copy">
           <header class="interior-heading">
             <h1>{{ selected.title }}<span>.</span></h1>
@@ -64,11 +67,14 @@ const asset = (file: string) => `${import.meta.env.BASE_URL}assets/${file}`;
         </header>
         <div class="offers">
           <a v-for="offer in offers" :key="offer.id" class="offer-card" :href="`#promotions/${offer.id}`">
-            <img :src="asset(offer.image)" alt="" width="400" height="300" />
+            <div class="offer-image">
+              <img :src="asset(offer.image)" alt="" width="400" height="300" loading="lazy" />
+              <span v-if="offer.discount" class="offer-discount" :aria-label="`Скидка ${offer.discount}`">−{{ offer.discount }}</span>
+            </div>
             <div class="promotion-copy">
               <h2>{{ offer.title }}</h2>
               <p>{{ offer.summary }}</p>
-              <span class="offer-more">Подробнее <ArrowUpRight :size="16" aria-hidden="true" /></span>
+              <span class="interior-action secondary offer-more">Подробнее <ArrowUpRight :size="16" aria-hidden="true" /></span>
             </div>
           </a>
         </div>
@@ -89,12 +95,14 @@ const asset = (file: string) => `${import.meta.env.BASE_URL}assets/${file}`;
   background: #fff;
 }
 .offer-card img, .offer-detail img { display: block; width: 100%; object-fit: cover; }
+.offer-image { position: relative; min-width: 0; }
+.offer-discount { position: absolute; top: 12px; left: 12px; padding: 7px 12px; border-radius: 8px; background: #ffc107; color: #171717; font-size: 23px; font-weight: 800; line-height: 1.15; }
 .offer-card img { height: 100%; }
 .promotion-copy { display: flex; flex-direction: column; align-items: flex-start; padding: 20px; }
 .promotion-copy h2 { font-size: 19px; line-height: 1.22; letter-spacing: -.025em; }
-.promotion-copy p { margin: 8px 0 18px; color: #5d5f5a; font-size: 14px; line-height: 1.5; }
-.offer-more { display: inline-flex; align-items: center; gap: 6px; margin-top: auto; font-size: 14px; font-weight: 700; }
-.offer-card:hover .offer-more { text-decoration: underline; text-underline-offset: 4px; }
+.promotion-copy p { margin: 8px 0 18px; color: #5d5f5a; font-size: var(--type-body); line-height: 1.5; }
+.offer-more { margin-top: auto; }
+.offer-card:hover .offer-more { background: #efefeb; }
 .offer-detail { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(20px, 4vw, 54px); align-items: center; margin-top: 26px; }
 .offer-detail img { height: auto; aspect-ratio: 4 / 3; border-radius: 14px; }
 .detail-copy .interior-heading { margin-top: 0; }

@@ -20,6 +20,7 @@ import {
   CheckCircle2,
   Info,
   Mail,
+  ShieldCheck,
 } from "lucide-vue-next";
 import SelectField from "./components/SelectField.vue";
 import DateRange from "./components/DateRange.vue";
@@ -62,9 +63,12 @@ const officeOpen = computed(() => {
 });
 const addressDelivery = "Доставка по адресу";
 const pickupPresets = [office, "Шереметьево (SVO)", "Домодедово (DME)", "Внуково (VKO)"];
+const baseMileage = "100 км / сутки";
 const category = ref("Все классы"),
   location = ref(office),
-  mileage = ref("100 км / сутки");
+  mileage = ref(baseMileage);
+const pricesMileage = ref(baseMileage);
+const priceTab = ref<"rental" | "services" | "damage">("rental");
 const address = ref("");
 const searchAddressErrors = ref(false);
 const discussMileage = ref(false);
@@ -87,7 +91,7 @@ const delivery = computed({
   },
 });
 const start = ref(addDays(todayISO(), 2)),
-  end = ref(addDays(todayISO(), 7));
+  end = ref(addDays(start.value, 1));
 const protection = ref(false),
   business = ref(false),
   foreign = ref(false);
@@ -131,6 +135,8 @@ const name = ref(""),
   submitted = ref(false),
   errors = ref<Record<string, string>>({}),
   requestSnapshot = ref("");
+const requestStart = ref("");
+const requestEnd = ref("");
 type DemoUser = { name: string; role: "client" | "rental"; kind: "person" | "company"; email: string; phone: string };
 const demoUser = ref<DemoUser | null>(null);
 const pages = ["catalog", "car", "search", "account", "prices", "services", "conditions", "contacts", "news", "promotions", "about"] as const;
@@ -149,6 +155,10 @@ function readRoute() {
   const car = section === "car" ? cars.find(item => String(item.id) === slug) : undefined;
 
   if (car) selected.value = car;
+  if (section === "prices" && page.value !== "prices") {
+    pricesMileage.value = baseMileage;
+    priceTab.value = "rental";
+  }
   page.value = pages.find(item => item === section && (item !== "car" || car)) ?? "catalog";
   detailId.value = slug;
 
@@ -189,19 +199,19 @@ window.addEventListener("popstate", readRoute);
 window.addEventListener("hashchange", readRoute);
 readRoute();
 const sort = ref("По цене");
-const priceTab = ref<"rental" | "services" | "damage">("rental");
 const catalogFilters = ref<CatalogFilterState>({ brand: "", fuel: "", drive: "", transmission: "", seats: null, extras: [] });
-const days = computed(() =>
-  Math.max(
-    1,
-    Math.round(
-      (localDate(end.value).getTime() - localDate(start.value).getTime()) /
-        86400000,
-    ),
-  ),
+function daysBetween(from: string, to: string) {
+  return Math.round((localDate(to).getTime() - localDate(from).getTime()) / 86400000);
+}
+const requestEarliest = computed(() => todayISO(currentTime.value));
+const requestMinEnd = computed(() => addDays(requestStart.value || requestEarliest.value, 1));
+const requestDays = computed(() =>
+  requestStart.value && requestStart.value >= requestEarliest.value && requestEnd.value >= requestMinEnd.value
+    ? daysBetween(requestStart.value, requestEnd.value)
+    : 0,
 );
 const mileagePrices: Record<string, number> = {
-  "100 км / сутки": 0,
+  [baseMileage]: 0,
   "250 км / сутки": 700,
   "500 км / сутки": 1500,
 };
@@ -248,19 +258,15 @@ const renterContext = computed(() =>
     foreign.value ? "Иностранный гражданин" : "",
   ].filter(Boolean),
 );
-const dateText = computed(
-  () =>
-    `${localDate(start.value).toLocaleDateString("ru-RU", { day: "numeric", month: "long" })} — ${localDate(end.value).toLocaleDateString("ru-RU", { day: "numeric", month: "long" })}`,
-);
-const dayLabel = computed(() =>
-  days.value % 10 === 1 && days.value % 100 !== 11
-    ? "день"
-    : days.value % 10 >= 2 &&
-        days.value % 10 <= 4 &&
-        !(days.value % 100 >= 12 && days.value % 100 <= 14)
-      ? "дня"
-      : "дней",
-);
+function dateRangeText(from: string, to: string) {
+  const formatter = new Intl.DateTimeFormat("ru", { day: "numeric", month: "long" });
+  return `${formatter.format(localDate(from))} — ${formatter.format(localDate(to))}`;
+}
+function rentalDayLabel(count: number) {
+  const form = numberForms.select(count);
+  return form === "one" ? "день" : form === "few" ? "дня" : "дней";
+}
+const dateText = computed(() => dateRangeText(start.value, end.value));
 function openInfo(title: string, body: string, photo?: keyof typeof guidePhotos) {
   infoTitle.value = title;
   infoBody.value = body;
@@ -290,7 +296,7 @@ function explainDelivery() {
 function explainProtection() {
   openInfo(
     "Защита+",
-    "Стоимость «Защиты+» зависит от автомобиля. Покрытие, исключения и ответственность согласуем до оформления. При получении осмотрите автомобиль вместе с сотрудником и зафиксируйте его состояние.",
+    "Защита+ — платная опция, которая снижает вашу ответственность при повреждении автомобиля. Стоимость указана за сутки и зависит от модели.\n\nПокрытие, исключения и ответственность согласуем до оформления. При получении осмотрите автомобиль вместе с сотрудником и зафиксируйте его состояние.",
     "protection",
   );
 }
@@ -318,6 +324,11 @@ function showCar(car: Car) {
   goPage("car", car);
 }
 function closeCar() { goPage(carReturnPage.value); }
+function showPriceCar(car: Car, withProtection = false) {
+  mileage.value = pricesMileage.value;
+  protection.value = withProtection;
+  showCar(car);
+}
 function editSearch() {
   modal.value = null;
   goPage("search");
@@ -328,6 +339,12 @@ function request(withMileageDiscussion = false) {
   modal.value = "request";
   submitted.value = false;
   errors.value = {};
+  requestStart.value = start.value;
+  requestEnd.value = end.value;
+}
+function setRequestStart(event: Event) {
+  requestStart.value = (event.target as HTMLInputElement).value;
+  if (requestStart.value && requestEnd.value < requestMinEnd.value) requestEnd.value = requestMinEnd.value;
 }
 function formatPhone(e: Event) {
   const input = e.target as HTMLInputElement;
@@ -352,9 +369,12 @@ function submitRequest() {
   if (!consent.value)
     errors.value.consent = "Нужно согласие на обработку данных";
   if (incompleteAddress.value) errors.value.address = "Уточните адрес доставки";
+  if (!requestDays.value) errors.value.dates = "Выберите дату получения и более позднюю дату возврата";
   if (Object.keys(errors.value).length) return;
   requestSnapshot.value = [
-    selected.value.name, dateText.value, pickupLabel.value, mileageLabel.value,
+    selected.value.name, dateRangeText(requestStart.value, requestEnd.value), pickupLabel.value, mileageLabel.value,
+    `Предварительно ${money(rate(selected.value) * requestDays.value)} ₽`,
+    protection.value ? "Защита+" : "",
     discussMileage.value ? "Пробег — обсудить перед оформлением" : "",
     catalogFilters.value.extras.length ? `Пожелания (уточнить наличие): ${catalogFilters.value.extras.join(", ")}` : "",
   ].filter(Boolean).join(" · ");
@@ -374,6 +394,11 @@ function searchWithAddress() {
 function search() {
   modal.value = null;
   if (page.value !== "catalog") goPage("catalog");
+}
+function searchWithDates(startDate: string, endDate: string) {
+  start.value = startDate;
+  end.value = endDate;
+  search();
 }
 
 function selectQuick(value: string) {
@@ -474,7 +499,7 @@ function logoutDemo() {
       </div>
       <div class="header-hours" :aria-label="`${officeOpen ? 'Сейчас открыто' : 'Сейчас закрыто'}. Понедельник–пятница, с 8 до 17 часов по Москве`">
         <span class="hours-dot" :class="{ 'hours-dot-open': officeOpen }" aria-hidden="true"></span>
-        <span>Пн–пт 8:00–17:00 (МСК)</span>
+        <span>Пн–пт 8:00–17:00<span class="hours-zone"> (МСК)</span></span>
       </div>
       </div>
       <button
@@ -709,15 +734,16 @@ function logoutDemo() {
   <CatalogPage v-if="page === 'catalog'"
     :cars="filteredCars" :all-cars="cars" v-model:filters="catalogFilters" :categories="categories" v-model:category="category" v-model:sort="sort"
     v-model:start="start" v-model:end="end" v-model:location="location" :location-options="pickupPresets"
-    :days="days" :day-label="dayLabel" v-model:mileage="mileage" :mileage-prices="mileagePrices" :mileage-label="mileageLabel" :rate="rate" :protection="protection"
+    v-model:mileage="mileage" :mileage-prices="mileagePrices" :mileage-label="mileageLabel" :rate="rate" :protection="protection"
     @apply-search="search" @edit-search="editSearch" @show-car="showCar" />
   <VehiclePage v-if="page === 'car'"
-    :car="selected" :back-label="carReturnPage === 'prices' ? 'К ценам' : 'Все автомобили'" :days="days" :day-label="dayLabel" :date-text="dateText" :pickup-label="pickupLabel"
-    v-model:mileage="mileage" :mileage-prices="mileagePrices" :mileage-extra="mileageExtra"
-    :protection="protection" :renter-context="renterContext" :extras="catalogFilters.extras" :delivery="delivery" :rate="rate(selected)"
-    @back="closeCar" @edit-search="editSearch" @request="request" />
-  <PricesPage v-if="page === 'prices'" v-model:tab="priceTab" :days="days" :day-label="dayLabel" :cars="cars" v-model:mileage="mileage" :mileage-prices="mileagePrices" @show-car="showCar" @open-terms="nav('Условия')" />
-  <ServicesPage v-if="page === 'services'" :detail-id="detailId" />
+    :car="selected" :back-label="carReturnPage === 'prices' ? 'К ценам' : 'Все автомобили'" :date-text="dateText" :pickup-label="pickupLabel"
+    v-model:mileage="mileage" :mileage-prices="mileagePrices" v-model:protection="protection"
+    :renter-context="renterContext" :extras="catalogFilters.extras" :delivery="delivery" :rate="rate(selected)"
+    @back="closeCar" @edit-search="editSearch" @request="request" @explain-protection="explainProtection" />
+  <PricesPage v-if="page === 'prices'" v-model:tab="priceTab" :cars="cars" v-model:mileage="pricesMileage" :mileage-prices="mileagePrices"
+    @show-car="showPriceCar" @explain-protection="explainProtection" @open-terms="nav('Условия')" />
+  <ServicesPage v-if="page === 'services'" :detail-id="detailId" :start="start" :end="end" @find-cars="searchWithDates" />
   <InformationPage v-if="page === 'conditions' || page === 'contacts' || page === 'about'" :page="page" />
   <NewsPage v-if="page === 'news'" :detail-id="detailId" />
   <PromotionsPage v-if="page === 'promotions'" :detail-id="detailId" />
@@ -749,11 +775,21 @@ function logoutDemo() {
     "
     @close="modal = null"
     ><template v-if="!submitted"
-      ><p class="modal-lead">{{ selected.name }} · {{ dateText }}</p>
+      ><p class="modal-lead">{{ selected.name }}</p>
       <form class="request-form" novalidate @submit.prevent="submitRequest">
+        <fieldset class="request-dates">
+          <legend>Даты аренды</legend>
+          <label class="text-field">Получение<input type="date" :value="requestStart" :min="requestEarliest" :aria-invalid="!!errors.dates && !requestDays" @input="setRequestStart" /></label>
+          <label class="text-field">Возврат<input v-model="requestEnd" type="date" :min="requestMinEnd" :aria-invalid="!!errors.dates && !requestDays" /></label>
+          <p v-if="errors.dates && !requestDays" class="error-text">{{ errors.dates }}</p>
+        </fieldset>
+        <p v-if="requestDays" class="request-estimate" role="status">
+          За {{ requestDays }} {{ rentalDayLabel(requestDays) }} <strong>{{ money(rate(selected) * requestDays) }} ₽</strong>
+        </p>
         <div class="request-trip">
           <p v-if="!addressSelected"><MapPin :size="16" aria-hidden="true" />{{ pickupLabel }}</p>
           <p><Gauge :size="16" aria-hidden="true" />Пробег · {{ mileageLabel }}</p>
+          <p v-if="protection"><ShieldCheck :size="16" aria-hidden="true" />Защита+{{ selected.protectionPrice == null ? ' · стоимость уточняется' : '' }}</p>
           <div v-if="catalogFilters.extras.length" class="request-extras">
             <strong>Пожелания к аренде</strong>
             <p>{{ catalogFilters.extras.join(", ") }}</p>

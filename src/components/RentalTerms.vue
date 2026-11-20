@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BadgeCheck, Check, CreditCard, FileText, Globe2, MapPin, ShieldCheck, UserRound } from 'lucide-vue-next';
+import { BadgeCheck, Check, CreditCard, FileText, Globe2, KeyRound, MapPin, ShieldCheck, UserRound } from 'lucide-vue-next';
 defineProps<{ embedded?: boolean }>();
 </script>
 
@@ -11,15 +11,14 @@ defineProps<{ embedded?: boolean }>();
     </div>
     <div class="terms-grid">
       <article class="terms-card driver-card">
-        <div class="card-top"><span class="title-icon"><UserRound :size="22" aria-hidden="true" /></span><h3>Чтобы взять машину<br />вам нужно</h3></div>
+        <div class="card-top"><span class="title-icon"><UserRound :size="22" aria-hidden="true" /></span><h3>Требования к водителю</h3></div>
         <div class="requirements">
           <div><span class="requirement-badge">21+</span><span>Возраст от 21 года</span></div>
           <div><span class="requirement-badge"><ShieldCheck :size="20" aria-hidden="true" /></span><span>Стаж от 1 года</span></div>
         </div>
-        <p class="card-subtle">Требования уточняются<br />перед оформлением.</p>
       </article>
       <article class="terms-card documents-card">
-        <div class="card-top"><span class="title-icon"><FileText :size="22" aria-hidden="true" /></span><h3>Предоставить<br />документы</h3></div>
+        <div class="card-top"><span class="title-icon"><FileText :size="22" aria-hidden="true" /></span><h3>Документы</h3></div>
         <ul class="documents-list">
           <li><Check :size="18" aria-hidden="true" />Паспорт</li>
           <li><Check :size="18" aria-hidden="true" />Водительское удостоверение</li>
@@ -27,21 +26,51 @@ defineProps<{ embedded?: boolean }>();
         <div class="foreign-docs"><span class="title-icon"><Globe2 :size="21" aria-hidden="true" /></span><div><h4>Иностранным гражданам</h4><p>Требуется миграционная карта или виза.</p></div></div>
       </article>
       <article class="terms-card deposit-card">
+        <KeyRound class="deposit-art" :size="128" :stroke-width="1" aria-hidden="true" />
         <h3>Когда возможна аренда без залога</h3>
         <ul class="deposit-list">
           <li><span class="list-icon"><CreditCard :size="19" aria-hidden="true" /></span><span>Оплата банковской картой</span></li>
-          <li><span class="list-icon"><MapPin :size="19" aria-hidden="true" /></span><span>Поездки по Москве<br />и Московской области</span></li>
+          <li><span class="list-icon"><MapPin :size="19" aria-hidden="true" /></span><span>Поездки по Москве и Московской области</span></li>
           <li><span class="list-icon"><BadgeCheck :size="19" aria-hidden="true" /></span><span>Гражданство РФ</span></li>
         </ul>
         <p class="asterisk">В отдельных случаях арендодатель может запросить залог.</p>
+        <p class="asterisk">Для поездок за пределы Москвы и Московской области залог обязателен.</p>
       </article>
     </div>
-    <p class="terms-note">Подтвердите требования и условия залога перед оформлением аренды.</p>
   </section>
 </template>
 
 <style scoped>
-.rental-terms{margin:60px 0 54px;color:#1c1c1b}.terms-heading{margin-bottom:20px}.terms-eyebrow{margin:0 0 9px;font-size:10px;letter-spacing:.15em;font-weight:750;color:#888}.terms-heading h2{margin:0;font-size:clamp(30px,3vw,40px);letter-spacing:-.045em;line-height:1.1}.terms-heading h2 span{color:#e0ab00}.heading-rule{display:block;width:44px;height:4px;border-radius:2px;margin-top:13px;background:linear-gradient(90deg,#ffc107 70%,#ffe488 70%)}.terms-grid{display:grid;grid-template-columns:.9fr 1fr 1.07fr;gap:15px;align-items:stretch}.terms-card{position:relative;min-width:0;min-height:250px;padding:24px;border:1px solid #e9e9e5;border-radius:14px;background:#fff;overflow:hidden;box-shadow:0 4px 14px #17171708}.terms-card h3{margin:0;font-size:18px;letter-spacing:-.025em;line-height:1.22}.deposit-card h3,.deposit-list,.asterisk{position:relative;z-index:1}.deposit-list{display:grid;gap:10px;list-style:none;margin:22px 0 24px;padding:0;font-size:13px;font-weight:600;line-height:1.35}.deposit-list li{display:flex;align-items:center;gap:9px}.list-icon,.title-icon{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:9px;background:#ffe8a0;color:#24221b}.asterisk{margin:auto 0 0;font-size:11px;line-height:1.4;color:#665a38;max-width:260px}.card-top{display:flex;align-items:flex-start;gap:11px}.requirements{display:grid;gap:8px;margin-top:24px}.requirements>div{display:flex;align-items:center;gap:10px;min-height:42px;padding:4px 10px 4px 5px;border-radius:9px;background:#f5f5f3;font-size:13px;font-weight:600}.requirement-badge{display:grid;place-items:center;flex:none;width:36px;height:32px;border-radius:7px;background:#ffecb2;font-size:15px;font-weight:800}.card-subtle{margin:22px 0 0;color:#8a8b86;font-size:11px;line-height:1.5}.documents-list{display:grid;gap:10px;margin:22px 0;padding:0;list-style:none;color:#353632;font-size:13px;font-weight:600;line-height:1.35}.documents-list li{display:flex;align-items:flex-start;gap:8px}.documents-list svg{flex:none;color:#b78800}.foreign-docs{display:flex;gap:11px;align-items:flex-start;padding-top:17px;border-top:1px solid #e9e9e5}.foreign-docs h4{margin:0;font-size:13px;line-height:1.3}.foreign-docs p{margin:5px 0 0;color:#686964;font-size:12px;line-height:1.45}.terms-note{margin:13px 0 0;color:#888;font-size:11px;line-height:1.5}
-@media(max-width:1000px){.terms-grid{grid-template-columns:1fr 1fr}.deposit-card{grid-column:1/-1;min-height:0}.deposit-list{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:20px}}
-@media(max-width:650px){.rental-terms{margin:45px 0 40px}.terms-heading h2{font-size:30px}.terms-grid{grid-template-columns:1fr;gap:11px}.terms-card{min-height:0;padding:20px}.deposit-card{grid-column:auto}.deposit-list{grid-template-columns:1fr}.requirements{margin-top:18px}.card-subtle{margin-top:16px}.documents-list{margin:18px 0}.foreign-docs{padding-top:15px}}
+.rental-terms { margin: 52px 0 36px; color: #1c1c1b; }
+.terms-heading { margin-bottom: 20px; }
+.terms-heading h2 { font-size: clamp(30px, 3vw, 40px); letter-spacing: -.045em; line-height: 1.1; }
+.terms-heading h2 span { color: #b58500; }
+.heading-rule { display: block; width: 44px; height: 4px; margin-top: 13px; border-radius: 2px; background: #ffc107; }
+.terms-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.terms-card { position: relative; min-width: 0; padding: clamp(18px, 3vw, 28px); border: 1px solid #e4e4df; border-radius: 14px; background: #fff; }
+.terms-card h3 { font-size: clamp(21px, 2vw, 26px); letter-spacing: -.035em; line-height: 1.2; }
+.card-top { display: flex; align-items: center; gap: 11px; }
+.list-icon, .title-icon, .requirement-badge { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 9px; background: #fff1c5; color: #24221b; }
+.requirements { display: grid; gap: 8px; margin-top: 21px; }
+.requirements > div { display: flex; align-items: center; gap: 10px; padding: 6px; border-radius: 9px; background: #f5f5f3; font-weight: 600; }
+.requirement-badge { font-size: var(--type-secondary); font-weight: 800; }
+.documents-list { display: grid; gap: 10px; margin: 21px 0; padding: 0; list-style: none; }
+.documents-list li { display: flex; align-items: center; gap: 8px; }
+.documents-list svg { flex: none; color: #805e00; }
+.foreign-docs { display: flex; gap: 11px; align-items: flex-start; padding-top: 17px; border-top: 1px solid #e9e9e5; }
+.foreign-docs h4 { margin: 0; font-size: var(--type-body); line-height: 1.25; }
+.foreign-docs p { margin: 5px 0 0; color: #53554f; line-height: 1.45; }
+.deposit-card { grid-column: 1 / -1; isolation: isolate; overflow: hidden; border-color: #edd176; background: linear-gradient(112deg, #fff6d9, #ffe58c 66%, #ffc641); }
+.deposit-art { position: absolute; right: 5%; top: -14px; z-index: -1; transform: rotate(-19deg); color: #aa740032; }
+.deposit-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 20px 0 16px; padding: 0; list-style: none; }
+.deposit-list li { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 10px; border-radius: 10px; background: #ffffff88; font-weight: 600; line-height: 1.35; }
+.deposit-list .list-icon { background: #fff8e0; }
+.asterisk { margin: 0; color: #4d3b06; line-height: 1.45; }
+.asterisk + .asterisk { margin-top: 6px; }
+@media (max-width: 700px) {
+  .rental-terms { margin: 34px 0 28px; }
+  .terms-grid, .deposit-list { grid-template-columns: minmax(0, 1fr); }
+  .deposit-card { grid-column: auto; }
+  .deposit-list { gap: 7px; }
+}
 </style>

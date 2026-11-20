@@ -75,4 +75,7 @@ const questions = [
 @media(max-width:800px){.faq-layout{grid-template-columns:1fr}.help-card{min-height:0}.help-eyebrow{margin-bottom:22px}.help-content{padding:24px}.help-content h2{max-width:none}.help-phone{max-width:330px}}
 @media(max-width:600px){.faq{padding-top:35px;margin-top:34px}.faq-heading{margin-bottom:19px}.faq-heading h2{font-size:30px}.faq-item h3 button{padding:15px;font-size:14px;gap:10px}.faq-toggle{width:31px;height:31px}.faq-answer{padding:0 55px 18px 15px}.faq-answer p{font-size:13px}.help-content{padding:22px}.help-content h2{font-size:24px}.help-copy{margin-bottom:20px}.help-phone{font-size:18px}}
 @media(prefers-reduced-motion:reduce){.faq-toggle,.faq-toggle svg{transition:none}}
+
+.faq-item h3 button, .faq-answer p { font-size: var(--type-body); }
+.messenger-chip { font-size: var(--type-control); }
 </style>

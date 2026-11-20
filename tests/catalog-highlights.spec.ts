@@ -26,7 +26,6 @@ test("class and mileage selection carry prices through the catalogue and vehicle
   const cards = page.locator(".fleet-card");
   await expect(cards).toHaveCount(2);
   const before = await cards.first().locator(".car-price strong").innerText();
-  const beforeTotal = await cards.first().locator(".car-price small").innerText();
   const amount = (value: string) => Number(value.split("₽")[0]!.replace(/\D/g, ""));
 
   const trigger = form.getByRole("button", { name: /Пробег в сутки/ });
@@ -40,9 +39,7 @@ test("class and mileage selection carry prices through the catalogue and vehicle
   await expect(trigger).toBeFocused();
   await expect(cards).toHaveCount(2);
   const price = await cards.first().locator(".car-price strong").innerText();
-  const total = await cards.first().locator(".car-price small").innerText();
   expect(amount(price) - amount(before)).toBe(700);
-  expect(amount(total) - amount(beforeTotal)).toBe(2100);
 
   await page.getByRole("button", { name: "Сравнить цены" }).click();
   await expect(higherPackage).toBeFocused();
@@ -57,7 +54,7 @@ test("class and mileage selection carry prices through the catalogue and vehicle
   await cards.first().getByRole("button", { name: "Подробнее", exact: true }).click();
   await expect(page.getByRole("group", { name: "Выбор тарифа по пробегу" })
     .getByRole("button", { name: /250 км/ })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator(".estimate-total strong")).toHaveText(total.split(" за")[0]!);
+  await expect(page.locator(".vehicle-heading-price strong")).toContainText(price);
   await page.getByRole("button", { name: "Все автомобили" }).click();
   await expect(category).toHaveValue("Кроссовер");
   await expect(trigger).toContainText("250 км");
@@ -66,8 +63,29 @@ test("class and mileage selection carry prices through the catalogue and vehicle
 
   await page.getByRole("navigation", { name: "Главное меню" })
     .getByRole("button", { name: "Цены", exact: true }).click();
-  await expect(page.getByRole("group", { name: "Лимит пробега в сутки" })
-    .getByRole("button", { name: /250 км/ })).toHaveAttribute("aria-pressed", "true");
+  const priceOptions = page.getByRole("group", { name: "Пробег в сутки" });
+  const solaris = page.getByRole("row").filter({ hasText: "Hyundai Solaris" });
+  await expect(priceOptions.getByRole("button", { name: "100 км" })).toHaveAttribute("aria-pressed", "true");
+  await expect(solaris.locator(".price")).toContainText(/2\s900 ₽/);
+  await expect(solaris).toContainText(/10\s000 ₽/);
+  await expect(solaris).not.toContainText(/за [345] д/);
+  await priceOptions.getByRole("button", { name: /^250 км/ }).click();
+  await expect(solaris.locator(".price")).toContainText(/3\s600 ₽/);
+  await priceOptions.getByRole("button", { name: /^500 км/ }).click();
+  await expect(solaris.locator(".price")).toContainText(/4\s400 ₽/);
+  await page.getByRole("button", { name: "Что покрывает «Защита+»" }).click();
+  await expect(page.getByRole("dialog", { name: "Защита+" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await solaris.getByRole("button", { name: /Добавить «Защиту\+»/ }).click();
+  await expect(page.getByRole("checkbox", { name: /Добавить «Защиту\+»/ })).toBeChecked();
+  await expect(page.locator(".vehicle-heading-price")).toContainText(/4\s890 ₽/);
+  await page.getByRole("button", { name: "К ценам" }).click();
+  await expect(priceOptions.getByRole("button", { name: "100 км" })).toHaveAttribute("aria-pressed", "true");
+  await expect(solaris.locator(".price")).toContainText(/2\s900 ₽/);
+  await page.getByRole("button", { name: "Доп. услуги" }).click();
+  await expect(page.getByRole("heading", { name: "Доставка автомобиля" })).toBeVisible();
+  await page.getByRole("button", { name: "Компенсация ущерба" }).click();
+  await expect(page.getByRole("heading", { name: "Компенсация ущерба" })).toBeVisible();
 });
 
 test("mobile banners can be browsed manually and link to their actions", async ({ page }) => {
