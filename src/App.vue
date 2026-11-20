@@ -198,7 +198,7 @@ function goPage(target: Page, car?: Car, slug?: string) {
 window.addEventListener("popstate", readRoute);
 window.addEventListener("hashchange", readRoute);
 readRoute();
-const sort = ref("По цене");
+const sort = ref("Сначала дешевле");
 const catalogFilters = ref<CatalogFilterState>({ brand: "", fuel: "", drive: "", transmission: "", seats: null, extras: [] });
 function daysBetween(from: string, to: string) {
   return Math.round((localDate(to).getTime() - localDate(from).getTime()) / 86400000);
@@ -332,7 +332,7 @@ function showPriceCar(car: Car, withProtection = false) {
 function editSearch() {
   modal.value = null;
   goPage("search");
-  nextTick(() => searchPanel.value?.focus());
+  nextTick(() => searchPanel.value?.focus({ preventScroll: true }));
 }
 function request(withMileageDiscussion = false) {
   discussMileage.value = withMileageDiscussion;
@@ -575,8 +575,6 @@ function logoutDemo() {
                 label="Лимит пробега"
                 :options="mileageOptions"
                 :option-details="mileageOptionDetails"
-                :display-value="(mileageExtra ? 'Пакет ' : 'Включено ') + mileage"
-                action-label="Изменить"
                 ><Gauge :size="20"
               /></SelectField>
               <button

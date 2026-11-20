@@ -54,7 +54,8 @@ for (const [width, height] of [[320, 568], [390, 844], [430, 932], [667, 375]]) 
     await expect(mileageField).toBeFocused();
     await expect(mileageField).toContainText("250 км");
 
-    await form.getByRole("combobox", { name: "Класс автомобиля" }).selectOption("Эконом");
+    await form.getByRole("button", { name: /^Класс автомобиля:/ }).tap();
+    await page.getByRole("option", { name: "Эконом", exact: true }).tap();
     await form.getByRole("button", { name: "Применить", exact: true }).tap();
     const cars = page.locator(".fleet-card");
     await expect(cars).toHaveCount(2);

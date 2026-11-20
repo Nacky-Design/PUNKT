@@ -3,14 +3,15 @@ import { expect, test } from "@playwright/test";
 test("class and mileage selection carry prices through the catalogue and vehicle details", async ({ page }) => {
   await page.goto("/");
   const form = page.getByRole("form", { name: "Параметры аренды" });
-  const category = form.getByRole("combobox", { name: "Класс автомобиля" });
-  await expect(form.locator("label").first()).toContainText("Класс автомобиля");
+  const category = form.getByRole("button", { name: /^Класс автомобиля:/ });
+  await expect(form.getByRole("button").first()).toHaveAccessibleName(/^Класс автомобиля:/);
   await form.getByRole("button", { name: "Все параметры" }).click();
   await expect(page.getByRole("region", { name: "Дополнительные параметры автомобиля" })
-    .getByRole("combobox", { name: "Класс автомобиля" })).toHaveCount(0);
+    .getByRole("button", { name: /^Класс автомобиля:/ })).toHaveCount(0);
   await page.keyboard.press("Escape");
 
-  await category.selectOption("Кроссовер");
+  await category.click();
+  await page.getByRole("option", { name: "Кроссовер", exact: true }).click();
   const start = form.getByRole("button", { name: /^Получение/ });
   const end = form.getByRole("button", { name: /^Возврат/ });
   await start.click();
@@ -21,7 +22,9 @@ test("class and mileage selection carry prices through the catalogue and vehicle
   await dates.nth(3).click();
   const startText = await start.innerText();
   const endText = await end.innerText();
-  await form.getByRole("combobox", { name: "Место получения" }).selectOption("Шереметьево (SVO)");
+  const pickup = form.getByRole("button", { name: /^Место получения:/ });
+  await pickup.click();
+  await page.getByRole("option", { name: "Шереметьево (SVO)", exact: true }).click();
   await form.getByRole("button", { name: "Применить", exact: true }).click();
   const cards = page.locator(".fleet-card");
   await expect(cards).toHaveCount(2);
@@ -46,17 +49,17 @@ test("class and mileage selection carry prices through the catalogue and vehicle
   await expect(higherPackage).toHaveAttribute("aria-pressed", "true");
   await page.keyboard.press("Escape");
   await expect(trigger).toBeFocused();
-  await expect(category).toHaveValue("Кроссовер");
+  await expect(category).toHaveAccessibleName("Класс автомобиля: Кроссовер");
   await expect(start).toHaveText(startText, { useInnerText: true });
   await expect(end).toHaveText(endText, { useInnerText: true });
-  await expect(form.getByRole("combobox", { name: "Место получения" })).toHaveValue("Шереметьево (SVO)");
+  await expect(pickup).toHaveAccessibleName("Место получения: Шереметьево (SVO)");
 
   await cards.first().getByRole("button", { name: "Подробнее", exact: true }).click();
   await expect(page.getByRole("group", { name: "Выбор тарифа по пробегу" })
     .getByRole("button", { name: /250 км/ })).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator(".vehicle-heading-price strong")).toContainText(price);
   await page.getByRole("button", { name: "Все автомобили" }).click();
-  await expect(category).toHaveValue("Кроссовер");
+  await expect(category).toHaveAccessibleName("Класс автомобиля: Кроссовер");
   await expect(trigger).toContainText("250 км");
   await expect(start).toHaveText(startText, { useInnerText: true });
   await expect(end).toHaveText(endText, { useInnerText: true });

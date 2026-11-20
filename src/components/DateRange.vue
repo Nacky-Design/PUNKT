@@ -90,7 +90,7 @@ onBeforeUnmount(() => document.removeEventListener("click", close));
       @click="show('start')"
     >
       <CalendarDays :size="21" /><span class="field-text"
-        ><span class="field-caption">Дата получения</span
+        ><span class="field-caption">Получение</span
         ><span class="field-value">{{ label(start) }}</span></span
       ></button
     ><span class="date-arrow"><ArrowRight :size="15" /></span
@@ -103,7 +103,7 @@ onBeforeUnmount(() => document.removeEventListener("click", close));
       @click="show('end')"
     >
       <CalendarDays :size="21" /><span class="field-text"
-        ><span class="field-caption">Дата возврата</span
+        ><span class="field-caption">Возврат</span
         ><span class="field-value">{{ label(end) }}</span></span
       ></button
     ><Transition name="popover"

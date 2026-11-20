@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { ChevronLeft, ChevronRight } from "lucide-vue-next";
 import CarArt from "./CarArt.vue";
 import type { Car } from "../data";
@@ -8,8 +8,19 @@ const props = defineProps<{ car: Car }>();
 const photos = computed(() => props.car.photos ?? []);
 const current = ref(0);
 const active = computed(() => photos.value[current.value]);
+const thumbnails = ref<HTMLDivElement>();
 const asset = (file: string) => `${import.meta.env.BASE_URL}assets/${file}`;
 let touchStart: Touch | undefined;
+
+watch(current, index => {
+  const list = thumbnails.value;
+  const button = list?.children.item(index);
+  if (!list || !(button instanceof HTMLElement)) return;
+  list.scrollTo({
+    left: Math.min(button.offsetLeft, Math.max(list.scrollLeft, button.offsetLeft + button.offsetWidth - list.clientWidth)),
+    top: Math.min(button.offsetTop, Math.max(list.scrollTop, button.offsetTop + button.offsetHeight - list.clientHeight)),
+  });
+}, { flush: "post" });
 
 function move(direction: number) {
   const count = photos.value.length;
@@ -33,7 +44,7 @@ function endSwipe(event: TouchEvent) {
 </script>
 
 <template>
-  <figure class="detail-photo" aria-label="Фотографии автомобиля"
+  <figure class="detail-photo" :class="{ 'detail-photo--with-previews': photos.length > 1 }" aria-label="Фотографии автомобиля"
     @keydown.left.prevent="move(-1)" @keydown.right.prevent="move(1)">
     <div class="gallery-stage" @touchstart.passive="startSwipe" @touchend.passive="endSwipe" @touchcancel="touchStart = undefined">
       <img v-if="active" :src="asset(active.file)" :alt="`${car.name} — ${active.label}`" decoding="async" />
@@ -43,31 +54,47 @@ function endSwipe(event: TouchEvent) {
         <button class="gallery-arrow next" type="button" aria-label="Следующее фото" @click="move(1)"><ChevronRight :size="24" aria-hidden="true" /></button>
       </template>
     </div>
-    <div v-if="photos.length > 1" class="gallery-thumbnails" role="group" aria-label="Выберите фотографию">
-      <button v-for="(photo, index) in photos" :key="photo.file" type="button" :aria-label="photo.label" :aria-pressed="index === current" @click="current = index">
-        <img :src="asset(photo.thumbnail ?? photo.file)" alt="" loading="lazy" decoding="async" />
-      </button>
+    <div v-if="photos.length > 1" class="gallery-rail" :style="{ '--preview-rows': Math.min(photos.length, 3) }">
+      <div ref="thumbnails" class="gallery-thumbnails" role="group" aria-label="Выберите фотографию">
+        <button v-for="(photo, index) in photos" :key="photo.file" type="button" :aria-label="photo.label" :aria-pressed="index === current" @click="current = index">
+          <img :src="asset(photo.thumbnail ?? photo.file)" alt="" loading="lazy" decoding="async" />
+        </button>
+      </div>
     </div>
     <span v-if="photos.length > 1" class="sr-only" role="status">{{ current + 1 }} из {{ photos.length }}. {{ active?.label }}</span>
   </figure>
 </template>
 
 <style scoped>
-.detail-photo { min-width: 0; margin: 0; }
-.gallery-stage { position: relative; width: 100%; height: clamp(228px, 37vw, 510px); border-radius: 14px; background: #edefeb; touch-action: pan-y pinch-zoom; }
-.gallery-stage > img, .gallery-stage :deep(.car-art) { display: block; width: 100%; height: 100%; border-radius: inherit; object-fit: contain; }
+.detail-photo { --gallery-gap: 10px; min-width: 0; margin: 0; }
+.gallery-stage { position: relative; width: 100%; aspect-ratio: 16 / 9; max-height: 510px; overflow: hidden; border-radius: 14px; background: #edefeb; touch-action: pan-y pinch-zoom; }
+.gallery-stage > img, .gallery-stage :deep(.car-art) { display: block; width: 100%; height: 100%; object-fit: cover; }
 .gallery-arrow { position: absolute; top: 50%; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; transform: translateY(-50%); border: 1px solid #d8dbd6; border-radius: 50%; background: #fff; }
 .gallery-arrow:hover { background: #f3f4f0; }
 .gallery-arrow.previous { left: 14px; }
 .gallery-arrow.next { right: 14px; }
-.gallery-thumbnails { display: flex; gap: 9px; overflow-x: auto; margin: 8px 0 0; padding: 4px; }
-.gallery-thumbnails button { flex: 0 0 92px; aspect-ratio: 3 / 2; overflow: hidden; padding: 0; border: 2px solid transparent; border-radius: 9px; background: #edefeb; }
-.gallery-thumbnails button[aria-pressed="true"] { border-color: #636963; }
+.gallery-rail { position: relative; min-width: 0; margin-top: var(--gallery-gap); }
+.gallery-thumbnails { position: relative; display: flex; gap: var(--gallery-gap); overflow-x: auto; }
+.gallery-thumbnails button { position: relative; flex: 0 0 86px; min-height: 0; aspect-ratio: 16 / 10; overflow: hidden; padding: 0; border-radius: 9px; background: #edefeb; }
+.gallery-thumbnails button[aria-pressed="true"]::after { content: ""; position: absolute; inset: 0; border: 2px solid #69746d; box-shadow: inset 0 0 0 1px #fff; border-radius: inherit; pointer-events: none; }
+.gallery-thumbnails button:focus-visible { outline-offset: -5px; }
 .gallery-thumbnails img { display: block; width: 100%; height: 100%; object-fit: cover; }
+@media (min-width: 761px) {
+  .detail-photo--with-previews { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--gallery-gap); }
+  .gallery-rail { margin-top: 0; }
+  .gallery-thumbnails {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: calc((100% - (var(--preview-rows) - 1) * var(--gallery-gap)) / var(--preview-rows));
+    overflow: hidden auto;
+    scrollbar-width: thin;
+  }
+  .gallery-thumbnails button { aspect-ratio: auto; }
+}
 @media (max-width: 650px) {
-  .gallery-stage { height: auto; aspect-ratio: 3 / 2; }
   .gallery-arrow.previous { left: 8px; }
   .gallery-arrow.next { right: 8px; }
-  .gallery-thumbnails button { flex-basis: 72px; }
 }
 </style>

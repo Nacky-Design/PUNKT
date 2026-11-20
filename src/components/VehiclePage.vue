@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowRight, ArrowUpRight, CalendarRange, CarFront, Check, ChevronLeft, Fuel, Gauge, MapPin, Settings2, ShieldCheck, UsersRound, Zap } from "lucide-vue-next";
+import { ArrowRight, ArrowUpRight, CalendarRange, CarFront, Check, ChevronLeft, Fuel, MapPin, Settings2, ShieldCheck, UsersRound, Zap } from "lucide-vue-next";
 import VehicleGallery from "./VehicleGallery.vue";
 import FleetFaq from "./FleetFaq.vue";
 import RentalTerms from "./RentalTerms.vue";
@@ -48,18 +48,18 @@ const emit = defineEmits<{
           <div class="vehicle-mileage" role="group" aria-label="Выбор тарифа по пробегу">
             <p>Лимит пробега в сутки</p>
             <div class="vehicle-mileage-options">
-              <button v-for="(price, option) in mileagePrices" :key="option" type="button" :aria-pressed="mileage === option" @click="emit('update:mileage', option)">
-                <strong>{{ option }}</strong>
-                <small>{{ price ? '+' + money(price) + ' ₽ / сутки' : 'Включено' }}</small>
+              <button v-for="(price, option) in mileagePrices" :key="option" type="button" :aria-pressed="mileage === option"
+                :aria-label="price ? `${option}, доплата ${money(price)} ₽ в сутки` : `${option}, включено в базовую цену`"
+                @click="emit('update:mileage', option)">
+                <strong>{{ option.replace(' км / сутки', '') }}</strong>
+                <small>км в сутки</small>
+                <span class="mileage-surcharge">{{ price ? '+' + money(price) + ' ₽' : 'Включено' }}</span>
               </button>
             </div>
           </div>
           <div class="estimate-trip">
             <p><CalendarRange :size="17" aria-hidden="true" />{{ dateText }}</p>
             <p><MapPin :size="17" aria-hidden="true" />{{ pickupLabel }}</p>
-            <div class="estimate-mileage">
-              <p><Gauge :size="17" aria-hidden="true" /><span>Пробег · <strong>{{ mileage }} включено</strong></span></p>
-            </div>
           </div>
           <dl class="vehicle-conditions" aria-label="Дополнительные условия расчёта">
             <div><dt>Залог</dt><dd>{{ car.deposit == null ? 'Уточняется' : money(car.deposit) + ' ₽' }}</dd></div>
@@ -75,7 +75,7 @@ const emit = defineEmits<{
               <span><strong>Добавить «Защиту+»</strong><small>+{{ money(car.protectionPrice) }} ₽ / сутки</small></span>
             </label>
             <p v-else><ShieldCheck :size="19" aria-hidden="true" /> «Защита+» · цена по запросу</p>
-            <button class="text-button" type="button" @click="emit('explain-protection')">Что покрывает «Защита+» <ArrowUpRight :size="15" aria-hidden="true" /></button>
+            <button class="text-button" type="button" aria-label="Что покрывает «Защита+»" @click="emit('explain-protection')">Что покрывает <ArrowUpRight :size="15" aria-hidden="true" /></button>
           </div>
           <button class="button button-primary full-width" type="button" @click="emit('request', false)">Подготовить заявку <ArrowRight :size="18" aria-hidden="true" /></button>
           <button class="mileage-discuss text-button" type="button" @click="emit('request', true)">Обсудить пробег <ArrowUpRight :size="15" aria-hidden="true" /></button>
@@ -144,7 +144,13 @@ const emit = defineEmits<{
 .vehicle-about p { line-height: 1.65; }
 .vehicle-auto-link { display: inline-flex; align-items: center; gap: 7px; margin-top: 13px; color: #6f5200; font-size: var(--type-control); font-weight: 700; }
 .vehicle-auto-link:hover { text-decoration: underline; }
-.estimate .vehicle-conditions { margin-top: 14px; padding-top: 14px; border-top: 1px solid #dededb; }
+.vehicle-page .estimate-trip { border-bottom: 0; }
+.estimate .vehicle-conditions { margin-top: 0; padding-top: 12px; border-top: 1px solid #dededb; }
+.vehicle-mileage > p { margin-bottom: 8px; }
+.vehicle-mileage-options button { gap: 4px; padding: 10px 4px; line-height: 1.15; }
+.vehicle-mileage-options strong { font-size: clamp(20px, 3vw, 24px); font-variant-numeric: tabular-nums; letter-spacing: -.025em; }
+.vehicle-mileage-options small, .mileage-surcharge { white-space: nowrap; }
+.mileage-surcharge { color: #535353; font-size: var(--type-secondary); }
 .vehicle-extras { margin-top: 14px; padding: 12px; border-radius: 8px; background: #fff; font-size: var(--type-body); line-height: 1.45; }
 .vehicle-extras p { margin: 4px 0; color: #444; }
 .vehicle-extras small { color: #666; font-size: var(--type-secondary); }
@@ -154,10 +160,11 @@ const emit = defineEmits<{
 .vehicle-protection small { display: block; margin-top: 4px; color: #545247; font-size: var(--type-secondary); }
 .vehicle-protection .text-button { justify-self: start; text-align: left; }
 .vehicle-page .estimate-trip p, .vehicle-page .vehicle-terms dd, .vehicle-page .vehicle-section > p { font-size: var(--type-body); }
-.vehicle-page .estimate dl, .vehicle-page .estimate-total span, .vehicle-page .estimate-mileage small,
+.vehicle-page .estimate dl,
 .vehicle-page .vehicle-mileage > p, .vehicle-page .vehicle-mileage-options small,
 .vehicle-page .spec-grid dt, .vehicle-page .context-tags span { font-size: var(--type-secondary); }
 .vehicle-page .vehicle-mileage-options button, .vehicle-page .text-button, .vehicle-page .estimate > .button { font-size: var(--type-control); }
+.vehicle-page .estimate > .button { margin-top: 0; }
 @media (min-width: 900px) { .vehicle-page .estimate { position: sticky; top: 24px; } }
 @media (max-width: 760px) { .vehicle-page .car-detail-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "photo" "estimate" "details"; gap: 18px; } }
 @media (max-width: 650px) {
@@ -165,5 +172,6 @@ const emit = defineEmits<{
   .vehicle-heading { display: grid; gap: 15px; margin: 22px 0 16px; }
   .vehicle-heading-price { text-align: left; }
   .vehicle-heading-price strong { font-size: 31px; }
+  .vehicle-page .estimate { padding: 15px; }
 }
 </style>

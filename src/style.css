@@ -3373,9 +3373,30 @@ h2 {
   background: #fff;
   box-shadow: none;
 }
-@media (max-width: 760px) {
-  .advanced-search .search-secondary .check-label { font-size: 12px; }
-  .advanced-search .category-tabs > button { font-size: 11px; }
+.advanced-search .search-panel:focus { outline: 2px solid #aeb4ae; outline-offset: 2px; }
+.advanced-search .field-caption {
+  color: #5d5f5a;
+  font-size: var(--type-secondary);
+  line-height: 1.2;
+}
+.advanced-search .field-value,
+.advanced-search .search-submit { font-size: var(--type-control); }
+.advanced-search .select-menu button,
+.advanced-search .option-detail,
+.advanced-search .pickup-suggestions [role="option"],
+.advanced-search .search-secondary .check-label,
+.advanced-search .quick-toggle,
+.advanced-search .category-tabs > button { font-size: var(--type-secondary); }
+.advanced-search .mileage-control .field { min-height: 58px; }
+.advanced-search .mileage-control .field-text { flex-direction: column; align-items: flex-start; gap: 3px; }
+.advanced-search .mileage-control .field-caption::after { content: none; }
+@media (max-width: 520px) {
+  .advanced-search .search-primary .field > svg:first-child,
+  .advanced-search .mileage-control .field > svg:first-child { display: none; }
+  .advanced-search .dates .field { padding-inline: 10px; }
+}
+@media (max-width: 380px) {
+  .advanced-search .search-secondary > .check-label { grid-column: 1 / -1; }
 }
 @media (max-width: 760px) and (pointer: coarse) {
   :is(.search-bar, .advanced-search, .auth-page, .modal) :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="file"]) {

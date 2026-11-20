@@ -80,13 +80,18 @@ test("class selection supports keyboard and search has an honest empty state", a
 test("catalogue compares costs, sorts and returns focus to the vehicle", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  const category = page.getByRole("combobox", { name: "Класс автомобиля" });
-  await category.selectOption("Эконом");
+  const category = page.getByRole("button", { name: /^Класс автомобиля:/ });
+  await category.press("ArrowDown");
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await expect(category).toHaveAccessibleName("Класс автомобиля: Эконом");
+  await expect(category).toBeFocused();
   await page.getByRole("button", { name: "Применить", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Наш автопарк", exact: true })).toBeVisible();
   const cards = page.locator(".fleet-card");
   await expect(cards).toHaveCount(2);
-  await page.getByRole("combobox", { name: "Сортировка" }).selectOption("Сначала дороже");
+  await page.getByRole("button", { name: /^Сортировка:/ }).click();
+  await page.getByRole("option", { name: "Сначала дороже", exact: true }).click();
   const first = cards.first();
   await expect(first.getByRole("heading")).toHaveText("Kia Rio");
   await expect(first).toContainText("5 мест");
@@ -96,7 +101,7 @@ test("catalogue compares costs, sorts and returns focus to the vehicle", async (
   await trigger.click();
   await page.getByRole("button", { name: "Все автомобили" }).click();
   await expect(trigger).toBeFocused();
-  await expect(category).toHaveValue("Эконом");
+  await expect(category).toHaveAccessibleName("Класс автомобиля: Эконом");
   await trigger.click();
   await page.getByRole("button", { name: "Изменить параметры" }).click();
   await expect(page.getByRole("region", { name: "Подбор автомобиля" })).toBeFocused();
@@ -135,11 +140,19 @@ test("vehicle details, cover, mileage and request form use the same rental detai
   const car = page.locator("main");
   await expect(car.locator(".vehicle-heading-price")).toContainText("4 090");
   await expect(car.locator(".estimate-trip")).toContainText("Офис на Авиационной");
-  await expect(car.locator(".estimate-trip")).toContainText("250 км / сутки включено");
+  await expect(car.getByRole("group", { name: "Выбор тарифа по пробегу" })
+    .getByRole("button", { name: /^250 км/ })).toHaveAttribute("aria-pressed", "true");
   await expect(car.locator(".spec-grid > div").first().locator("dd")).toHaveText("5");
   await expect(car.locator(".vehicle-tech")).toContainText("480 л");
   const gallery = car.getByRole("figure", { name: "Фотографии автомобиля" });
-  await expect(gallery.getByRole("img", { name: "Hyundai Solaris — Вид спереди" })).toHaveJSProperty("naturalWidth", 1200);
+  const mainPhoto = gallery.getByRole("img", { name: "Hyundai Solaris — Вид спереди" });
+  await expect(mainPhoto).toHaveJSProperty("naturalWidth", 1200);
+  await expect(mainPhoto).toHaveCSS("object-fit", "cover");
+  const photoBox = await mainPhoto.boundingBox();
+  const previewsBox = await gallery.getByRole("group", { name: "Выберите фотографию" }).boundingBox();
+  expect(photoBox).not.toBeNull();
+  expect(previewsBox).not.toBeNull();
+  expect(previewsBox!.x).toBeGreaterThan(photoBox!.x + photoBox!.width);
   const rearPhoto = gallery.getByRole("button", { name: "Вид сзади" });
   await rearPhoto.click();
   await expect(gallery.getByRole("img", { name: "Hyundai Solaris — Вид сзади" })).toBeVisible();
@@ -195,9 +208,9 @@ for (const width of [320, 430, 768, 1024, 1440, 1536, 2048]) {
     await page.goto("/");
     await expect(page.locator(".fleet-banner")).toBeVisible();
     const form = page.getByRole("form", { name: "Параметры аренды" });
-    const controls = [form.getByRole("combobox", { name: "Класс автомобиля" }),
+    const controls = [form.getByRole("button", { name: /^Класс автомобиля:/ }),
       form.getByRole("button", { name: /^Получение/ }), form.getByRole("button", { name: /^Возврат/ }),
-      form.getByRole("combobox", { name: "Место получения" }),
+      form.getByRole("button", { name: /^Место получения:/ }),
       form.getByRole("button", { name: /Пробег в сутки/ }), form.getByRole("button", { name: "Все параметры" }),
       form.getByRole("button", { name: "Применить", exact: true })];
     for (const control of controls) {
@@ -207,6 +220,11 @@ for (const width of [320, 430, 768, 1024, 1440, 1536, 2048]) {
       expect(rect!.x + rect!.width).toBeLessThanOrEqual(width);
     }
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+    if (width >= 1180) {
+      const captionPositions = await form.locator(".field-caption, .date-caption, .mileage-label")
+        .evaluateAll(labels => labels.map(label => label.getBoundingClientRect().top));
+      expect(Math.max(...captionPositions) - Math.min(...captionPositions)).toBeLessThan(1);
+    }
     await expect(page.locator(".fleet-card")).toHaveCount(6);
   });
 }
@@ -387,11 +405,12 @@ test("editable pickup suggests houses and preserves a manual address and mileage
   await pickup.fill("Сиреневый бульвар, 24с1");
   await page.getByRole("button", { name: "Найти автомобиль" }).click();
   const results = page.locator("main");
-  await expect(results.getByRole("combobox", { name: "Место получения" })).toHaveValue("Доставка по адресу");
+  await expect(results.getByRole("button", { name: /^Место получения:/ })).toHaveAccessibleName("Место получения: Доставка по адресу");
   await expect(results.locator(".fleet-card").first()).toContainText("100 км / сутки включено");
   await results.getByRole("button", { name: "Подробнее: Hyundai Solaris" }).click();
   const car = page.locator("main");
-  await expect(car.locator(".estimate-trip")).toContainText("100 км / сутки включено");
+  await expect(car.getByRole("group", { name: "Выбор тарифа по пробегу" })
+    .getByRole("button", { name: /^100 км/ })).toHaveAttribute("aria-pressed", "true");
   await expect(car.locator(".estimate-trip")).toContainText("Москва, Сиреневый бульвар, 24с1");
   await car.getByRole("button", { name: "Обсудить пробег" }).click();
   const request = page.getByRole("dialog");
@@ -421,6 +440,7 @@ for (const [width, height] of [[1920, 1080], [1536, 864], [1366, 768]]) {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/");
     for (const [label, selector] of [
+      [/^Класс автомобиля:/, ".class-field .select-menu"], [/^Место получения:/, ".location-field .select-menu"],
       [/^Получение/, ".range-popover"], [/Пробег в сутки/, ".mileage-picker"],
       [/^Все параметры/, ".parameters-panel"],
     ] as const) {

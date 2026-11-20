@@ -155,4 +155,10 @@ function confirmDemo() {
 /* iOS Safari zooms the entire page when a focused input uses text smaller than 16px. */
 @media (max-width:600px), (hover:none) and (pointer:coarse){.auth-field input,.password-control input{font-size:16px}}
 @media(max-width:360px){.role-grid{grid-template-columns:1fr}.role-grid button{min-height:58px}}
+.auth-heading p { color: #5d5f5a; font-size: var(--type-body); }
+.demo-note, .login-method button, .auth-field, .password-heading, .subtle-link, .auth-switch,
+.auth-switch button, .recovery-note, .sms-note, .sms-back, .role-grid small, .kind-options button,
+.consent-example, .consent-example small, .verify-content p, .verify-back { font-size: var(--type-secondary); }
+.auth-field input, .password-control input, .submit-button { font-size: var(--type-control); }
+.auth-field input:focus-visible, .password-control input:focus-visible { outline-color: var(--focus-ring); }
 </style>

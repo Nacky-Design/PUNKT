@@ -8,6 +8,7 @@ import CatalogFilters, { type CatalogFilterState } from './CatalogFilters.vue';
 import FleetFaq from './FleetFaq.vue';
 import CatalogMileage from './CatalogMileage.vue';
 import CatalogHighlights from './CatalogHighlights.vue';
+import SelectField from './SelectField.vue';
 import CompanyIntro from './CompanyIntro.vue';
 import RentalTerms from './RentalTerms.vue';
 import { messengerLinks } from '../contact';
@@ -41,6 +42,10 @@ const draftCategory = ref(props.category);
 const draftStart = ref(props.start);
 const draftEnd = ref(props.end);
 const draftLocation = ref(props.location);
+const pickupOptions = computed(() => props.locationOptions.includes(draftLocation.value)
+  ? props.locationOptions
+  : [draftLocation.value, ...props.locationOptions]);
+const sortOptions = ['Сначала дешевле', 'Сначала дороже', 'По названию'];
 watch(() => [props.start, props.end, props.location], ([start, end, location]) => {
   draftStart.value = start!; draftEnd.value = end!; draftLocation.value = location!;
 });
@@ -58,7 +63,6 @@ function clearFilters() {
   emit('update:filters', { brand: '', fuel: '', drive: '', transmission: '', seats: null, extras: [] });
 }
 const mileageField = ref<InstanceType<typeof CatalogMileage>>();
-const valueOf = (event: Event) => (event.target as HTMLInputElement | HTMLSelectElement).value;
 </script>
 
 <template>
@@ -77,14 +81,9 @@ const valueOf = (event: Event) => (event.target as HTMLInputElement | HTMLSelect
       </section>
 
       <form class="search-bar" aria-label="Параметры аренды" @submit.prevent="applySearch">
-        <label class="class-field">
-          Класс автомобиля
-          <select v-model="draftCategory" class="select-control">
-            <option v-for="item in categories" :key="item">{{ item }}</option>
-          </select>
-        </label>
+        <SelectField v-model="draftCategory" class="class-field" label="Класс автомобиля" :options="categories" appearance="catalog" />
         <CatalogDateRange v-model:start="draftStart" v-model:end="draftEnd" />
-        <label class="location-field">Место получения<select v-model="draftLocation" class="select-control"><option v-if="!locationOptions.includes(draftLocation)" :value="draftLocation">{{ draftLocation }}</option><option v-for="option in locationOptions" :key="option" :value="option">{{ option }}</option></select></label>
+        <SelectField v-model="draftLocation" class="location-field" label="Место получения" :options="pickupOptions" appearance="catalog" />
         <CatalogMileage ref="mileageField" :model-value="mileage" :prices="mileagePrices"
           @update:model-value="emit('update:mileage', $event)" />
         <CatalogFilters :filters="filters" :all-cars="allCars" @apply="emit('update:filters', $event)" />
@@ -93,7 +92,11 @@ const valueOf = (event: Event) => (event.target as HTMLInputElement | HTMLSelect
 
       <div class="fleet-heading">
         <h2>Наш автопарк</h2>
-        <label class="sort-label">Сортировка <select class="select-control" :value="sort" @change="emit('update:sort', valueOf($event))"><option value="По цене">Сначала дешевле</option><option>Сначала дороже</option><option>По названию</option></select></label>
+        <div class="sort-label">
+          <span aria-hidden="true">Сортировка</span>
+          <SelectField :model-value="sort" :display-value="sort" label="Сортировка" :options="sortOptions"
+            appearance="inline" @update:model-value="emit('update:sort', $event)" />
+        </div>
       </div>
       <p v-if="filters.extras.length" class="extras-summary"><strong>Пожелания:</strong> {{ filters.extras.join(', ') }}</p>
       <div v-if="cars.length" class="fleet-grid">
@@ -121,9 +124,9 @@ const valueOf = (event: Event) => (event.target as HTMLInputElement | HTMLSelect
 </template>
 
 <style scoped>
-.fleet-page{background:#f7f7f5;color:#191919;min-height:100vh;padding:38px 0 75px}.fleet-container{width:min(1380px,calc(100% - 64px));margin:0 auto}.fleet-intro{display:flex;justify-content:space-between;align-items:end;margin-bottom:26px}.eyebrow{font-size:10px;letter-spacing:.16em;font-weight:800;color:#777;margin:0 0 12px}.fleet-intro h1{font-size:clamp(34px,4vw,55px);line-height:1.05;letter-spacing:-.055em;margin:0;font-weight:750}.fleet-intro h1 span{color:#edb600}.intro-copy{font-size:15px;color:#6b6b68;margin:12px 0 0}.intro-caption{display:flex;gap:20px;align-items:end;text-transform:uppercase}.intro-caption span{font-size:10px;letter-spacing:.1em;color:#999}.intro-caption strong{font-size:13px;line-height:1.2;letter-spacing:.02em}.search-bar{display:grid;grid-template-columns:150px 1fr 1fr 1.4fr auto;align-items:stretch;background:#fff;border:1px solid #dededb;border-radius:12px;padding:8px;box-shadow:0 8px 30px #17171708}.search-caption{display:flex;gap:10px;align-items:center;padding:0 15px;font-size:12px;line-height:1.3;color:#777}.search-caption svg{color:#d3a000}.search-caption strong{color:#222}.search-bar label{border-left:1px solid #e8e8e5;padding:7px 14px 5px;font-size:10px;font-weight:700;color:#777}.search-bar input,.search-bar select{display:block;width:100%;border:0;background-color:transparent;font-family:inherit;font-size:13px;font-weight:600;color:#222;padding:5px 0 1px;outline-offset:2px;min-width:0}.search-bar select{font-family:inherit;font-size:13px;font-weight:600;line-height:1.2}.search-submit{border:0;border-radius:8px;background:#ffc107;padding:0 22px;display:flex;align-items:center;justify-content:center;gap:18px;font-weight:750;cursor:pointer}.search-submit:hover{background:#eeb400}.fleet-heading{display:flex;justify-content:space-between;align-items:end;margin-top:24px}.fleet-heading h2{font-size:29px;letter-spacing:-.04em;margin:0}.sort-label{font-size:12px;color:#777;display:flex;align-items:center;gap:10px}.sort-label select{background-color:white;border:1px solid #dededb;border-radius:7px;padding:9px;font-family:inherit;font-size:12px;font-weight:600;color:#333}.fleet-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.fleet-card{background:#fff;border:1px solid #e2e2de;border-radius:12px;overflow:hidden;transition:box-shadow .2s,border-color .2s}.fleet-card:hover,.fleet-card:focus-within{border-color:#dfc878;box-shadow:0 8px 25px #1b1b1b10}.car-image{display:block;width:100%;height:150px;padding:0;border:0;position:relative;background:#f1f1ef;cursor:pointer;overflow:hidden}.car-image :deep(.car-art){height:150px;aspect-ratio:auto;container-type:size}.car-image :deep(.car-art:before){width:min(100%,245px,calc((100cqh - 13px)*1.6));transform:translate(-50%,-54%)}.car-image>span{position:absolute;left:14px;top:13px;background:#fff;border:1px solid #e7e7e4;border-radius:5px;padding:5px 8px;font-size:10px;font-weight:700}.car-content{padding:15px 17px}.car-title{display:flex;justify-content:space-between;gap:10px;align-items:center}.car-title h3{margin:0;font-size:18px;letter-spacing:-.025em}.car-title>span{color:#999;font-size:12px}.car-specs{display:flex;flex-wrap:wrap;gap:15px;color:#777;font-size:11px;margin:11px 0 16px}.car-specs span,.card-bottom span{display:flex;align-items:center;gap:5px}.car-price{display:flex;justify-content:space-between;align-items:end;gap:5px;border-top:1px solid #eeeeeb;padding-top:13px}.car-price strong{font-size:22px;letter-spacing:-.04em}.car-price span{font-size:11px;color:#888}.car-price small{font-size:11px;color:#777;text-align:right}.card-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px}.card-bottom span{font-size:11px;color:#888}.card-bottom button,.empty button{border:0;background:#f3f3f1;padding:10px 12px;border-radius:7px;font-weight:700;font-size:12px;display:flex;align-items:center;gap:12px;cursor:pointer}.card-bottom button:hover,.empty button:hover{background:#ffc107}.empty{background:#fff;border:1px solid #e2e2de;border-radius:12px;padding:30px}.empty h3{margin:0}.empty p{color:#777;font-size:14px}.empty button{margin-top:15px}
-@media(max-width:1000px){.search-bar{grid-template-columns:1fr 1fr 1.4fr auto}.search-caption{display:none}.search-bar label:first-of-type{border-left:0}.fleet-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.intro-caption{display:none}}
-@media(max-width:650px){.fleet-page{padding:28px 0 50px}.fleet-container{width:calc(100% - 32px)}.fleet-intro h1{font-size:37px}.intro-copy{font-size:13px}.search-bar{grid-template-columns:1fr 1fr;gap:0}.search-bar label{padding:9px 10px}.search-bar .location-field{border-left:0;border-top:1px solid #e8e8e5;grid-column:1/-1}.search-submit{min-height:46px;grid-column:1/-1}.fleet-heading{margin-top:30px;display:block}.fleet-heading h2{font-size:26px}.sort-label{margin-top:15px;justify-content:space-between}.fleet-grid{grid-template-columns:1fr}.car-image,.car-image :deep(.car-art){height:170px}}
+.fleet-page{background:#f7f7f5;color:#191919;min-height:100vh;padding:38px 0 75px}.fleet-container{width:min(1380px,calc(100% - 64px));margin:0 auto}.fleet-intro{display:flex;justify-content:space-between;align-items:end;margin-bottom:26px}.eyebrow{font-size:10px;letter-spacing:.16em;font-weight:800;color:#777;margin:0 0 12px}.fleet-intro h1{font-size:clamp(34px,4vw,55px);line-height:1.05;letter-spacing:-.055em;margin:0;font-weight:750}.fleet-intro h1 span{color:#edb600}.intro-copy{font-size:15px;color:#6b6b68;margin:12px 0 0}.intro-caption{display:flex;gap:20px;align-items:end;text-transform:uppercase}.intro-caption span{font-size:10px;letter-spacing:.1em;color:#999}.intro-caption strong{font-size:13px;line-height:1.2;letter-spacing:.02em}.search-bar{display:grid;grid-template-columns:150px 1fr 1fr 1.4fr auto;align-items:stretch;background:#fff;border:1px solid #dededb;border-radius:12px;padding:8px;box-shadow:0 8px 30px #17171708}.search-caption{display:flex;gap:10px;align-items:center;padding:0 15px;font-size:12px;line-height:1.3;color:#777}.search-caption svg{color:#d3a000}.search-caption strong{color:#222}.search-submit{border:0;border-radius:8px;background:#ffc107;padding:0 22px;display:flex;align-items:center;justify-content:center;gap:18px;font-weight:750;cursor:pointer}.search-submit:hover{background:#eeb400}.fleet-heading{display:flex;justify-content:space-between;align-items:end;margin-top:24px}.fleet-heading h2{font-size:29px;letter-spacing:-.04em;margin:0}.sort-label{font-size:12px;color:#777;display:flex;align-items:center;gap:10px}.fleet-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.fleet-card{background:#fff;border:1px solid #e2e2de;border-radius:12px;overflow:hidden;transition:box-shadow .2s,border-color .2s}.fleet-card:hover,.fleet-card:focus-within{border-color:#dfc878;box-shadow:0 8px 25px #1b1b1b10}.car-image{display:block;width:100%;height:150px;padding:0;border:0;position:relative;background:#f1f1ef;cursor:pointer;overflow:hidden}.car-image :deep(.car-art){height:150px;aspect-ratio:auto;container-type:size}.car-image :deep(.car-art:before){width:min(100%,245px,calc((100cqh - 13px)*1.6));transform:translate(-50%,-54%)}.car-image>span{position:absolute;left:14px;top:13px;background:#fff;border:1px solid #e7e7e4;border-radius:5px;padding:5px 8px;font-size:10px;font-weight:700}.car-content{padding:15px 17px}.car-title{display:flex;justify-content:space-between;gap:10px;align-items:center}.car-title h3{margin:0;font-size:18px;letter-spacing:-.025em}.car-title>span{color:#999;font-size:12px}.car-specs{display:flex;flex-wrap:wrap;gap:15px;color:#777;font-size:11px;margin:11px 0 16px}.car-specs span,.card-bottom span{display:flex;align-items:center;gap:5px}.car-price{display:flex;justify-content:space-between;align-items:end;gap:5px;border-top:1px solid #eeeeeb;padding-top:13px}.car-price strong{font-size:22px;letter-spacing:-.04em}.car-price span{font-size:11px;color:#888}.car-price small{font-size:11px;color:#777;text-align:right}.card-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px}.card-bottom span{font-size:11px;color:#888}.card-bottom button,.empty button{border:0;background:#f3f3f1;padding:10px 12px;border-radius:7px;font-weight:700;font-size:12px;display:flex;align-items:center;gap:12px;cursor:pointer}.card-bottom button:hover,.empty button:hover{background:#ffc107}.empty{background:#fff;border:1px solid #e2e2de;border-radius:12px;padding:30px}.empty h3{margin:0}.empty p{color:#777;font-size:14px}.empty button{margin-top:15px}
+@media(max-width:1000px){.search-bar{grid-template-columns:1fr 1fr 1.4fr auto}.search-caption{display:none}.fleet-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.intro-caption{display:none}}
+@media(max-width:650px){.fleet-page{padding:28px 0 50px}.fleet-container{width:calc(100% - 32px)}.fleet-intro h1{font-size:37px}.intro-copy{font-size:13px}.search-bar{grid-template-columns:1fr 1fr;gap:0}.search-bar .location-field{border-left:0;border-top:1px solid #e8e8e5;grid-column:1/-1}.search-submit{min-height:46px;grid-column:1/-1}.fleet-heading{margin-top:30px;display:block}.fleet-heading h2{font-size:26px}.sort-label{margin-top:15px;justify-content:space-between}.fleet-grid{grid-template-columns:1fr}.car-image,.car-image :deep(.car-art){height:170px}}
 
 /* Keep the fleet in view as soon as the page opens. */
 .fleet-page{padding-top:24px}.fleet-intro{margin-bottom:18px}.fleet-intro .eyebrow,.intro-caption{display:none}.fleet-intro h1{font-size:clamp(30px,3.1vw,42px)}.intro-copy{margin-top:5px}.fleet-heading{margin-top:20px}
@@ -159,24 +162,19 @@ const valueOf = (event: Event) => (event.target as HTMLInputElement | HTMLSelect
   gap: 0;
   z-index: 5;
 }
-.search-bar .class-field { border-left: 0; }
-.search-bar label { min-width: 0; font-size: var(--type-secondary); line-height: 1.2; }
-.search-bar .select-control {
-  min-height: 32px;
-  padding: 4px 22px 4px 4px;
-  margin-top: 3px;
-  border-radius: 5px;
-  background-position: right 3px center;
-  font-size: var(--type-control);
-  text-overflow: ellipsis;
-}
+.search-bar .location-field { border-left: 1px solid #e8e8e5; }
+.search-bar :deep(.date-field) { padding: 8px 11px; gap: 5px; min-height: 52px; }
+.search-bar :deep(.field-caption),
+.search-bar :deep(.date-caption),
+.search-bar :deep(.date-value),
+.search-bar :deep(.mileage-label),
+.search-bar :deep(.mileage-value) { line-height: 1.2; }
 .fleet-heading { align-items: center; margin-bottom: 14px; }
 .search-bar .search-submit { grid-column: auto; grid-row: auto; margin-top: 0; font-size: var(--type-control); }
 .sort-label { color: #5d5f5a; font-size: var(--type-secondary); }
-.sort-label .select-control { padding: 10px 39px 10px 12px; font-size: var(--type-control); }
-.search-bar .select-control:focus, .sort-label .select-control:focus { background-color: #f5f5f3; }
-@media (hover: hover) {
-  .search-bar .select-control:hover, .sort-label .select-control:hover { background-color: #f5f5f3; }
+.sort-label :deep(.field) { gap: 12px; }
+@media (min-width: 701px) {
+  .location-field :deep(.select-menu) { left: auto; right: 0; }
 }
 .car-image > span, .car-title > span, .car-specs, .car-price span, .car-price small, .card-bottom span, .unpriced-option, .extras-summary {
   font-size: var(--type-secondary);
@@ -206,7 +204,6 @@ const valueOf = (event: Event) => (event.target as HTMLInputElement | HTMLSelect
   .search-bar :deep(.parameters-trigger > svg:first-child) { display: none; }
 }
 @media (max-width: 650px) {
-  .sort-label .select-control { max-width: 70%; }
   .fleet-banner .banner-copy > p { font-size: var(--type-secondary); }
 }
 
@@ -226,6 +223,9 @@ const valueOf = (event: Event) => (event.target as HTMLInputElement | HTMLSelect
 .car-image :deep(.car-art--photo img){object-fit:cover}
 
 @media (min-width: 1180px) {
-  .search-bar { grid-template-columns: minmax(116px, 1.08fr) minmax(104px, .92fr) minmax(104px, .92fr) minmax(132px, 1.26fr) minmax(140px, 1.12fr) minmax(159px, 1.18fr) auto; }
+  .search-bar { grid-template-columns: minmax(172px, 1.13fr) minmax(110px, .9fr) minmax(110px, .9fr) minmax(165px, 1.29fr) minmax(148px, 1fr) minmax(155px, 1.12fr) auto; }
+  .search-bar :deep(.mileage-trigger) { gap: 5px 8px; padding-block: 8px; }
+  .search-bar :deep(.mileage-label) { grid-column: 1 / -1; white-space: nowrap; }
+  .search-bar :deep(.mileage-trigger svg) { grid-row: 2; }
 }
 </style>
