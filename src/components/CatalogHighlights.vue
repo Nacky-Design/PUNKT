@@ -55,7 +55,7 @@ function show(index: number) {
             Сравнить цены <ArrowRight :size="17" aria-hidden="true" />
           </button>
         </div>
-        <img :src="asset('promo-city-mileage.webp')" width="1000" height="667" alt="" loading="lazy" />
+        <img :src="asset('promo-atlas-mileage.webp')" width="1080" height="720" alt="" loading="lazy" />
       </article>
     </div>
     <p class="highlights-position" aria-live="polite">{{ active + 1 }} из 2</p>
@@ -84,7 +84,7 @@ function show(index: number) {
 .highlight h3 { font-size: clamp(21px, 2.15vw, 31px); line-height: 1.12; letter-spacing: -.04em; }
 .highlight p { margin: 9px 0 17px; color: #4c4e48; font-size: var(--type-body); line-height: 1.45; }
 .highlight img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.mileage-highlight img { object-position: 66% center; }
+.mileage-highlight img { object-position: 54% 60%; }
 .highlight-action {
   display: inline-flex;
   align-items: center;
@@ -101,6 +101,9 @@ function show(index: number) {
 }
 .highlight-action svg { flex: none; }
 .highlight-action:hover { background: #ffd047; }
+@media (min-width: 931px) and (max-width: 1150px) {
+  .mileage-highlight img { object-position: 38% 60%; }
+}
 @media (max-width: 930px) {
   .highlights { margin-top: 36px; }
   .highlights-position { display: block; margin-top: 9px; color: #5d5f5a; font-size: var(--type-secondary); }
