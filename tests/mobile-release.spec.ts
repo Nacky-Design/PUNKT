@@ -77,7 +77,10 @@ for (const [width, height] of [[320, 568], [390, 844], [430, 932], [667, 375]]) 
     await page.getByRole("button", { name: "Подготовить заявку" }).tap();
     const request = page.getByRole("dialog", { name: "Запрос на аренду" });
     await fitsViewport(request, width, height);
-    await expect(request.getByRole("status")).toContainText(/За 3 дня\s*10\s800 ₽/);
+    const summary = request.getByRole("group", { name: "Условия аренды" });
+    await expect(summary).toContainText(/за 3 дня\s*10\s800 ₽/);
+    await expect(summary).toContainText("10:00 (МСК)");
+    await expect(request.locator("input")).toHaveCount(3);
     await request.getByRole("button", { name: "Проверить заявку" }).tap();
     await expect(request.getByText("Введите телефон полностью")).toBeVisible();
     await request.getByRole("textbox", { name: "Ваше имя" }).fill("Александр");

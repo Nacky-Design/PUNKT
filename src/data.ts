@@ -179,6 +179,10 @@ export const money = (n: number) => new Intl.NumberFormat("ru-RU").format(n);
 export const isoDate = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 export const localDate = (str: string) => new Date(str + "T12:00:00");
+export function rentalTime(value: string) {
+  const time = value.trim().replace(/^(\d):/, "0$1:").replace(/^(\d{2})(\d{2})$/, "$1:$2");
+  return /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time) ? time : "";
+}
 export const todayISO = (date = new Date()) =>
   new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Moscow",

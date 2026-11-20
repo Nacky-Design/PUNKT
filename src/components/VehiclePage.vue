@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { ArrowRight, ArrowUpRight, CalendarRange, CarFront, Check, ChevronLeft, Fuel, MapPin, Settings2, ShieldCheck, UsersRound, Zap } from "lucide-vue-next";
+import { ArrowRight, ArrowUpRight, CarFront, Check, ChevronLeft, Clock3, Fuel, MapPin, Settings2, ShieldCheck, UsersRound, Zap } from "lucide-vue-next";
+import CatalogDateRange from "./CatalogDateRange.vue";
 import VehicleGallery from "./VehicleGallery.vue";
 import FleetFaq from "./FleetFaq.vue";
 import RentalTerms from "./RentalTerms.vue";
 import { messengerLinks } from "../contact";
-import { money, type Car } from "../data";
+import { money, rentalTime, type Car } from "../data";
 
 defineProps<{
   car: Car;
   backLabel?: string;
-  dateText: string;
   pickupLabel: string;
+  pickupIncomplete: boolean;
+  periodError: string;
   mileage: string;
   mileagePrices: Record<string, number>;
   protection: boolean;
@@ -19,6 +21,10 @@ defineProps<{
   delivery: boolean;
   rate: number;
 }>();
+const start = defineModel<string>("start", { required: true });
+const end = defineModel<string>("end", { required: true });
+const startTime = defineModel<string>("startTime", { required: true });
+const endTime = defineModel<string>("endTime", { required: true });
 const emit = defineEmits<{
   back: [];
   "update:mileage": [value: string];
@@ -45,6 +51,30 @@ const emit = defineEmits<{
       <div class="car-detail-grid">
         <VehicleGallery :key="car.id" :car="car" />
         <aside class="estimate" aria-label="Параметры аренды">
+          <section class="vehicle-period" aria-labelledby="vehicle-period-title">
+            <div class="vehicle-period-heading">
+              <h2 id="vehicle-period-title">Период аренды</h2>
+              <span>Время по Москве</span>
+            </div>
+            <div class="vehicle-period-controls">
+              <CatalogDateRange v-model:start="start" v-model:end="end" />
+              <label class="vehicle-time">
+                <span class="sr-only">Время получения</span>
+                <input v-model="startTime" type="text" inputmode="numeric" maxlength="5" placeholder="ЧЧ:ММ" required
+                  :aria-invalid="!!periodError" :aria-describedby="periodError ? 'vehicle-period-error' : undefined"
+                  @blur="startTime = rentalTime(startTime) || startTime" />
+                <Clock3 :size="16" aria-hidden="true" />
+              </label>
+              <label class="vehicle-time">
+                <span class="sr-only">Время возврата</span>
+                <input v-model="endTime" type="text" inputmode="numeric" maxlength="5" placeholder="ЧЧ:ММ" required
+                  :aria-invalid="!!periodError" :aria-describedby="periodError ? 'vehicle-period-error' : undefined"
+                  @blur="endTime = rentalTime(endTime) || endTime" />
+                <Clock3 :size="16" aria-hidden="true" />
+              </label>
+            </div>
+            <p v-if="periodError" id="vehicle-period-error" class="error-text" role="alert">{{ periodError }}</p>
+          </section>
           <div class="vehicle-mileage" role="group" aria-label="Выбор тарифа по пробегу">
             <p>Лимит пробега в сутки</p>
             <div class="vehicle-mileage-options">
@@ -58,8 +88,8 @@ const emit = defineEmits<{
             </div>
           </div>
           <div class="estimate-trip">
-            <p><CalendarRange :size="17" aria-hidden="true" />{{ dateText }}</p>
             <p><MapPin :size="17" aria-hidden="true" />{{ pickupLabel }}</p>
+            <p v-if="pickupIncomplete" class="error-text">Укажите улицу и номер дома через «Изменить параметры».</p>
           </div>
           <dl class="vehicle-conditions" aria-label="Дополнительные условия расчёта">
             <div><dt>Залог</dt><dd>{{ car.deposit == null ? 'Уточняется' : money(car.deposit) + ' ₽' }}</dd></div>
@@ -77,8 +107,8 @@ const emit = defineEmits<{
             <p v-else><ShieldCheck :size="19" aria-hidden="true" /> «Защита+» · цена по запросу</p>
             <button class="text-button" type="button" aria-label="Что покрывает «Защита+»" @click="emit('explain-protection')">Что покрывает <ArrowUpRight :size="15" aria-hidden="true" /></button>
           </div>
-          <button class="button button-primary full-width" type="button" @click="emit('request', false)">Подготовить заявку <ArrowRight :size="18" aria-hidden="true" /></button>
-          <button class="mileage-discuss text-button" type="button" @click="emit('request', true)">Обсудить пробег <ArrowUpRight :size="15" aria-hidden="true" /></button>
+          <button class="button button-primary full-width" type="button" :disabled="!!periodError || pickupIncomplete" @click="emit('request', false)">Подготовить заявку <ArrowRight :size="18" aria-hidden="true" /></button>
+          <button class="mileage-discuss text-button" type="button" :disabled="!!periodError || pickupIncomplete" @click="emit('request', true)">Обсудить пробег <ArrowUpRight :size="15" aria-hidden="true" /></button>
         </aside>
         <div class="vehicle-sections">
           <section v-if="car.modelDescription || car.autoUrl" class="vehicle-section vehicle-about" aria-labelledby="vehicle-about-title">
@@ -146,6 +176,21 @@ const emit = defineEmits<{
 .vehicle-auto-link:hover { text-decoration: underline; }
 .vehicle-page .estimate-trip { border-bottom: 0; }
 .estimate .vehicle-conditions { margin-top: 0; padding-top: 12px; border-top: 1px solid #dededb; }
+.vehicle-period { margin-bottom: 16px; }
+.vehicle-period-heading { display: flex; align-items: baseline; flex-wrap: wrap; justify-content: space-between; gap: 4px 8px; margin-bottom: 8px; }
+.vehicle-period-heading h2 { font-size: var(--type-control); }
+.vehicle-period-heading span { color: #5d5f5a; font-size: var(--type-secondary); }
+.vehicle-period-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid #dededb; border-radius: 10px; background: #fff; }
+.vehicle-period :deep(.range-picker) { grid-column: 1 / -1; }
+.vehicle-period :deep(.date-field) { padding: 9px 10px 6px; }
+.vehicle-period :deep(.date-field:first-child) { border-left: 0; border-top-left-radius: 10px; }
+.vehicle-period :deep(.date-field:nth-child(2)) { border-top-right-radius: 10px; }
+.vehicle-period :deep(.range-popover) { right: 0; left: auto; }
+.vehicle-time { position: relative; min-width: 0; padding: 4px 9px 8px; }
+.vehicle-time + .vehicle-time { border-left: 1px solid #e8e8e5; }
+.vehicle-time input { width: 100%; min-width: 0; min-height: 42px; padding: 4px 29px 4px 8px; border: 1px solid #dededb; border-radius: 7px; background: #fafaf8; color: #222; font-size: var(--type-control); font-variant-numeric: tabular-nums; }
+.vehicle-time svg { position: absolute; inset-inline-end: 17px; top: calc(50% - 2px); transform: translateY(-50%); color: #62655e; pointer-events: none; }
+.vehicle-period > .error-text { margin-top: 8px; font-size: var(--type-secondary); }
 .vehicle-mileage > p { margin-bottom: 8px; }
 .vehicle-mileage-options button { gap: 4px; padding: 10px 4px; line-height: 1.15; }
 .vehicle-mileage-options strong { font-size: clamp(20px, 3vw, 24px); font-variant-numeric: tabular-nums; letter-spacing: -.025em; }
@@ -165,7 +210,7 @@ const emit = defineEmits<{
 .vehicle-page .spec-grid dt, .vehicle-page .context-tags span { font-size: var(--type-secondary); }
 .vehicle-page .vehicle-mileage-options button, .vehicle-page .text-button, .vehicle-page .estimate > .button { font-size: var(--type-control); }
 .vehicle-page .estimate > .button { margin-top: 0; }
-@media (min-width: 900px) { .vehicle-page .estimate { position: sticky; top: 24px; } }
+@media (min-width: 900px) and (min-height: 950px) { .vehicle-page .estimate { position: sticky; top: 24px; } }
 @media (max-width: 760px) { .vehicle-page .car-detail-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "photo" "estimate" "details"; gap: 18px; } }
 @media (max-width: 650px) {
   .vehicle-page { padding: 26px 16px 56px; }
