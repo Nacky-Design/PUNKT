@@ -60,7 +60,10 @@ const emit = defineEmits<{
             <p v-if="periodError" id="vehicle-period-error" class="error-text" role="alert">{{ periodError }}</p>
           </section>
           <div class="vehicle-mileage" role="group" aria-label="Выбор тарифа по пробегу">
-            <p>Лимит пробега в сутки</p>
+            <p class="vehicle-mileage-heading">
+              <span>Лимит пробега</span>
+              <span class="vehicle-mileage-rate" role="status"><strong>{{ money(rate) }} ₽</strong> / сутки</span>
+            </p>
             <div class="vehicle-mileage-options">
               <button v-for="(price, option) in mileagePrices" :key="option" type="button" :aria-pressed="mileage === option"
                 :aria-label="price ? `${option}, доплата ${money(price)} ₽ в сутки` : `${option}, включено в базовую цену`"
@@ -172,6 +175,9 @@ const emit = defineEmits<{
 .vehicle-period :deep(.range-popover) { right: 0; left: auto; }
 .vehicle-period > .error-text { margin-top: 8px; font-size: var(--type-secondary); }
 .vehicle-mileage > p { margin-bottom: 8px; }
+.vehicle-mileage-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 8px; }
+.vehicle-mileage-rate { color: #535751; font-weight: 500; white-space: nowrap; }
+.vehicle-mileage-rate strong { color: #191919; font-size: var(--type-body); font-variant-numeric: tabular-nums; }
 .vehicle-mileage-options button { gap: 4px; padding: 10px 4px; line-height: 1.15; }
 .vehicle-mileage-options strong { font-size: clamp(20px, 3vw, 24px); font-variant-numeric: tabular-nums; letter-spacing: -.025em; }
 .vehicle-mileage-options small, .mileage-surcharge { white-space: nowrap; }

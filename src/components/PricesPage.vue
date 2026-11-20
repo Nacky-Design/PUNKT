@@ -66,7 +66,12 @@ const faq = [
                       <div><strong>{{ car.name }}</strong><small>{{ car.category }} · {{ car.year }} г.</small></div>
                     </div>
                   </td>
-                  <td class="daily-cell" data-label="Цена за сутки"><strong class="price">{{ money(car.price + selectedExtra) }} ₽</strong></td>
+                  <td class="daily-cell" data-label="Цена за сутки">
+                    <strong class="price">{{ money(car.price + selectedExtra) }} ₽</strong>
+                    <small v-if="car.overagePrice != null" class="price-overage">
+                      <span>Сверх лимита</span> <span>{{ money(car.overagePrice) }} ₽/км</span>
+                    </small>
+                  </td>
                   <td class="detail-cell" data-label="Защита+">
                     <div v-if="car.protectionPrice !== undefined" class="price-cell-content">
                       <span class="protection-rate"><strong>+{{ money(car.protectionPrice) }} ₽</strong><small>за сутки</small></span>
@@ -151,6 +156,7 @@ const faq = [
 .price-heading .interior-action { flex: none; }
 .price-toolbar h2 { margin-bottom: 10px; font-size: clamp(20px, 2vw, 24px); }
 .price-table .price { font-size: clamp(23px, 2.5vw, 30px); letter-spacing: -.035em; }
+.price-overage span:last-child { white-space: nowrap; }
 .car-wrap :deep(.car-art--photo) { display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .car-wrap :deep(.car-art--photo img) { width: auto; height: auto; max-width: 100%; max-height: 100%; border-radius: inherit; }
 .protection-guide-link, .protection-add { display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 0; color: #625019; font-size: var(--type-secondary); font-weight: 650; text-align: left; text-decoration: underline; text-underline-offset: 3px; }
@@ -227,6 +233,7 @@ const faq = [
     gap: 12px;
   }
   .price-table .daily-cell {
+    row-gap: 4px;
     margin: 12px 0 2px;
     padding: 9px 11px;
     border-radius: 8px;
@@ -237,6 +244,7 @@ const faq = [
     color: #51534f;
     font-size: var(--type-secondary);
   }
+  .price-table .price-overage { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 8px; margin: 0; }
   .price-table .price { justify-self: end; font-size: 27px; line-height: 1.15; }
   .price-table .detail-cell { padding: 11px 0; }
   .price-table tr > .detail-cell + .detail-cell { border-top: 1px solid #eeefec; }

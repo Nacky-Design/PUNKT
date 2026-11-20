@@ -31,6 +31,7 @@ const props = defineProps<{
   address: string;
   deliveryPoint?: DeliveryPoint;
   mileage: string;
+  baseMileage: string;
   mileagePrices: Record<string, number>;
   mileageLabel: string;
   protection: boolean;
@@ -100,7 +101,11 @@ const mileageField = ref<InstanceType<typeof CatalogMileage>>();
           <h1 id="fleet-banner-title">Автомобиль<br />под ваши планы<span>.</span></h1>
           <p>Прокат автомобилей в Москве.</p>
           <a v-if="Number.isFinite(lowestRate)" href="#prices" class="banner-price">
-            <span>От <strong>{{ money(lowestRate) }} ₽</strong> / сутки</span><ArrowRight :size="17" aria-hidden="true" />
+            <span class="banner-price-copy">
+              <span>От <strong>{{ money(lowestRate) }} ₽</strong> / сутки</span>
+              <small>{{ baseMileage.replace(' / ', ' в ') }} включено</small>
+            </span>
+            <ArrowRight :size="17" aria-hidden="true" />
           </a>
         </div>
       </section>
@@ -177,6 +182,8 @@ const mileageField = ref<InstanceType<typeof CatalogMileage>>();
 .banner-price { display: inline-flex; align-self: flex-start; align-items: center; gap: 9px; min-height: 40px; margin-top: 12px; padding: 6px 12px; border-radius: 8px; background: #fffffff0; color: #171717; font-size: var(--type-control); pointer-events: auto; }
 .banner-price:hover { background: #fff; }
 .banner-price strong { font-size: 21px; }
+.banner-price-copy { display: grid; gap: 2px; line-height: 1.25; }
+.banner-price-copy small { color: #535751; font-size: var(--type-secondary); }
 .fleet-banner :deep(.hero-playback){top:auto;right:14px;bottom:14px;z-index:3}
 @media(max-width:650px){.fleet-banner{height:205px;margin-bottom:14px;border-radius:11px}.fleet-banner :deep(.hero-visual){height:100%;background-position:center 60%}.fleet-banner :deep(.hero-visual video){height:100%;object-position:center 50%}.fleet-banner :deep(.hero-visual video.hero-video-people){object-position:center 0%}.fleet-banner .banner-shade{background:linear-gradient(90deg,rgba(12,17,19,.88),rgba(12,17,19,.52) 66%,rgba(12,17,19,.16))}.fleet-banner .banner-copy{padding:18px 20px}.fleet-banner h1{font-size:31px}.fleet-banner .banner-copy > p:last-child{font-size:12px;margin-top:9px}.desktop-break{display:none}.fleet-banner :deep(.hero-playback){right:10px;bottom:10px}}
 @media(max-width:650px){.fleet-banner .banner-copy h1,.fleet-banner .banner-copy p,.fleet-banner .banner-shade{transition:opacity .6s ease}.fleet-banner:has(.hero-video-people) .banner-copy h1,.fleet-banner:has(.hero-video-people) .banner-copy p{opacity:0}.fleet-banner:has(.hero-video-people) .banner-shade{opacity:.2}}

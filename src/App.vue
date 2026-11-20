@@ -775,7 +775,7 @@ function logoutDemo() {
     :cars="filteredCars" :all-cars="cars" v-model:filters="catalogFilters" :categories="categories" v-model:category="category" v-model:sort="sort"
     v-model:start="start" v-model:end="end" v-model:location="location" :location-options="pickupPresets"
     :address="address" :address-mode="addressDelivery" :delivery-point="deliveryPoint" @confirm-address="confirmDeliveryAddress"
-    v-model:mileage="mileage" :mileage-prices="mileagePrices" :mileage-label="mileageLabel" :rate="rate" :protection="protection"
+    v-model:mileage="mileage" :base-mileage="baseMileage" :mileage-prices="mileagePrices" :mileage-label="mileageLabel" :rate="rate" :protection="protection"
     @apply-search="search" @edit-search="editSearch" @show-car="showCar" />
   <VehiclePage v-if="page === 'car'"
     :car="selected" :back-label="carReturnPage === 'prices' ? 'К ценам' : 'Все автомобили'" :pickup-label="pickupLabel"
