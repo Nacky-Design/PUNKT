@@ -37,8 +37,8 @@ import PromotionsPage from "./components/PromotionsPage.vue";
 import SiteFooter from "./components/SiteFooter.vue";
 import DemoAuth from "./components/DemoAuth.vue";
 import DemoDashboard from "./components/DemoDashboard.vue";
-import HeaderMessengerIcon from "./components/HeaderMessengerIcon.vue";
-import { messengerLinks } from "./contact";
+import MessengerIcons from "./components/MessengerIcons.vue";
+import { deliveryAddressLine, deliveryPointUrl, hasDeliveryAddress, type DeliveryPoint, type DeliverySelection } from "./delivery";
 import type { CatalogFilterState } from "./components/CatalogFilters.vue";
 import VehiclePage from "./components/VehiclePage.vue";
 import {
@@ -73,13 +73,21 @@ const category = ref("Все классы"),
 const pricesMileage = ref(baseMileage);
 const priceTab = ref<"rental" | "services" | "damage">("rental");
 const address = ref("");
+const deliveryPoint = ref<DeliveryPoint>();
 const searchAddressErrors = ref(false);
 const addressSelected = computed(() => location.value === addressDelivery);
-const cleanAddress = computed(() => address.value.trim().replace(/^Москва\s*,\s*/iu, "").replace(/\s+/g, " "));
-const incompleteAddress = computed(() =>
-  addressSelected.value &&
-  !/\p{L}.*[ ,](?:д(?:ом|\.)?\s*)?\d+[а-яa-z]?(?:\s*(?:[ксkc/]|корп(?:ус)?\.?|стр(?:оение)?\.?)\s*\d+[а-яa-z]?)*(?:\s*,.+)?$/iu.test(cleanAddress.value),
-);
+const cleanAddress = computed(() => deliveryAddressLine(address.value));
+const incompleteAddress = computed(() => addressSelected.value && !hasDeliveryAddress(address.value));
+
+function editDeliveryAddress(value: string) {
+  address.value = value;
+  deliveryPoint.value = undefined;
+}
+function confirmDeliveryAddress(selection: DeliverySelection) {
+  address.value = selection.address;
+  location.value = addressDelivery;
+  deliveryPoint.value = selection.point;
+}
 const pickupLabel = computed(() => {
   if (!addressSelected.value) return location.value;
   if (incompleteAddress.value) return "Доставка по Москве, адрес уточняется";
@@ -144,6 +152,7 @@ const requestDetails = ref<{
   car: string;
   period: string;
   pickup: string;
+  pickupMap?: string;
   mileage: string;
   protection: string;
   notes: string[];
@@ -365,6 +374,7 @@ function request(withMileageDiscussion = false) {
     car: selected.value.name,
     period: `${rentalMoment(period.start, period.startTime)} — ${rentalMoment(period.end, period.endTime)} (МСК)`,
     pickup: pickupLabel.value,
+    pickupMap: addressSelected.value && deliveryPoint.value ? deliveryPointUrl(deliveryPoint.value) : undefined,
     mileage: mileageLabel.value,
     protection: protection.value
       ? (selected.value.protectionPrice == null ? "Защита+ · стоимость уточняется" : "Защита+ подключена")
@@ -525,10 +535,7 @@ function logoutDemo() {
       >
         <Phone :size="16" /><span>8 495 104-10-10</span>
       </a>
-      <div v-if="messengerLinks.telegram || messengerLinks.whatsapp" class="header-messengers" aria-label="Мессенджеры">
-        <a v-if="messengerLinks.telegram" class="header-messenger" :href="messengerLinks.telegram" target="_blank" rel="noopener noreferrer" aria-label="Telegram"><HeaderMessengerIcon kind="telegram" /></a>
-        <a v-if="messengerLinks.whatsapp" class="header-messenger" :href="messengerLinks.whatsapp" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><HeaderMessengerIcon kind="whatsapp" /></a>
-      </div>
+      <MessengerIcons class="header-messengers" icon-class="header-messenger" :channels="['telegram', 'whatsapp']" />
       </div>
       <div class="header-hours" :aria-label="`${officeOpen ? 'Сейчас открыто' : 'Сейчас закрыто'}. Понедельник–пятница, с 8 до 17 часов по Москве`">
         <span class="hours-dot" :class="{ 'hours-dot-open': officeOpen }" aria-hidden="true"></span>
@@ -593,7 +600,8 @@ function logoutDemo() {
             <DateRange v-model:start="start" v-model:end="end" />
             <DeliveryAddress
               v-model="location"
-              v-model:address="address"
+              :address="address"
+              @update:address="editDeliveryAddress"
               :presets="pickupPresets"
               :address-mode="addressDelivery"
               :invalid="searchAddressErrors && incompleteAddress"
@@ -766,6 +774,7 @@ function logoutDemo() {
   <CatalogPage v-if="page === 'catalog'"
     :cars="filteredCars" :all-cars="cars" v-model:filters="catalogFilters" :categories="categories" v-model:category="category" v-model:sort="sort"
     v-model:start="start" v-model:end="end" v-model:location="location" :location-options="pickupPresets"
+    :address="address" :address-mode="addressDelivery" :delivery-point="deliveryPoint" @confirm-address="confirmDeliveryAddress"
     v-model:mileage="mileage" :mileage-prices="mileagePrices" :mileage-label="mileageLabel" :rate="rate" :protection="protection"
     @apply-search="search" @edit-search="editSearch" @show-car="showCar" />
   <VehiclePage v-if="page === 'car'"
@@ -817,6 +826,9 @@ function logoutDemo() {
         <div class="request-trip" role="group" aria-label="Условия аренды">
           <p><CalendarRange :size="16" aria-hidden="true" />{{ requestDetails.period }}</p>
           <p><MapPin :size="16" aria-hidden="true" />{{ requestDetails.pickup }}</p>
+          <a v-if="requestDetails.pickupMap" class="request-map-link" :href="requestDetails.pickupMap" target="_blank" rel="noopener noreferrer">
+            Точка подачи на карте <ArrowUpRight :size="16" aria-hidden="true" />
+          </a>
           <p><Gauge :size="16" aria-hidden="true" />Пробег · {{ requestDetails.mileage }}</p>
           <p><ShieldCheck :size="16" aria-hidden="true" />{{ requestDetails.protection }}</p>
           <ul v-if="requestDetails.notes.length" class="request-notes">

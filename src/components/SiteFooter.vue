@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Clock3, MapPin, Phone } from 'lucide-vue-next';
-import HeaderMessengerIcon from './HeaderMessengerIcon.vue';
+import MessengerIcons from './MessengerIcons.vue';
 import { messengerLinks } from '../contact';
 
 const navItems = [
@@ -38,13 +38,10 @@ const year = new Date().getFullYear();
           <p><MapPin :size="16" aria-hidden="true" />Москва, ул. Авиационная, 24с1</p>
         </div>
 
-        <div v-if="messengerLinks.telegram || messengerLinks.whatsapp || messengerLinks.max" class="footer-social">
+        <div class="footer-social">
           <p class="footer-label">МЕССЕНДЖЕРЫ</p>
-          <div class="social-icons" aria-label="Мессенджеры">
-            <a v-if="messengerLinks.whatsapp" class="social-icon whatsapp" :href="messengerLinks.whatsapp" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><HeaderMessengerIcon kind="whatsapp" /></a>
-            <a v-if="messengerLinks.telegram" class="social-icon" :href="messengerLinks.telegram" target="_blank" rel="noopener noreferrer" aria-label="Telegram"><HeaderMessengerIcon kind="telegram" /></a>
-            <a v-if="messengerLinks.max" class="social-icon" :href="messengerLinks.max" target="_blank" rel="noopener noreferrer" aria-label="Max"><HeaderMessengerIcon kind="max" /></a>
-          </div>
+          <MessengerIcons class="social-icons" icon-class="social-icon" :channels="['whatsapp', 'telegram', 'max']" />
+          <p v-if="!messengerLinks.whatsapp || !messengerLinks.telegram || !messengerLinks.max" class="social-note">Ссылки на мессенджеры уточняются.</p>
         </div>
       </div>
       <div class="footer-bottom">
@@ -76,12 +73,11 @@ const year = new Date().getFullYear();
 .footer-phone svg { color:#ffc107; }
 .footer-phone:hover { color:#ffc107; }
 .social-icons { display:flex; gap:9px; align-items:center; }
-.social-icon { display:grid; place-items:center; width:34px; height:34px; flex:none; }
-.social-icon svg { width:24px; height:24px; }
-.social-icon { color:#f4f4f2; }
-.social-icon.whatsapp { color:#f4f4f2; }
-.social-icon.whatsapp svg { width:21px; height:21px; }
-.social-note { color:#a9adab; font-size:11px; line-height:1.4; margin:11px 0 0; }
+.social-icons :deep(.social-icon) { display:grid; place-items:center; width:42px; height:44px; flex:none; color:#f4f4f2; }
+.social-icons :deep(.social-icon svg) { width:22px; height:22px; }
+.social-icons :deep(a.social-icon:hover) { color:#ffc107; }
+.social-icons :deep(span.social-icon) { opacity:.8; }
+.social-note { color:#a9adab; font-size:var(--type-secondary); line-height:1.4; margin:11px 0 0; }
 .footer-bottom { display:flex; justify-content:space-between; align-items:end; gap:20px; margin-top:33px; padding-top:20px; border-top:1px solid #ffffff2b; color:#a9adab; font-size:var(--type-secondary); line-height:1.5; }
 .footer-bottom p { margin:0; }
 .footer-bottom-left { min-width:0; }
@@ -92,10 +88,21 @@ const year = new Date().getFullYear();
 .footer-legal span { color:#c5c8c6; }
 .footer-legal small { color:#898f8b; font-size:10px; width:100%; }
 @media (max-width:1000px) { .footer-main, .footer-main:has(.footer-social) { grid-template-columns:1fr 1fr; gap:28px; } .footer-main > * + * { border-left:0; padding-left:0; min-height:0; } .footer-main > :nth-child(even) { padding-left:24px; border-left:1px solid #ffffff28; } }
-@media (max-width:600px) { .site-footer { padding:35px 16px 24px; } .footer-main { gap:25px 18px; } .footer-main > :nth-child(even) { padding-left:16px; } .footer-brand { width:145px; height:51px; } .footer-nav-grid { grid-template-columns:1fr; } .footer-nav-grid a { min-height:44px; } .footer-phone { font-size:14px; } .footer-contact p:not(.footer-label) { white-space:normal; line-height:1.35; } .footer-contact p:not(.footer-label) svg { flex:none; } .footer-bottom { margin-top:25px; gap:12px; } .footer-legal { gap:8px 14px; } }
-@media (max-width:360px) { .footer-main, .footer-main:has(.footer-social) { grid-template-columns:1fr; } .footer-main > :nth-child(even) { border-left:0; padding-left:0; } .footer-nav-grid { grid-template-columns:1fr 1fr; } }
+@media (max-width:600px) {
+  .site-footer { padding:29px 16px 20px; }
+  .footer-main, .footer-main:has(.footer-social) { grid-template-columns: minmax(0, 1fr); gap:22px; }
+  .footer-main > :nth-child(even) { padding-left:0; border-left:0; }
+  .footer-brand { width:145px; height:51px; }
+  .footer-label { margin-bottom:8px; }
+  .footer-nav-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 18px; }
+  .footer-nav-grid a { min-height:40px; }
+  .footer-phone { font-size:16px; }
+  .footer-contact p:not(.footer-label) { margin-top:6px; line-height:1.35; }
+  .footer-bottom { margin-top:20px; padding-top:16px; gap:12px; align-items:flex-end; }
+  .footer-bottom .footer-copyright { margin:0; }
+  .footer-credit { flex:0 1 12ch; }
+}
 
 .site-footer { --focus-ring: #b7c1bc; }
 .footer-contact p svg { flex: none; }
-@media (max-width: 500px) { .footer-bottom { align-items: flex-start; flex-direction: column; gap: 10px; } }
 </style>

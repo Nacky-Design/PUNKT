@@ -160,3 +160,22 @@ test("daily rental passes selected dates into the catalogue", async ({ page }) =
   await expect(page.locator(".fleet-card .car-price").first()).toContainText(/2\s900 ₽ \/ сутки/);
   await noOverflow(page, 320);
 });
+
+
+test("mobile footer stays stacked and shows the messenger icons across its breakpoints", async ({ page }) => {
+  await page.goto("/");
+  const footer = page.getByRole("contentinfo");
+  const header = page.getByRole("banner");
+  for (const width of [320, 360, 361, 390, 430, 600, 601]) {
+    await page.setViewportSize({ width, height: 844 });
+    await noOverflow(page, width);
+    await expect(header.getByRole("group", { name: "Мессенджеры" }).getByRole("img")).toHaveCount(2);
+    await expect(footer.getByRole("group", { name: "Мессенджеры" }).getByRole("img")).toHaveCount(3);
+    const layout = await footer.evaluate(element => ({
+      tracks: getComputedStyle(element.querySelector(".footer-main")!).gridTemplateColumns.split(" ").length,
+      nav: getComputedStyle(element.querySelector(".footer-nav-grid")!).gridTemplateColumns.split(" ").length,
+      divider: getComputedStyle(element.querySelector(".footer-nav")!).borderLeftWidth,
+    }));
+    expect(layout).toEqual({ tracks: width <= 600 ? 1 : 2, nav: 2, divider: width <= 600 ? "0px" : "1px" });
+  }
+});

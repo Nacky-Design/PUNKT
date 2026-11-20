@@ -11,8 +11,10 @@ import CatalogHighlights from './CatalogHighlights.vue';
 import SelectField from './SelectField.vue';
 import CompanyIntro from './CompanyIntro.vue';
 import RentalTerms from './RentalTerms.vue';
+import PickupAddressDialog from './PickupAddressDialog.vue';
 import { messengerLinks } from '../contact';
 import { money, type Car } from '../data';
+import { deliveryAddressLine, hasDeliveryAddress, type DeliveryPoint, type DeliverySelection } from '../delivery';
 
 const props = defineProps<{
   cars: Car[];
@@ -25,6 +27,9 @@ const props = defineProps<{
   end: string;
   location: string;
   locationOptions: string[];
+  addressMode: string;
+  address: string;
+  deliveryPoint?: DeliveryPoint;
   mileage: string;
   mileagePrices: Record<string, number>;
   mileageLabel: string;
@@ -36,19 +41,39 @@ const emit = defineEmits<{
   (event: 'apply-search' | 'edit-search'): void;
   (event: 'update:filters', value: CatalogFilterState): void;
   (event: 'show-car', car: Car): void;
+  (event: 'confirm-address', selection: DeliverySelection): void;
 }>();
 const lowestRate = computed(() => Math.min(...props.allCars.map(car => car.price)));
 const draftCategory = ref(props.category);
 const draftStart = ref(props.start);
 const draftEnd = ref(props.end);
 const draftLocation = ref(props.location);
-const pickupOptions = computed(() => props.locationOptions.includes(draftLocation.value)
-  ? props.locationOptions
-  : [draftLocation.value, ...props.locationOptions]);
+const addressEditor = ref<'manual' | 'map'>();
+const savedPickup = computed(() => hasDeliveryAddress(props.address) ? `Москва, ${deliveryAddressLine(props.address)}` : '');
+const pickupValue = computed(() => draftLocation.value === props.addressMode && savedPickup.value ? savedPickup.value : draftLocation.value);
+const pickupOptions = computed(() => [
+  ...props.locationOptions,
+  ...(savedPickup.value ? [savedPickup.value] : []),
+  'Ввести адрес', 'Выбрать на карте',
+]);
+
+function choosePickup(value: string) {
+  if (value === 'Ввести адрес' || value === 'Выбрать на карте') {
+    addressEditor.value = value === 'Ввести адрес' ? 'manual' : 'map';
+    return;
+  }
+  draftLocation.value = value === savedPickup.value ? props.addressMode : value;
+}
+function confirmAddress(selection: DeliverySelection) {
+  draftLocation.value = props.addressMode;
+  emit('confirm-address', selection);
+  addressEditor.value = undefined;
+}
 const sortOptions = ['Сначала дешевле', 'Сначала дороже', 'По названию'];
-watch(() => [props.start, props.end, props.location], ([start, end, location]) => {
-  draftStart.value = start!; draftEnd.value = end!; draftLocation.value = location!;
+watch(() => [props.start, props.end], ([start, end]) => {
+  draftStart.value = start!; draftEnd.value = end!;
 });
+watch(() => props.location, value => { draftLocation.value = value; });
 watch(() => props.category, category => { draftCategory.value = category; });
 function applySearch() {
   emit('update:category', draftCategory.value);
@@ -83,12 +108,15 @@ const mileageField = ref<InstanceType<typeof CatalogMileage>>();
       <form class="search-bar" aria-label="Параметры аренды" @submit.prevent="applySearch">
         <SelectField v-model="draftCategory" class="class-field" label="Класс автомобиля" :options="categories" appearance="catalog" />
         <CatalogDateRange v-model:start="draftStart" v-model:end="draftEnd" />
-        <SelectField v-model="draftLocation" class="location-field" label="Место получения" :options="pickupOptions" appearance="catalog" />
+        <SelectField :model-value="pickupValue" class="location-field" label="Место получения" :options="pickupOptions" appearance="catalog"
+          @update:model-value="choosePickup" />
         <CatalogMileage ref="mileageField" :model-value="mileage" :prices="mileagePrices"
           @update:model-value="emit('update:mileage', $event)" />
         <CatalogFilters :filters="filters" :all-cars="allCars" @apply="emit('update:filters', $event)" />
         <button class="search-submit" type="submit">Применить <ArrowRight :size="18" /></button>
       </form>
+      <PickupAddressDialog v-if="addressEditor" :initial="addressEditor" :address="address"
+        :point="deliveryPoint" :address-mode="addressMode" @close="addressEditor = undefined" @confirm="confirmAddress" />
 
       <div class="fleet-heading">
         <h2>Наш автопарк</h2>

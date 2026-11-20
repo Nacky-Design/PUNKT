@@ -153,3 +153,75 @@ test("mobile banners can be browsed manually and link to their actions", async (
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Бесплатная доставка по Москве.");
   await expect(page.locator("main")).toContainText("09:00–21:00");
 });
+
+
+test("manual pickup address is confirmed from the catalogue and carried to the request", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.clock.setFixedTime(new Date("2026-11-20T10:00:00+03:00"));
+  await page.goto("/");
+  const pickup = page.getByRole("button", { name: /^Место получения:/ });
+  await pickup.click();
+  await expect(page.getByRole("option", { name: "Шереметьево (SVO)" })).toBeVisible();
+  await page.getByRole("option", { name: "Ввести адрес" }).click();
+  const dialog = page.getByRole("dialog", { name: "Введите адрес доставки" });
+  const field = dialog.getByRole("combobox", { name: "Адрес доставки · Москва" });
+  await expect(field).toBeFocused();
+  await dialog.getByRole("button", { name: "Подтвердить адрес" }).click();
+  await expect(field).toHaveAttribute("aria-invalid", "true");
+  await field.fill("Москва, Новый Арбат, 15");
+  await dialog.getByRole("button", { name: "Подтвердить адрес" }).click();
+  await expect(pickup).toHaveAccessibleName("Место получения: Москва, Новый Арбат, 15");
+  await expect(pickup).toBeFocused();
+
+  await page.locator(".fleet-card").first().getByRole("button", { name: "Подробнее", exact: true }).click();
+  await expect(page.getByRole("complementary", { name: "Параметры аренды" })).toContainText("Москва, Новый Арбат, 15");
+  await page.getByRole("button", { name: /^Получение/ }).click();
+  await page.getByRole("button", { name: "Подтвердить период" }).click();
+  await page.getByRole("button", { name: "Подготовить заявку" }).click();
+  const request = page.getByRole("dialog", { name: "Запрос на аренду" });
+  await expect(request.getByRole("group", { name: "Условия аренды" })).toContainText("Москва, Новый Арбат, 15");
+});
+
+test("a map pin resolves to an editable address and is kept in the request", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-11-20T10:00:00+03:00"));
+  const tile = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l+kAAAAASUVORK5CYII=", "base64");
+  await page.route("https://tile.openstreetmap.org/**", route => route.fulfill({ contentType: "image/png", body: tile }));
+  await page.route("https://nominatim.openstreetmap.org/reverse?**", route => route.fulfill({
+    json: { address: { city: "Москва", road: "Тверская улица", house_number: "13" } },
+  }));
+  await page.goto("/");
+  await page.getByRole("button", { name: /^Место получения:/ }).click();
+  await page.getByRole("option", { name: "Выбрать на карте" }).click();
+  const dialog = page.getByRole("dialog", { name: "Выберите адрес на карте" });
+  await expect(dialog.getByRole("button", { name: "Выбрать центр карты" })).toBeVisible();
+  await dialog.getByRole("region", { name: "Карта Москвы" }).click({ position: { x: 275, y: 145 } });
+  await expect(dialog.locator(".pickup-map-marker")).toBeVisible();
+  const field = dialog.getByRole("combobox", { name: "Адрес доставки · Москва" });
+  await expect(field).toHaveValue("Тверская улица, 13");
+  await field.fill("Тверская улица, 14");
+  await dialog.getByRole("button", { name: "Подтвердить адрес" }).click();
+  await expect(page.getByRole("button", { name: "Место получения: Москва, Тверская улица, 14" })).toBeVisible();
+
+  await page.locator(".fleet-card").first().getByRole("button", { name: "Подробнее", exact: true }).click();
+  await page.getByRole("button", { name: /^Получение/ }).click();
+  await page.getByRole("button", { name: "Подтвердить период" }).click();
+  await page.getByRole("button", { name: "Подготовить заявку" }).click();
+  const terms = page.getByRole("group", { name: "Условия аренды" });
+  await expect(terms).toContainText("Москва, Тверская улица, 14");
+  await expect(terms.getByRole("link", { name: "Точка подачи на карте" })).toHaveAttribute("href", /^https:\/\/www\.openstreetmap\.org\/\?mlat=/);
+});
+
+test("manual entry is available when map tiles fail", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.route("https://tile.openstreetmap.org/**", route => route.abort());
+  await page.goto("/");
+  await page.getByRole("button", { name: /^Место получения:/ }).click();
+  await page.getByRole("option", { name: "Выбрать на карте" }).click();
+  const dialog = page.getByRole("dialog", { name: "Выберите адрес на карте" });
+  await expect(dialog.getByRole("status")).toHaveText("Карта недоступна. Укажите адрес ниже.");
+  await dialog.getByRole("button", { name: "Ввести вручную" }).click();
+  const manual = page.getByRole("dialog", { name: "Введите адрес доставки" });
+  await manual.getByRole("combobox").fill("Новый Арбат, 15");
+  await manual.getByRole("button", { name: "Подтвердить адрес" }).click();
+  await expect(page.getByRole("button", { name: "Место получения: Москва, Новый Арбат, 15" })).toBeVisible();
+});

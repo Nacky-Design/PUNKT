@@ -516,7 +516,7 @@ test("editable pickup suggests houses and preserves a manual address and mileage
   await pickup.fill("Сиреневый бульвар, 24с1");
   await page.getByRole("button", { name: "Найти автомобиль" }).click();
   const results = page.locator("main");
-  await expect(results.getByRole("button", { name: /^Место получения:/ })).toHaveAccessibleName("Место получения: Доставка по адресу");
+  await expect(results.getByRole("button", { name: /^Место получения:/ })).toHaveAccessibleName("Место получения: Москва, Сиреневый бульвар, 24с1");
   await expect(results.locator(".fleet-card").first()).toContainText("100 км / сутки включено");
   await results.getByRole("button", { name: "Подробнее: Hyundai Solaris" }).click();
   const car = page.locator("main");

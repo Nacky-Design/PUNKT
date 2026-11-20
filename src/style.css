@@ -3398,3 +3398,15 @@ h2 {
     font-size: 16px;
   }
 }
+
+
+.header-messenger { display: grid; place-items: center; }
+.header-messenger svg { width: 18px; height: 18px; }
+.header-messengers a:hover { color: #ffc107; }
+.header-messengers span { opacity: .8; }
+.request-map-link { display: inline-flex; align-items: center; gap: 6px; color: #775500; text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 380px) {
+  .header-hours { font-size: 11px; }
+  .header-contact-row .header-phone { font-size: 12px; }
+  .header-contact-row .header-phone svg { width: 16px; }
+}
