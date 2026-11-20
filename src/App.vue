@@ -49,6 +49,7 @@ import {
   addDays,
   localDate,
   checkRentalPeriod,
+  profileInitials,
   type Car,
   type RentalPeriod,
 } from "./data";
@@ -100,6 +101,7 @@ const protection = ref(false),
 const quickOpen = ref(false),
   quickCategory = ref("Все классы"),
   mobileMenu = ref(false),
+  mobileMenuButton = ref<HTMLButtonElement>(),
   rail = ref<HTMLElement>();
 const canScrollBack = ref(false);
 const canScrollForward = ref(false);
@@ -163,10 +165,13 @@ function readRoute() {
   const previousHash = currentHash;
   currentHash = hash;
   modal.value = null;
+  mobileMenu.value = false;
   const [section, slug = ""] = hash.slice(1).split("/");
   const car = section === "car" ? cars.find(item => String(item.id) === slug) : undefined;
 
   if (car) selected.value = car;
+  if (section === "search" && slug === "business") business.value = true;
+  if (section === "search" && slug === "international") foreign.value = true;
   if (section === "prices") {
     priceTab.value = slug === "services" || slug === "damage" ? slug : "rental";
     if (page.value === "prices") return;
@@ -180,6 +185,12 @@ function readRoute() {
     document.title = heading && page.value !== "catalog"
       ? `${heading.textContent?.trim().replace(/\.$/, "")} — Пункт`
       : "Пункт — автомобиль под ваши планы";
+    if (section === "conditions" && slug === "deposit") {
+      const deposit = document.getElementById("rental-deposit-title");
+      deposit?.focus({ preventScroll: true });
+      deposit?.scrollIntoView({ block: "start", behavior: "instant" });
+      return;
+    }
     if (previousHash === undefined) return;
 
     const returnLink = !slug && previousHash.startsWith(`#${section}/`)
@@ -289,10 +300,6 @@ function openInfo(title: string, body: string, photo?: keyof typeof guidePhotos)
   modal.value = "info";
   mobileMenu.value = false;
 }
-function openService(id: string) {
-  mobileMenu.value = false;
-  goPage("services", undefined, id);
-}
 function explainMileage() {
   const limit = Number.parseInt(mileage.value, 10);
   openInfo(
@@ -315,16 +322,11 @@ function explainProtection() {
     "protection",
   );
 }
-function nav(item: string) {
+function closeMobileMenu(event?: KeyboardEvent) {
+  if (!mobileMenu.value) return;
+  if (event) event.preventDefault();
   mobileMenu.value = false;
-  if (item === "Цены") goPage("prices");
-  else if (item === "Услуги") goPage("services");
-  else if (item === "Автопарк") goPage("catalog");
-  else if (item === "Акции") goPage("promotions");
-  else if (item === "Контакты") goPage("contacts");
-  else if (item === "Условия") goPage("conditions");
-  else if (item === "Новости") goPage("news");
-  else if (item === "О компании") goPage("about");
+  mobileMenuButton.value?.focus();
 }
 const carReturnPage = ref<"catalog" | "prices">("catalog");
 function showCar(car: Car) {
@@ -497,16 +499,16 @@ function logoutDemo() {
     </defs>
   </svg>
   <a href="#search" class="skip-link">Перейти к подбору автомобиля</a>
-  <header class="site-header site-header-solid">
-    <a class="brand" href="#catalog" @click.prevent="goPage('catalog')" aria-label="Пункт — на главную"
+  <header class="site-header site-header-solid" @keydown.esc="closeMobileMenu">
+    <a class="brand" href="#catalog" aria-label="Пункт — на главную"
       ><span class="brand-image"></span
     ></a>
     <nav class="desktop-nav" aria-label="Главное меню">
       <template v-for="item in navItems" :key="item.route">
-        <ServicesMenu v-if="item.route === 'services'" @select="openService" :current="page === 'services'" @all="nav('Услуги')" />
-        <button v-else class="nav-label" type="button" @click="nav(item.label)" :aria-current="page === item.route ? 'page' : undefined">
+        <ServicesMenu v-if="item.route === 'services'" :current="page === 'services'" />
+        <a v-else class="nav-label" :href="`#${item.route}`" :aria-current="page === item.route ? 'page' : undefined">
           {{ item.label }}
-        </button>
+        </a>
       </template>
     </nav>
     <div class="header-actions">
@@ -535,10 +537,11 @@ function logoutDemo() {
         :aria-label="demoUser ? 'Открыть личный кабинет' : 'Войти в личный кабинет'"
         @click="account"
       >
-        <span v-if="demoUser" class="account-avatar" aria-hidden="true">{{ demoUser.kind === "company" ? "К" : "МИ" }}</span>
+        <span v-if="demoUser" class="account-avatar" aria-hidden="true">{{ profileInitials(demoUser.name, demoUser.kind === "company" ? "К" : "П") }}</span>
         <UserRound v-else :size="19" aria-hidden="true" /><span class="account-label">{{ demoUser ? "Кабинет" : "Войти" }}</span>
       </button>
       <button
+        ref="mobileMenuButton"
         class="mobile-menu-button icon-button"
         :aria-expanded="mobileMenu"
         :aria-controls="mobileMenu ? 'mobile-nav' : undefined"
@@ -551,10 +554,10 @@ function logoutDemo() {
     <Transition name="popover">
       <nav v-if="mobileMenu" id="mobile-nav" class="mobile-nav" aria-label="Мобильное меню">
         <template v-for="item in navItems" :key="item.route">
-          <ServicesMenu v-if="item.route === 'services'" mobile @select="openService" :current="page === 'services'" @all="nav('Услуги')" />
-          <button v-else type="button" @click="nav(item.label)" :aria-current="page === item.route ? 'page' : undefined">
-            {{ item.label }}<ArrowUpRight :size="17" />
-          </button>
+          <ServicesMenu v-if="item.route === 'services'" mobile :current="page === 'services'" />
+          <a v-else :href="`#${item.route}`" @click="closeMobileMenu()" :aria-current="page === item.route ? 'page' : undefined">
+            {{ item.label }}<ArrowUpRight :size="17" aria-hidden="true" />
+          </a>
         </template>
         <button @click="account">
           Личный кабинет<UserRound :size="17" />
@@ -768,12 +771,12 @@ function logoutDemo() {
     :renter-context="renterContext" :extras="catalogFilters.extras" :delivery="delivery" :rate="rate(selected)"
     @back="closeCar" @edit-search="editSearch" @apply-period="applyRentalPeriod" @request="request" @explain-protection="explainProtection" />
   <PricesPage v-if="page === 'prices'" :tab="priceTab" :cars="cars" v-model:mileage="pricesMileage" :mileage-prices="mileagePrices"
-    @show-car="showPriceCar" @explain-protection="explainProtection" @open-terms="nav('Условия')" />
+    @show-car="showPriceCar" @explain-protection="explainProtection" @open-terms="goPage('conditions')" />
   <ServicesPage v-if="page === 'services'" :detail-id="detailId" :start="start" :end="end" @find-cars="searchWithDates" />
   <InformationPage v-if="page === 'conditions' || page === 'contacts' || page === 'about'" :page="page" />
   <NewsPage v-if="page === 'news'" :detail-id="detailId" />
   <PromotionsPage v-if="page === 'promotions'" :detail-id="detailId" />
-  <SiteFooter v-if="page !== 'account'" @navigate="nav" />
+  <SiteFooter v-if="page !== 'account'" />
   <DemoAuth v-if="page === 'account' && !demoUser" @back="goPage('catalog')" @enter="enterDemo" />
   <DemoDashboard v-if="page === 'account' && demoUser" :user="demoUser" @catalog="goPage('catalog')" @logout="logoutDemo" />
   <BaseModal

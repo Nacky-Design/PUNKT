@@ -54,7 +54,8 @@ const asset = (file: string) => `${import.meta.env.BASE_URL}assets/${file}`;
           </header>
           <div class="detail-actions">
             <a href="tel:+74951041010" class="interior-action"><Phone :size="17" aria-hidden="true" /> {{ selected.id === 'half-day' ? 'Позвонить по акции' : 'Уточнить условия' }}</a>
-            <a v-if="selected.id !== 'half-day'" href="#catalog" class="interior-action secondary">Посмотреть автомобили <ArrowRight :size="17" aria-hidden="true" /></a>
+            <a v-if="selected.id === 'free-delivery'" href="#prices/services" class="interior-action secondary">Все тарифы доставки <ArrowRight :size="17" aria-hidden="true" /></a>
+            <a v-else-if="selected.id !== 'half-day'" href="#catalog" class="interior-action secondary">Посмотреть автомобили <ArrowRight :size="17" aria-hidden="true" /></a>
           </div>
         </div>
       </article>

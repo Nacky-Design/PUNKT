@@ -91,6 +91,7 @@ const emit = defineEmits<{
             <p v-else><ShieldCheck :size="19" aria-hidden="true" /> «Защита+» · цена по запросу</p>
             <button class="text-button" type="button" aria-label="Что покрывает «Защита+»" @click="emit('explain-protection')">Что покрывает <ArrowUpRight :size="15" aria-hidden="true" /></button>
           </div>
+          <p v-if="!periodConfirmed" class="vehicle-request-hint">Выберите даты и время, чтобы подготовить заявку.</p>
           <button class="button button-primary full-width" type="button" :disabled="!periodConfirmed || !!periodError || pickupIncomplete" @click="emit('request', false)">Подготовить заявку <ArrowRight :size="18" aria-hidden="true" /></button>
           <button class="mileage-discuss text-button" type="button" :disabled="!periodConfirmed || !!periodError || pickupIncomplete" @click="emit('request', true)">Обсудить пробег <ArrowUpRight :size="15" aria-hidden="true" /></button>
         </aside>
@@ -141,6 +142,8 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
+.vehicle-request-hint { color: #5d5f5a; font-size: var(--type-secondary); line-height: 1.4; margin: 0 0 8px; }
+
 .vehicle-page { min-height: 80vh; padding: 36px 24px 80px; background: #fff; color: #1d1d1d; }
 .vehicle-page-inner { max-width: 1280px; margin: 0 auto; }
 .vehicle-page .car-detail-grid { grid-template-columns: minmax(0, 1.7fr) minmax(330px, 1fr); grid-template-areas: "photo photo" "details estimate"; gap: 24px 28px; }

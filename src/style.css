@@ -1327,16 +1327,16 @@ h2 {
   padding: 0;
   list-style: none;
 }
-.services-panel button,
-.mobile-services button {
+.services-panel :is(button, a),
+.mobile-services :is(button, a) {
   width: 100%;
   padding: 8px;
   border-radius: 6px;
   text-align: left;
   font-size: 14px;
 }
-.services-panel button:hover,
-.mobile-services button:hover {
+.services-panel :is(button, a):hover,
+.mobile-services :is(button, a):hover {
   background: #ffffff15;
   color: #fff;
 }
@@ -2527,8 +2527,8 @@ h2 {
     gap: 8px;
   }
   .account-button {
-    width: 32px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
     padding: 5px;
     border: 0;
   }
@@ -2553,7 +2553,7 @@ h2 {
     max-height: calc(100dvh - 100px);
     overflow-y: auto;
   }
-  .mobile-nav > button,
+  .mobile-nav > :is(button, a),
   .mobile-services > summary {
     display: flex;
     align-items: center;
@@ -2564,7 +2564,7 @@ h2 {
     color: #fff;
     border-radius: 8px;
   }
-  .mobile-nav > button:hover,
+  .mobile-nav > :is(button, a):hover,
   .mobile-services summary:hover {
     background: #ffffff13;
   }

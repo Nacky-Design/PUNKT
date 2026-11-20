@@ -3,8 +3,12 @@ import { Clock3, MapPin, Phone } from 'lucide-vue-next';
 import HeaderMessengerIcon from './HeaderMessengerIcon.vue';
 import { messengerLinks } from '../contact';
 
-const emit = defineEmits<{ navigate: [item: string] }>();
-const navItems = ['Цены', 'Услуги', 'Условия', 'Акции', 'Новости', 'О компании', 'Контакты'];
+const navItems = [
+  { label: 'Цены', href: '#prices' }, { label: 'Услуги', href: '#services' },
+  { label: 'Условия', href: '#conditions' }, { label: 'Акции', href: '#promotions' },
+  { label: 'Новости', href: '#news' }, { label: 'О компании', href: '#about' },
+  { label: 'Контакты', href: '#contacts' },
+];
 const logoAsset = `${import.meta.env.BASE_URL}assets/logo-source.webp`;
 const year = new Date().getFullYear();
 </script>
@@ -14,16 +18,16 @@ const year = new Date().getFullYear();
     <div class="footer-inner">
       <div class="footer-main">
         <div class="footer-brand-block">
-          <button class="footer-brand" type="button" aria-label="Пункт — к автопарку" @click="emit('navigate', 'Автопарк')">
+          <a class="footer-brand" href="#catalog" aria-label="Пункт — к автопарку">
             <span :style="{ backgroundImage: `url('${logoAsset}')` }"></span>
-          </button>
+          </a>
           <p>Автомобиль под ваши планы.</p>
         </div>
 
         <nav class="footer-nav" aria-label="Навигация в подвале">
           <p class="footer-label">НАВИГАЦИЯ</p>
           <div class="footer-nav-grid">
-            <button v-for="item in navItems" :key="item" type="button" @click="emit('navigate', item)">{{ item }}</button>
+            <a v-for="item in navItems" :key="item.href" :href="item.href">{{ item.label }}</a>
           </div>
         </nav>
 
@@ -63,12 +67,12 @@ const year = new Date().getFullYear();
 .footer-brand span { position:absolute; inset:0; background-position:50% 45.5%; background-repeat:no-repeat; background-size:calc(100% + 10px) auto; filter:url(#logo-white); }
 .footer-brand-block p { margin:10px 0 0; color:#a9adab; font-size:var(--type-secondary); line-height:1.5; }
 .footer-label { margin:0 0 16px; color:#9fa5a1; font-size:var(--type-secondary); font-weight:650; letter-spacing:.02em; }
-.footer-nav-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:11px 24px; }
-.footer-nav-grid button { padding:0; text-align:left; color:#e5e7e5; font-size:var(--type-secondary); }
-.footer-nav-grid button:hover,.footer-nav-grid button:focus-visible { color:#ffc107; }
+.footer-nav-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:2px 24px; }
+.footer-nav-grid a { display:flex; align-items:center; min-height:34px; text-align:left; color:#e5e7e5; font-size:var(--type-secondary); }
+.footer-nav-grid a:hover,.footer-nav-grid a:focus-visible { color:#ffc107; }
 .footer-contact p:not(.footer-label) { display:flex; align-items:center; gap:10px; margin:11px 0 0; color:#c3c8c4; font-size:var(--type-secondary); }
 .footer-contact p:not(.footer-label) svg { color:#ffc107; }
-.footer-phone { display:flex; align-items:center; gap:9px; font-weight:700; font-size:17px; white-space:nowrap; }
+.footer-phone { display:flex; align-items:center; min-height:44px; gap:9px; font-weight:700; font-size:17px; white-space:nowrap; }
 .footer-phone svg { color:#ffc107; }
 .footer-phone:hover { color:#ffc107; }
 .social-icons { display:flex; gap:9px; align-items:center; }
@@ -88,7 +92,7 @@ const year = new Date().getFullYear();
 .footer-legal span { color:#c5c8c6; }
 .footer-legal small { color:#898f8b; font-size:10px; width:100%; }
 @media (max-width:1000px) { .footer-main, .footer-main:has(.footer-social) { grid-template-columns:1fr 1fr; gap:28px; } .footer-main > * + * { border-left:0; padding-left:0; min-height:0; } .footer-main > :nth-child(even) { padding-left:24px; border-left:1px solid #ffffff28; } }
-@media (max-width:600px) { .site-footer { padding:35px 16px 24px; } .footer-main { gap:25px 18px; } .footer-main > :nth-child(even) { padding-left:16px; } .footer-brand { width:145px; height:51px; } .footer-nav-grid { grid-template-columns:1fr; gap:10px; } .footer-phone { font-size:14px; } .footer-contact p:not(.footer-label) { white-space:normal; line-height:1.35; } .footer-contact p:not(.footer-label) svg { flex:none; } .footer-bottom { margin-top:25px; gap:12px; } .footer-legal { gap:8px 14px; } }
+@media (max-width:600px) { .site-footer { padding:35px 16px 24px; } .footer-main { gap:25px 18px; } .footer-main > :nth-child(even) { padding-left:16px; } .footer-brand { width:145px; height:51px; } .footer-nav-grid { grid-template-columns:1fr; } .footer-nav-grid a { min-height:44px; } .footer-phone { font-size:14px; } .footer-contact p:not(.footer-label) { white-space:normal; line-height:1.35; } .footer-contact p:not(.footer-label) svg { flex:none; } .footer-bottom { margin-top:25px; gap:12px; } .footer-legal { gap:8px 14px; } }
 @media (max-width:360px) { .footer-main, .footer-main:has(.footer-social) { grid-template-columns:1fr; } .footer-main > :nth-child(even) { border-left:0; padding-left:0; } .footer-nav-grid { grid-template-columns:1fr 1fr; } }
 
 .site-footer { --focus-ring: #b7c1bc; }

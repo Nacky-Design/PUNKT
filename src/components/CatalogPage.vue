@@ -180,6 +180,8 @@ const mileageField = ref<InstanceType<typeof CatalogMileage>>();
   font-size: var(--type-secondary);
 }
 .card-bottom { flex-wrap: wrap; }
+.car-title > span, .car-specs, .car-price span, .card-bottom span { color: #5d5f5a; }
+.car-price > div { display: flex; align-items: baseline; gap: 5px; }
 .card-bottom button, .empty button { font-size: var(--type-control); }
 .empty p { font-size: var(--type-body); }
 .fleet-banner .banner-copy > p { font-size: var(--type-body); }
@@ -192,7 +194,7 @@ const mileageField = ref<InstanceType<typeof CatalogMileage>>();
   .search-submit { min-height: 46px; }
 }
 @media (min-width: 701px) and (max-width: 1179px) {
-  .search-bar { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.45fr); row-gap: 8px; }
+  .search-bar { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.72fr); row-gap: 8px; }
   .search-bar .location-field { grid-column: 4; grid-row: 1; }
   .search-bar :deep(.catalog-mileage) { grid-column: 1 / 3; grid-row: 2; border-top: 0; }
   .search-bar :deep(.mileage-trigger) { width: 100%; min-width: 0; }

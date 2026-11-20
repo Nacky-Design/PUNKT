@@ -18,7 +18,7 @@ const officeMap = `https://yandex.ru/map-widget/v1/?mode=search&text=${encodeURI
       <template v-if="page === 'conditions'">
         <header class="interior-heading">
           <h1>Условия аренды<span>.</span></h1>
-          <p>Что понадобится при получении автомобиля и в каких случаях нужен залог.</p>
+          <p>Требования к водителю, документы и залог.</p>
         </header>
         <RentalTerms embedded />
         <section class="terms-contact" aria-labelledby="terms-contact-title">

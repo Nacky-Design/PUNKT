@@ -9,7 +9,7 @@ defineProps<{
   displayValue?: string;
   actionLabel?: string;
   optionDetails?: Record<string, string>;
-  appearance?: "catalog" | "inline";
+  appearance?: "catalog" | "inline" | "panel";
 }>();
 const emit = defineEmits<{ "update:modelValue": [value: string] }>();
 const open = ref(false),
@@ -152,6 +152,13 @@ onBeforeUnmount(() => document.removeEventListener("click", outside));
 .select-field--inline .select-menu button { min-height: 44px; padding: 9px 10px; font-size: var(--type-control); }
 .select-menu button:focus-visible { outline-offset: -2px; }
 .select-menu button svg { flex: none; }
+.select-field--inline .select-menu button { padding-inline: 12px; }
+.select-field--panel .field { width: 100%; min-height: 54px; height: auto; padding: 7px 10px; border-radius: 8px; }
+.select-field--panel .field-caption { font-size: var(--type-secondary); font-weight: 650; color: #5d5f5a; }
+.select-field--panel .field-value { font-size: var(--type-control); }
+.select-field--panel .select-menu { position: static; width: 100%; max-height: 190px; margin-top: 5px; overflow-y: auto; overscroll-behavior: contain; }
+.select-field--panel .select-menu button { min-height: 44px; font-size: var(--type-control); }
+.select-field--panel .select-menu button span { overflow-wrap: anywhere; }
 @media (max-width: 700px) {
   .select-field--catalog .select-menu { width: 100%; }
 }

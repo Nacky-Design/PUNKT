@@ -4,6 +4,7 @@ import { ArrowRight, Building2, CalendarDays, Camera, CarFront, ChevronRight, Cl
 import DemoCarPhotos from './DemoCarPhotos.vue';
 import HeaderMessengerIcon from './HeaderMessengerIcon.vue';
 import { messengerLinks } from '../contact';
+import { profileInitials } from '../data';
 
 const props = defineProps<{ user: { name: string; role: 'client' | 'rental'; kind: 'person' | 'company'; email: string; phone: string } }>();
 const emit = defineEmits<{ catalog: []; logout: [] }>();
@@ -11,8 +12,8 @@ type Section = 'overview' | 'activity' | 'photos' | 'profile';
 const section = ref<Section>('overview');
 const roleLabel = computed(() => props.user.role === 'client' ? 'Клиент' : 'Прокатчик');
 const activityLabel = computed(() => props.user.role === 'client' ? 'Мои аренды' : 'Мои автомобили');
-const displayName = computed(() => props.user.kind === 'company' ? (props.user.name.trim() || 'ООО «Пример»') : 'Михаил Иванович');
-const initials = computed(() => props.user.kind === 'company' ? 'К' : 'МИ');
+const displayName = computed(() => props.user.name.trim() || (props.user.kind === 'company' ? 'ООО «Пример»' : 'Гость'));
+const initials = computed(() => profileInitials(displayName.value, props.user.kind === 'company' ? 'К' : 'П'));
 const dateOffset = (days: number) => { const date = new Date(); date.setHours(12, 0, 0, 0); date.setDate(date.getDate() + days); return date; };
 const dateLabel = (date: Date) => new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }).format(date);
 const dateInput = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -45,7 +46,7 @@ function prepareExtension() { requestedDate.value = extensionDate.value; extensi
           <div v-if="user.role === 'client'" class="cashback"><div><span>Мои баллы</span></div><strong>300</strong></div>
         </aside>
         <div class="cabinet-content">
-          <div class="demo-notice"><span class="notice-mark">i</span><p>Здесь показан пример поездки. Чтобы изменить условия реальной аренды, свяжитесь с «Пунктом».</p></div>
+          <div v-if="user.role === 'client' && (section === 'overview' || section === 'activity')" class="demo-notice"><span class="notice-mark">i</span><p>Здесь показан пример поездки. Чтобы изменить условия реальной аренды, свяжитесь с «Пунктом».</p></div>
           <section class="support-card" aria-label="Связь с техподдержкой">
             <div><h2>Техподдержка</h2><p>Поможем с вопросами по аренде.</p></div>
             <div class="support-actions"><div class="direct-contacts"><a class="support-phone" href="tel:+74951041010"><Phone :size="16" aria-hidden="true" /> 8 495 104-10-10</a><a class="support-mail" href="mailto:info@punktprokat.ru"><Mail :size="16" aria-hidden="true" /> info@punktprokat.ru</a></div>
@@ -69,7 +70,7 @@ function prepareExtension() { requestedDate.value = extensionDate.value; extensi
           <template v-else-if="section === 'profile'"><div class="section-title"><div><h2>{{ user.kind === 'company' ? 'Реквизиты компании' : 'Профиль' }}</h2></div></div>
             <section class="content-card profile-details"><div class="profile-heading"><span class="avatar large">{{ initials }}</span><div><h3>{{ displayName }}</h3><p>{{ user.kind === 'company' ? 'Юридическое лицо' : 'Частное лицо' }}</p></div></div>
               <dl v-if="user.kind === 'company'"><div><dt><Building2 :size="17" /> Название компании</dt><dd>{{ user.name || 'ООО «Пример»' }}</dd></div><div><dt>ИНН</dt><dd>Не указан</dd></div><div><dt>КПП</dt><dd>Не указан</dd></div><div><dt>ОГРН</dt><dd>Не указан</dd></div><div><dt><MapPin :size="17" /> Юридический адрес</dt><dd>Не указан</dd></div><div><dt><Phone :size="17" /> Телефон</dt><dd>{{ user.phone || 'Не указан' }}</dd></div><div><dt><Mail :size="17" /> E-mail</dt><dd>{{ user.email || 'Не указан' }}</dd></div></dl>
-              <dl v-else><div><dt><UserRound :size="17" /> Имя</dt><dd>Михаил Иванович</dd></div><div><dt><Phone :size="17" /> Телефон</dt><dd>{{ user.phone || 'Не указан' }}</dd></div><div><dt><Mail :size="17" /> E-mail</dt><dd>{{ user.email || 'Не указан' }}</dd></div></dl>
+              <dl v-else><div><dt><UserRound :size="17" /> Имя</dt><dd>{{ displayName }}</dd></div><div><dt><Phone :size="17" /> Телефон</dt><dd>{{ user.phone || 'Не указан' }}</dd></div><div><dt><Mail :size="17" /> E-mail</dt><dd>{{ user.email || 'Не указан' }}</dd></div></dl>
             </section>
           </template>
           <template v-else><div class="section-title"><div><h2>{{ section === 'overview' ? 'Обзор' : activityLabel }}</h2></div></div><section class="content-card empty-state"><span class="card-icon"><CarFront :size="25" /></span><h3>В этом профиле нет автомобилей</h3><button class="catalog-button" type="button" @click="emit('catalog')">Посмотреть автопарк <ArrowRight :size="17" /></button></section></template>

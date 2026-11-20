@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { ArrowUpRight, ChevronDown, Phone } from 'lucide-vue-next';
 import HeaderMessengerIcon from './HeaderMessengerIcon.vue';
 
-defineProps<{ messengerLinks?: { telegram?: string; max?: string } }>();
+const props = defineProps<{ messengerLinks?: { telegram?: string; max?: string } }>();
+const messengers = computed(() => [
+  { kind: 'telegram' as const, label: 'Telegram', href: props.messengerLinks?.telegram },
+  { kind: 'max' as const, label: 'Max', href: props.messengerLinks?.max },
+]);
 const active = ref<number | null>(0);
 const questions = [
   {
@@ -16,7 +20,8 @@ const questions = [
   },
   {
     question: 'От чего зависит стоимость аренды?',
-    answer: 'Предварительный расчёт зависит от автомобиля, срока аренды и выбранного пакета пробега. Итоговую стоимость и дополнительные платежи уточните перед оформлением.',
+    answer: 'Цена за сутки зависит от автомобиля, лимита пробега и выбранных опций. Итог за поездку рассчитывается после выбора дат в карточке.',
+    link: { href: '#prices', label: 'Посмотреть цены за сутки' },
   },
   {
     question: 'Какие документы нужны для аренды?',
@@ -24,15 +29,18 @@ const questions = [
   },
   {
     question: 'Можно ли получить автомобиль с доставкой?',
-    answer: 'В подборе можно указать доставку по адресу в Москве или выбрать аэропорт. Место, время и стоимость подачи согласуются отдельно.',
+    answer: 'В подборе можно указать адрес в Москве или выбрать аэропорт. Дневная доставка по Москве бесплатна.',
+    link: { href: '#prices/services', label: 'Тарифы доставки' },
   },
   {
     question: 'Нужен ли залог?',
-    answer: 'Размер залога и возможность аренды без него зависят от выбранного автомобиля и условий поездки. Уточним их до подтверждения.',
+    answer: 'Размер залога указан в ценах и карточке автомобиля. Возможность аренды без залога зависит от условий поездки и арендатора.',
+    link: { href: '#conditions/deposit', label: 'Когда можно без залога' },
   },
   {
     question: 'Как работает лимит пробега?',
-    answer: 'В расчёте можно выбрать пакет пробега на сутки. Пробег сверх выбранного лимита оплачивается отдельно; ставку и правила расчёта согласуем заранее.',
+    answer: 'Выберите 100, 250 или 500 км в сутки. Цена меняется с выбранным лимитом. Пробег сверх лимита оплачивается отдельно.',
+    link: { href: '#prices', label: 'Сравнить тарифы по пробегу' },
   },
   {
     question: 'Можно ли добавить второго водителя или детское кресло?',
@@ -52,18 +60,26 @@ const questions = [
       <div class="faq-list">
         <article v-for="(item, index) in questions" :key="item.question" class="faq-item" :class="{ 'is-open': active === index }">
           <h3><button type="button" :aria-expanded="active === index" :aria-controls="`faq-answer-${index}`" @click="active = active === index ? null : index"><span>{{ item.question }}</span><span class="faq-toggle"><ChevronDown :size="20" aria-hidden="true" /></span></button></h3>
-          <div v-show="active === index" :id="`faq-answer-${index}`" class="faq-answer"><p>{{ item.answer }}</p></div>
+          <div v-show="active === index" :id="`faq-answer-${index}`" class="faq-answer"><p>{{ item.answer }}</p><a v-if="item.link" :href="item.link.href">{{ item.link.label }} <ArrowUpRight :size="16" aria-hidden="true" /></a></div>
         </article>
       </div>
       <aside class="help-card" aria-labelledby="help-title">
         <div class="help-decor" aria-hidden="true"></div>
         <div class="help-content">
+          <p class="help-eyebrow">Мы на связи</p>
           <h2 id="help-title">Не нашли ответ на свой вопрос?</h2>
+          <p class="help-copy">Задайте его нашим специалистам</p>
           <a class="help-phone" href="tel:+74951041010"><span class="phone-icon"><Phone :size="21" aria-hidden="true" /></span><span>8 495 104-10-10</span><ArrowUpRight :size="18" aria-hidden="true" /></a>
-          <div v-if="messengerLinks?.telegram || messengerLinks?.max" class="messengers" aria-label="Мессенджеры">
-            <a v-if="messengerLinks?.telegram" class="messenger-chip" :href="messengerLinks.telegram" target="_blank" rel="noopener noreferrer"><HeaderMessengerIcon kind="telegram" />Telegram</a>
-            <a v-if="messengerLinks?.max" class="messenger-chip" :href="messengerLinks.max" target="_blank" rel="noopener noreferrer"><HeaderMessengerIcon kind="max" />Max</a>
+          <div class="messengers" role="group" aria-label="Мессенджеры">
+            <component v-for="messenger in messengers" :key="messenger.kind" :is="messenger.href ? 'a' : 'span'"
+              class="messenger-chip" :href="messenger.href"
+              :target="messenger.href ? '_blank' : undefined" :rel="messenger.href ? 'noopener noreferrer' : undefined">
+              <HeaderMessengerIcon :kind="messenger.kind" />{{ messenger.label }}
+            </component>
           </div>
+          <p v-if="messengers.some(messenger => !messenger.href)" class="messenger-note">
+            {{ messengers.some(messenger => messenger.href) ? 'Одна из ссылок уточняется.' : 'Ссылки на мессенджеры уточняются.' }}
+          </p>
         </div>
       </aside>
     </div>
@@ -77,5 +93,15 @@ const questions = [
 @media(prefers-reduced-motion:reduce){.faq-toggle,.faq-toggle svg{transition:none}}
 
 .faq-item h3 button, .faq-answer p { font-size: var(--type-body); }
-.messenger-chip { font-size: var(--type-control); }
+.help-card { --focus-ring: #ffcd45; }
+.help-eyebrow { text-transform: uppercase; font-size: var(--type-secondary); margin-bottom: clamp(20px, 3vw, 36px); }
+.help-copy { font-size: var(--type-body); margin: 10px 0 20px; }
+.help-phone { min-height: 44px; width: 100%; max-width: none; }
+.help-phone:hover { color: #ffe18a; }
+.messenger-chip { font-size: var(--type-control); min-height: 44px; padding-inline: 11px 14px; }
+a.messenger-chip:hover { background: #ffe38c; }
+span.messenger-chip { background: #e1e5e1; }
+.messenger-note { font-size: var(--type-secondary); }
+.faq-answer a { display: inline-flex; gap: 6px; align-items: center; min-height: 36px; margin-top: 4px; color: #775500; text-decoration: underline; text-underline-offset: 3px; }
+.faq-item h3 button:focus-visible { outline-offset: -3px; }
 </style>

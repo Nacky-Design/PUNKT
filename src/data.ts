@@ -208,3 +208,9 @@ export const addDays = (str: string, days: number) => {
   d.setDate(d.getDate() + days);
   return isoDate(d);
 };
+
+
+export function profileInitials(name: string, fallback: string) {
+  return name.trim().split(/\s+/u).slice(0, 2)
+    .map(word => word.match(/[\p{L}\p{N}]/u)?.[0] ?? '').join('').toLocaleUpperCase('ru-RU') || fallback;
+}

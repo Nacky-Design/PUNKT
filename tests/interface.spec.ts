@@ -307,7 +307,7 @@ test("advanced rental options use the current site and delivery links open the o
   await expect(page.getByRole("region", { name: "Подбор автомобиля" })).toBeVisible();
   await expect(page.locator(".hero-visual, #ui-kit")).toHaveCount(0);
 
-  await page.getByRole("link", { name: "К автопарку" }).click();
+  await page.getByRole("link", { name: "К автопарку", exact: true }).click();
   await page.getByRole("link", { name: "Условия доставки" }).click();
   await expect(page.locator("main h1")).toHaveText("Бесплатная доставка по Москве.");
   await expect(page.locator("main")).toContainText("09:00–21:00");
@@ -316,7 +316,7 @@ test("advanced rental options use the current site and delivery links open the o
 test("desktop services support hover, keyboard navigation and direct detail links", async ({ page }) => {
   await page.goto("/");
   const nav = page.getByRole("navigation", { name: "Главное меню" });
-  const trigger = nav.getByRole("button", { name: "Услуги", exact: true });
+  const trigger = nav.getByRole("button", { name: /список услуг/ });
   const panel = page.locator("#services-panel");
   await expect(panel).toBeHidden();
   await trigger.hover();
@@ -326,12 +326,12 @@ test("desktop services support hover, keyboard navigation and direct detail link
 
   await trigger.focus();
   await page.keyboard.press("ArrowDown");
-  await expect(panel.getByRole("button", { name: "Все услуги" })).toBeFocused();
+  await expect(panel.getByRole("link", { name: "Все услуги" })).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(trigger).toBeFocused();
   await expect(panel).toBeHidden();
 
-  await trigger.click();
+  await nav.getByRole("link", { name: "Услуги", exact: true }).click();
   await expect(page).toHaveURL(/#services$/);
   const longTerm = page.getByRole("link", { name: /Долгосрочная аренда/ });
   await longTerm.click();
@@ -347,7 +347,7 @@ test("mobile services expand by group and open a shareable detail", async ({ pag
   await page.getByRole("button", { name: "Открыть меню" }).click();
   const nav = page.getByRole("navigation", { name: "Мобильное меню" });
   await nav.locator("summary").getByText("Услуги", { exact: true }).click();
-  const trip = nav.getByRole("button", { name: "Поездки по России" });
+  const trip = nav.getByRole("link", { name: "Поездки по России" });
   await expect(trip).toBeHidden();
   await nav.locator("summary").getByText("Поездки и события").click();
   await trip.click();
@@ -356,6 +356,35 @@ test("mobile services expand by group and open a shareable detail", async ({ pag
   await page.reload();
   await expect(page.getByRole("heading", { name: "Поездки по России." })).toBeVisible();
   await expect(page.getByRole("link", { name: "Уточнить условия" })).toHaveAttribute("href", /^tel:/);
+});
+
+test("mobile support and service links keep the right contact and rental context", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.goto("/");
+  const support = page.getByRole("complementary", { name: "Не нашли ответ на свой вопрос?" });
+  await expect(support.getByRole("link", { name: "8 495 104-10-10" })).toHaveAttribute("href", "tel:+74951041010");
+  const messengers = support.getByRole("group", { name: "Мессенджеры" });
+  await expect(messengers.getByText("Telegram")).toBeVisible();
+  await expect(messengers.getByText("Max")).toBeVisible();
+  await expect(messengers.getByRole("link")).toHaveCount(0);
+  await expect(support.getByText("Ссылки на мессенджеры уточняются.")).toBeVisible();
+
+  const menu = page.getByRole("button", { name: /меню$/ });
+  await menu.click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("navigation", { name: "Мобильное меню" })).toBeHidden();
+  await expect(menu).toBeFocused();
+
+  await page.goto("/#services/business");
+  await page.getByRole("link", { name: "Подобрать автомобиль" }).click();
+  await expect(page.getByRole("checkbox", { name: "Для юридических лиц" })).toBeChecked();
+  await page.goto("/#services/international");
+  await page.getByRole("link", { name: "Подобрать автомобиль" }).click();
+  await expect(page.getByRole("checkbox", { name: "Иностранный гражданин" })).toBeChecked();
+  await page.goto("/#prices");
+  await page.getByRole("link", { name: "Когда можно без залога" }).first().click();
+  await expect(page).toHaveURL(/#conditions\/deposit$/);
+  await expect(page.getByRole("heading", { name: "Когда возможна аренда без залога" })).toBeFocused();
 });
 
 test("news and promotions keep their detail on reload and return to the list", async ({ page }) => {
@@ -369,7 +398,7 @@ test("news and promotions keep their detail on reload and return to the list", a
   await page.goBack();
   await expect(article).toBeFocused();
 
-  await page.getByRole("navigation", { name: "Главное меню" }).getByRole("button", { name: "Акции" }).click();
+  await page.getByRole("navigation", { name: "Главное меню" }).getByRole("link", { name: "Акции" }).click();
   const offer = page.getByRole("link", { name: /Аренда на полдня/ });
   await offer.click();
   await expect(page).toHaveURL(/#promotions\/half-day$/);

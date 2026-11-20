@@ -70,14 +70,14 @@ const faq = [
                   <td class="detail-cell" data-label="Защита+">
                     <div v-if="car.protectionPrice !== undefined" class="price-cell-content">
                       <span class="protection-rate"><strong>+{{ money(car.protectionPrice) }} ₽</strong><small>за сутки</small></span>
-                      <button type="button" class="protection-add" :data-car-action="`protect-${car.id}`" :aria-label="`Добавить «Защиту+» для ${car.name}`" @click="emit('show-car', car, true)">Добавить</button>
+                      <button type="button" class="protection-add" :data-car-action="`protect-${car.id}`" :aria-label="`К карточке ${car.name} с «Защитой+»`" @click="emit('show-car', car, true)">К авто с «Защитой+»</button>
                     </div>
                     <span v-else class="muted">Цена по запросу</span>
                   </td>
                   <td class="detail-cell" data-label="Залог">
                     <div v-if="car.deposit !== undefined" class="price-cell-content">
                       <strong>{{ money(car.deposit) }} ₽</strong>
-                      <small><a href="#conditions">Когда можно без залога</a></small>
+                      <small><a href="#conditions/deposit">Когда можно без залога</a></small>
                     </div>
                     <span v-else class="muted">Уточняется</span>
                   </td>
@@ -88,7 +88,10 @@ const faq = [
           </div>
           <div class="fleet-travel">
             <p>Выдаём чистые и обслуженные автомобили. Год выпуска и характеристики указаны в карточках.</p>
-            <a href="#services/abroad">Поездки по России и в Беларусь <ArrowRight :size="16" aria-hidden="true" /></a>
+            <div class="fleet-travel-links">
+              <a href="#services/russia">Поездки по России <ArrowRight :size="16" aria-hidden="true" /></a>
+              <a href="#services/abroad">Поездки в Беларусь <ArrowRight :size="16" aria-hidden="true" /></a>
+            </div>
           </div>
           <section class="price-questions" aria-labelledby="prices-faq-heading">
             <div><h2 id="prices-faq-heading">Вопросы о стоимости<span>.</span></h2></div>
@@ -157,7 +160,8 @@ const faq = [
 .table-shell { margin-top: 16px; }
 .fleet-travel { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin-top: 18px; }
 .fleet-travel p { max-width: 58ch; color: #5d5f5a; line-height: 1.5; }
-.fleet-travel a { display: inline-flex; align-items: center; gap: 7px; font-size: var(--type-control); font-weight: 650; text-decoration: underline; text-underline-offset: 3px; }
+.fleet-travel-links { display: flex; flex-wrap: wrap; gap: 4px 20px; }
+.fleet-travel a { min-height: 36px; display: inline-flex; align-items: center; gap: 7px; font-size: var(--type-control); font-weight: 650; text-decoration: underline; text-underline-offset: 3px; }
 .price-toolbar p:last-child, .price-table th, .price-table td small, .price-table td::before, .muted,
 .mileage-switch small, .service-card-heading > div > p:last-child, .option-card p small,
 .delivery-table th, .delivery-table thead th, .delivery-table thead th span, .delivery-table td::before {
@@ -179,7 +183,7 @@ const faq = [
   .car-wrap { flex-wrap: wrap; gap: 5px; }
 }
 @media (max-width: 700px) {
-  .price-heading { margin-bottom: 18px; }
+  .price-heading { margin: 14px 0; }
   .price-heading .interior-action { display: none; }
   .price-tabs { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 4px; margin-top: 0; }
   .price-tabs a { min-width: 0; min-height: 46px; padding: 6px 4px; font-size: var(--type-secondary); line-height: 1.2; text-align: center; }
@@ -188,7 +192,7 @@ const faq = [
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 2px 8px;
-    margin-top: 12px;
+    margin-top: 8px;
   }
   .price-toolbar > div { display: contents; }
   .price-toolbar h2 { grid-area: 1 / 1; margin: 0; font-size: 18px; }
@@ -199,7 +203,7 @@ const faq = [
   .guide-label-full { display: none; }
   .guide-label-short { display: inline; }
 
-  .table-shell { overflow: visible; margin-top: 14px; border: 0; background: transparent; }
+  .table-shell { overflow: visible; margin-top: 10px; border: 0; background: transparent; }
   .price-table, .price-table tbody { display: block; }
   .price-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .price-table tbody { display: grid; gap: 14px; }

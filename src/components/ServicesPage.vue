@@ -49,8 +49,17 @@ const selected = computed(() => groups.flatMap(group => group.items).find(item =
           <ul><li v-for="point in selected.points" :key="point">{{ point }}</li></ul>
           <div class="page-actions">
             <a href="tel:+74951041010" class="interior-action"><Phone :size="17" aria-hidden="true" /> {{ selected.id === 'roadside' ? 'Позвонить в «Пункт»' : 'Уточнить условия' }}</a>
-            <a v-if="selected.id !== 'roadside'" :href="selected.id === 'deposit' ? '#conditions' : '#catalog'" class="interior-action secondary">
-              {{ selected.id === 'deposit' ? 'Условия аренды' : 'Посмотреть автомобили' }} <ArrowRight :size="17" aria-hidden="true" />
+            <a v-if="selected.id === 'business' || selected.id === 'international'" :href="`#search/${selected.id}`" class="interior-action secondary">
+              Подобрать автомобиль <ArrowRight :size="17" aria-hidden="true" />
+            </a>
+            <a v-else-if="selected.id === 'deposit'" href="#conditions/deposit" class="interior-action secondary">
+              Когда можно без залога <ArrowRight :size="17" aria-hidden="true" />
+            </a>
+            <a v-else-if="selected.id === 'roadside'" href="#prices/services" class="interior-action secondary">
+              Цены на доп. услуги <ArrowRight :size="17" aria-hidden="true" />
+            </a>
+            <a v-else href="#catalog" class="interior-action secondary">
+              Посмотреть автомобили <ArrowRight :size="17" aria-hidden="true" />
             </a>
           </div>
         </section>
@@ -88,6 +97,8 @@ const selected = computed(() => groups.flatMap(group => group.items).find(item =
 .service-sections{display:grid;gap:42px}.group-heading{display:flex;align-items:end;justify-content:space-between;gap:16px;padding-bottom:15px;border-bottom:1px solid #e0e0dc}.group-heading h2{margin:0;font-size:23px;letter-spacing:-.035em}.group-heading p{margin:5px 0 0;color:#83847e;font-size:13px;line-height:1.45}.service-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}.service-card{display:flex;align-items:flex-start;gap:14px;min-width:0;min-height:104px;padding:19px;border:1px solid #e6e6e1;border-radius:12px;background:#fff;text-align:left;transition:border-color .2s,box-shadow .2s,transform .2s}.service-card:hover,.service-card:focus-visible{border-color:#e6c657;box-shadow:0 6px 20px #2221;transform:translateY(-1px)}.service-icon{display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:10px;background:#fff2c9;color:#29251a}.service-copy{display:grid;gap:6px;min-width:0;flex:1}.service-copy strong{color:#20211f;font-size:15px;line-height:1.25}.service-copy>span{color:#5d5f5a;font-size:14px;line-height:1.5}.service-arrow{display:grid;place-items:center;flex:none;width:30px;height:30px;border-radius:50%;background:#f4f4f2;color:#494b47}.service-card:hover .service-arrow{background:#ffc107;color:#171717}
 @media(max-width:700px){.service-sections{gap:32px}.group-heading h2{font-size:21px}.service-grid{grid-template-columns:1fr}.service-card{min-height:0;padding:16px}.service-copy>span{font-size:13px}}
 @media(prefers-reduced-motion:reduce){.service-card{transition:none}}
+.service-copy { padding-top: 1px; }
+.service-arrow { margin-top: 5px; }
 .service-copy strong { font-size: var(--type-body); }
 .service-copy > span { font-size: var(--type-secondary); }
 </style>

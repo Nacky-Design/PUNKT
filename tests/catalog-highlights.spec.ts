@@ -65,7 +65,7 @@ test("class and mileage selection carry prices through the catalogue and vehicle
   await expect(end).toHaveText(endText, { useInnerText: true });
 
   await page.getByRole("navigation", { name: "Главное меню" })
-    .getByRole("button", { name: "Цены", exact: true }).click();
+    .getByRole("link", { name: "Цены", exact: true }).click();
   const priceOptions = page.getByRole("group", { name: "Пробег в сутки" });
   const solaris = page.getByRole("row").filter({ hasText: "Hyundai Solaris" });
   await expect(priceOptions.getByRole("button", { name: "100 км" })).toHaveAttribute("aria-pressed", "true");
@@ -79,7 +79,7 @@ test("class and mileage selection carry prices through the catalogue and vehicle
   await page.getByRole("button", { name: "Что покрывает «Защита+»" }).click();
   await expect(page.getByRole("dialog", { name: "Защита+" })).toBeVisible();
   await page.keyboard.press("Escape");
-  await solaris.getByRole("button", { name: /Добавить «Защиту\+»/ }).click();
+  await solaris.getByRole("button", { name: /К карточке Hyundai Solaris с «Защитой\+»/ }).click();
   await expect(page.getByRole("checkbox", { name: /Добавить «Защиту\+»/ })).toBeChecked();
   await expect(page.locator(".vehicle-heading-price")).toContainText(/4\s890 ₽/);
   await page.getByRole("button", { name: "К ценам" }).click();
@@ -133,6 +133,7 @@ test("mobile banners can be browsed manually and link to their actions", async (
   const next = banners.getByRole("button", { name: "Следующий баннер" });
   await next.click();
   await expect(next).toHaveAttribute("aria-disabled", "true");
+  await expect(banners.getByText("2 из 2", { exact: true })).toBeVisible();
   const image = banners.locator("img").nth(1);
   await expect.poll(() => image.evaluate((element) => element.naturalWidth)).toBeGreaterThan(0);
   await banners.getByRole("button", { name: "Сравнить цены" }).click();

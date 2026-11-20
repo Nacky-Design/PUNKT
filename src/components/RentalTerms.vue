@@ -8,6 +8,7 @@ defineProps<{ embedded?: boolean }>();
     <div v-if="!embedded" class="terms-heading">
       <h2 id="rental-terms-title">Условия аренды<span>.</span></h2>
       <span class="heading-rule" aria-hidden="true"></span>
+      <a class="terms-link" href="#conditions">Все условия аренды</a>
     </div>
     <div class="terms-grid">
       <article class="terms-card driver-card">
@@ -27,7 +28,7 @@ defineProps<{ embedded?: boolean }>();
       </article>
       <article class="terms-card deposit-card">
         <KeyRound class="deposit-art" :size="128" :stroke-width="1" aria-hidden="true" />
-        <h3>Когда возможна аренда без залога</h3>
+        <h3 :id="embedded ? 'rental-deposit-title' : undefined" :tabindex="embedded ? -1 : undefined">Когда возможна аренда без залога</h3>
         <ul class="deposit-list">
           <li><span class="list-icon"><CreditCard :size="19" aria-hidden="true" /></span><span>Оплата банковской картой</span></li>
           <li><span class="list-icon"><MapPin :size="19" aria-hidden="true" /></span><span>Поездки по Москве и Московской области</span></li>
@@ -42,7 +43,14 @@ defineProps<{ embedded?: boolean }>();
 
 <style scoped>
 .rental-terms { margin: 52px 0 36px; color: #1c1c1b; }
-.terms-heading { margin-bottom: 20px; }
+.terms-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px 16px; margin-bottom: 20px; }
+.terms-heading .heading-rule { grid-row: 2; margin-top: 0; }
+.terms-link { grid-area: 1 / 2; display: inline-flex; align-items: center; min-height: 44px; color: #775500; font-size: var(--type-control); text-decoration: underline; text-underline-offset: 3px; }
+#rental-deposit-title { scroll-margin-top: 24px; }
+@media (max-width: 520px) {
+  .terms-heading { grid-template-columns: 1fr; gap: 8px; }
+  .terms-heading .terms-link { grid-area: 3 / 1; justify-self: start; }
+}
 .terms-heading h2 { font-size: clamp(30px, 3vw, 40px); letter-spacing: -.045em; line-height: 1.1; }
 .terms-heading h2 span { color: #b58500; }
 .heading-rule { display: block; width: 44px; height: 4px; margin-top: 13px; border-radius: 2px; background: #ffc107; }

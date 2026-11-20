@@ -58,6 +58,7 @@ function show(index: number) {
         <img :src="asset('promo-city-mileage.webp')" width="1000" height="667" alt="" loading="lazy" />
       </article>
     </div>
+    <p class="highlights-position" aria-live="polite">{{ active + 1 }} из 2</p>
   </section>
 </template>
 
@@ -66,7 +67,7 @@ function show(index: number) {
 .highlights-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 16px; }
 .highlights-heading h2 { font-size: clamp(26px, 3vw, 38px); line-height: 1.1; letter-spacing: -.045em; }
 .highlights-heading h2 span { color: #a87900; }
-.highlights-controls { display: none; }
+.highlights-controls, .highlights-position { display: none; }
 .highlights-track { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .highlight {
   display: grid;
@@ -102,6 +103,7 @@ function show(index: number) {
 .highlight-action:hover { background: #ffd047; }
 @media (max-width: 930px) {
   .highlights { margin-top: 36px; }
+  .highlights-position { display: block; margin-top: 9px; color: #5d5f5a; font-size: var(--type-secondary); }
   .highlights-controls { display: flex; gap: 6px; flex: none; }
   .highlights-controls button {
     display: grid;

@@ -38,6 +38,11 @@ for (const [width, height] of [[320, 568], [390, 844], [430, 932], [667, 375]]) 
 
     const filters = await openSheet(form.getByRole("button", { name: /^Все параметры/ }), "Дополнительные параметры автомобиля");
     await expect(filters.getByRole("button", { name: "Закрыть окно" })).toBeFocused();
+    const transmission = filters.getByRole("button", { name: /Коробка передач/ });
+    await transmission.tap();
+    await filters.getByRole("option", { name: "Автомат" }).tap();
+    await expect(transmission).toHaveAccessibleName("Коробка передач: Автомат");
+    await expect(transmission).toBeFocused();
     await filters.getByRole("checkbox", { name: "Детское кресло" }).tap();
     const apply = filters.getByRole("button", { name: "Применить", exact: true });
     await apply.scrollIntoViewIfNeeded();
@@ -120,9 +125,9 @@ test("mobile navigation opens the editorial pages and a sample account", async (
     const nav = page.getByRole("navigation", { name: "Мобильное меню" });
     if (label === "Услуги") {
       await nav.locator("summary").filter({ hasText: /^Услуги$/ }).tap();
-      await nav.getByRole("button", { name: "Все услуги" }).tap();
+      await nav.getByRole("link", { name: "Все услуги" }).tap();
     } else {
-      await nav.getByRole("button", { name: label, exact: true }).tap();
+      await nav.getByRole("link", { name: label, exact: true }).tap();
     }
     await expect(page.locator("main h1")).toHaveText(heading);
     await expect(nav).toHaveCount(0);
