@@ -24,7 +24,7 @@ const offers = [
   {
     id: 'half-day', title: 'Аренда на полдня', image: 'guide-road.webp', discount: '30%',
     summary: 'Вариант для поездок на несколько часов.',
-    description: 'Уточните время получения и возврата. Возможность аренды на полдня и стоимость зависят от автомобиля и даты.',
+    description: 'Чтобы оформить аренду на полдня, позвоните нам. Назовите время получения и возврата, а мы подберём автомобиль и рассчитаем стоимость.',
   },
   {
     id: 'large-families', title: 'Многодетным семьям', image: 'hero-wan-hd.webp', discount: '20%',
@@ -53,8 +53,8 @@ const asset = (file: string) => `${import.meta.env.BASE_URL}assets/${file}`;
             <p>{{ selected.description }}</p>
           </header>
           <div class="detail-actions">
-            <a href="tel:+74951041010" class="interior-action"><Phone :size="17" aria-hidden="true" /> Уточнить условия</a>
-            <a href="#catalog" class="interior-action secondary">Посмотреть автомобили <ArrowRight :size="17" aria-hidden="true" /></a>
+            <a href="tel:+74951041010" class="interior-action"><Phone :size="17" aria-hidden="true" /> {{ selected.id === 'half-day' ? 'Позвонить по акции' : 'Уточнить условия' }}</a>
+            <a v-if="selected.id !== 'half-day'" href="#catalog" class="interior-action secondary">Посмотреть автомобили <ArrowRight :size="17" aria-hidden="true" /></a>
           </div>
         </div>
       </article>

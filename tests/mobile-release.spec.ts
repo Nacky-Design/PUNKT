@@ -23,12 +23,12 @@ for (const [width, height] of [[320, 568], [390, 844], [430, 932], [667, 375]]) 
       const dialog = page.getByRole("dialog", { name: title });
       await expect(dialog).toBeVisible();
       await fitsViewport(dialog, width, height);
-      await expect(dialog.getByRole("button", { name: "Закрыть окно" })).toBeFocused();
       return dialog;
     }
 
     const start = form.getByRole("button", { name: /^Получение/ });
     const calendar = await openSheet(start, "Выбор дат аренды");
+    await expect(calendar.locator(".date-grid button[tabindex='0']")).toBeFocused();
     await calendar.getByRole("button", { name: "Следующий месяц" }).tap();
     const days = calendar.locator(".month").first().locator(".date-grid button");
     await days.nth(1).tap();
@@ -37,6 +37,7 @@ for (const [width, height] of [[320, 568], [390, 844], [430, 932], [667, 375]]) 
     await expect(start).toBeFocused();
 
     const filters = await openSheet(form.getByRole("button", { name: /^Все параметры/ }), "Дополнительные параметры автомобиля");
+    await expect(filters.getByRole("button", { name: "Закрыть окно" })).toBeFocused();
     await filters.getByRole("checkbox", { name: "Детское кресло" }).tap();
     const apply = filters.getByRole("button", { name: "Применить", exact: true });
     await apply.scrollIntoViewIfNeeded();
@@ -87,12 +88,12 @@ for (const [width, height] of [[320, 568], [390, 844], [430, 932], [667, 375]]) 
     await expect(summary).toContainText(/за 3 дня\s*10\s800 ₽/);
     await expect(summary).toContainText("10:00 (МСК)");
     await expect(request.locator("input")).toHaveCount(3);
-    await request.getByRole("button", { name: "Проверить заявку" }).tap();
+    await request.getByRole("button", { name: "Собрать параметры для звонка" }).tap();
     await expect(request.getByText("Введите телефон полностью")).toBeVisible();
     await request.getByRole("textbox", { name: "Ваше имя" }).fill("Александр");
     await request.getByRole("textbox", { name: "Телефон", exact: true }).fill("9991234567");
     await request.getByRole("checkbox", { name: /^Согласен на обработку/ }).tap();
-    await request.getByRole("button", { name: "Проверить заявку" }).tap();
+    await request.getByRole("button", { name: "Собрать параметры для звонка" }).tap();
     const confirmation = page.getByRole("dialog", { name: "Параметры аренды" });
     await expect(confirmation.getByRole("link", { name: "Позвонить в «Пункт»" })).toHaveAttribute("href", /^tel:/);
     await confirmation.getByRole("button", { name: "Закрыть окно" }).tap();

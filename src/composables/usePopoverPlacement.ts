@@ -12,6 +12,7 @@ export function usePopoverPlacement(
   root: Ref<HTMLElement | undefined>,
   isOpen: () => unknown,
   selector: string,
+  fitHeight = false,
 ) {
   const above = ref(true);
   function measure() {
@@ -19,10 +20,15 @@ export function usePopoverPlacement(
     const bounds = root.value?.getBoundingClientRect();
     const popup = root.value?.querySelector<HTMLElement>(selector);
     if (!bounds || !popup) return;
-    const availableAbove = bounds.top - 16,
-      availableBelow = innerHeight - bounds.bottom - 16;
-    above.value =
-      availableBelow < popup.offsetHeight && availableAbove > availableBelow;
+    const clearance = fitHeight ? 24 : 16;
+    const availableAbove = bounds.top - clearance;
+    const availableBelow = innerHeight - bounds.bottom - clearance;
+    const height = fitHeight ? popup.scrollHeight + popup.offsetHeight - popup.clientHeight : popup.offsetHeight;
+    above.value = availableBelow < height && availableAbove > availableBelow;
+    if (fitHeight) {
+      const availableHeight = above.value ? availableAbove : availableBelow;
+      popup.style.setProperty("--popover-max-height", `${Math.max(0, availableHeight)}px`);
+    }
   }
   watch(isOpen, async () => {
     await nextTick();

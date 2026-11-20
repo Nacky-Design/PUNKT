@@ -19,7 +19,6 @@ import {
   CircleHelp,
   Clock3,
   CheckCircle2,
-  Info,
   Mail,
   ShieldCheck,
 } from "lucide-vue-next";
@@ -138,6 +137,7 @@ const name = ref(""),
   submitted = ref(false),
   errors = ref<Record<string, string>>({}),
   requestSnapshot = ref("");
+const requestResult = ref<HTMLElement>();
 const requestDetails = ref<{
   car: string;
   period: string;
@@ -162,13 +162,15 @@ function readRoute() {
   if (hash === currentHash) return;
   const previousHash = currentHash;
   currentHash = hash;
+  modal.value = null;
   const [section, slug = ""] = hash.slice(1).split("/");
   const car = section === "car" ? cars.find(item => String(item.id) === slug) : undefined;
 
   if (car) selected.value = car;
-  if (section === "prices" && page.value !== "prices") {
+  if (section === "prices") {
+    priceTab.value = slug === "services" || slug === "damage" ? slug : "rental";
+    if (page.value === "prices") return;
     pricesMileage.value = baseMileage;
-    priceTab.value = "rental";
   }
   page.value = pages.find(item => item === section && (item !== "car" || car)) ?? "catalog";
   detailId.value = slug;
@@ -206,7 +208,7 @@ function goPage(target: Page, car?: Car, slug?: string) {
   readRoute();
 }
 
-window.addEventListener("popstate", readRoute);
+// Browser history restores its own focus and scroll before dispatching hashchange.
 window.addEventListener("hashchange", readRoute);
 readRoute();
 const sort = ref("Сначала дешевле");
@@ -403,6 +405,7 @@ function submitRequest() {
     ...details.notes, `Предварительно ${money(details.total)} ₽`,
   ].join(" · ");
   submitted.value = true;
+  nextTick(() => requestResult.value?.focus());
   name.value = "";
   phone.value = "";
   consent.value = false;
@@ -764,7 +767,7 @@ function logoutDemo() {
     v-model:mileage="mileage" :mileage-prices="mileagePrices" v-model:protection="protection"
     :renter-context="renterContext" :extras="catalogFilters.extras" :delivery="delivery" :rate="rate(selected)"
     @back="closeCar" @edit-search="editSearch" @apply-period="applyRentalPeriod" @request="request" @explain-protection="explainProtection" />
-  <PricesPage v-if="page === 'prices'" v-model:tab="priceTab" :cars="cars" v-model:mileage="pricesMileage" :mileage-prices="mileagePrices"
+  <PricesPage v-if="page === 'prices'" :tab="priceTab" :cars="cars" v-model:mileage="pricesMileage" :mileage-prices="mileagePrices"
     @show-car="showPriceCar" @explain-protection="explainProtection" @open-terms="nav('Условия')" />
   <ServicesPage v-if="page === 'services'" :detail-id="detailId" :start="start" :end="end" @find-cars="searchWithDates" />
   <InformationPage v-if="page === 'conditions' || page === 'contacts' || page === 'about'" :page="page" />
@@ -799,6 +802,10 @@ function logoutDemo() {
     @close="modal = null"
     ><template v-if="!submitted"
       ><p class="modal-lead request-vehicle">{{ requestDetails.car }}</p>
+      <div class="request-contact">
+        <p>Чтобы согласовать аренду, позвоните нам. Введённые данные остаются на этой странице.</p>
+        <a href="tel:+74951041010" class="button button-soft"><Phone :size="18" aria-hidden="true" />Позвонить сейчас</a>
+      </div>
       <form class="request-form" novalidate @submit.prevent="submitRequest">
         <div class="request-trip" role="group" aria-label="Условия аренды">
           <p><CalendarRange :size="16" aria-hidden="true" />{{ requestDetails.period }}</p>
@@ -850,16 +857,13 @@ function logoutDemo() {
           errors.consent
         }}</small
         ><button type="submit" class="button button-primary full-width">
-          Проверить заявку<ArrowRight :size="18" />
+          Собрать параметры для звонка<ArrowRight :size="18" aria-hidden="true" />
         </button>
-        <p class="prototype-note">
-          <Info :size="16" />Для согласования аренды позвоните нам. Введённые данные остаются на этой странице.
-        </p>
       </form></template
     >
     <div v-else class="demo-success">
       <CheckCircle2 :size="44" />
-      <h3>Что сообщить при звонке</h3>
+      <h3 ref="requestResult" tabindex="-1">Что сообщить при звонке</h3>
       <p>{{ requestSnapshot }}</p>
       <p class="muted">
         Позвоните, чтобы уточнить наличие, итоговую цену и место получения.

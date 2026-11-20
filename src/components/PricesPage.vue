@@ -5,14 +5,18 @@ import CarArt from './CarArt.vue';
 import DamageCompensation from './DamageCompensation.vue';
 import { daytimeDeliveryHours, money, type Car } from '../data';
 
-const props = defineProps<{ cars: Car[]; mileage: string; mileagePrices: Record<string, number> }>();
+const props = defineProps<{ tab: "rental" | "services" | "damage"; cars: Car[]; mileage: string; mileagePrices: Record<string, number> }>();
 const emit = defineEmits<{
   'update:mileage': [value: string];
   'show-car': [car: Car, withProtection?: boolean];
   'explain-protection': [];
   'open-terms': [];
 }>();
-const activeTab = defineModel<'rental' | 'services' | 'damage'>('tab', { required: true });
+const tabs = [
+  { id: 'rental', label: 'Аренда авто', href: '#prices' },
+  { id: 'services', label: 'Доп. услуги', href: '#prices/services' },
+  { id: 'damage', label: 'Компенсация ущерба', href: '#prices/damage' },
+] as const;
 const selectedExtra = computed(() => props.mileagePrices[props.mileage] ?? 0);
 const sortedCars = computed(() => [...props.cars].sort((a, b) => a.price - b.price));
 const faq = [
@@ -31,13 +35,11 @@ const faq = [
         <h1>Цены на аренду<span>.</span></h1>
         <a class="interior-action" href="tel:+74951041010"><Phone :size="17" aria-hidden="true" /> Позвонить</a>
       </header>
-      <div class="price-tabs" role="group" aria-label="Разделы цен">
-        <button id="price-tab-rental" type="button" :aria-pressed="activeTab === 'rental'" aria-controls="price-content" @click="activeTab = 'rental'">Аренда авто</button>
-        <button id="price-tab-services" type="button" :aria-pressed="activeTab === 'services'" aria-controls="price-content" @click="activeTab = 'services'">Доп. услуги</button>
-        <button id="price-tab-damage" type="button" :aria-pressed="activeTab === 'damage'" aria-controls="price-content" @click="activeTab = 'damage'">Компенсация ущерба</button>
-      </div>
+      <nav class="price-tabs" aria-label="Разделы цен">
+        <a v-for="item in tabs" :key="item.id" :href="item.href" :aria-current="tab === item.id ? 'page' : undefined">{{ item.label }}</a>
+      </nav>
       <div id="price-content">
-        <template v-if="activeTab === 'rental'">
+        <template v-if="tab === 'rental'">
           <div class="price-toolbar">
             <div>
               <h2 id="prices-mileage">Пробег в сутки</h2>
@@ -95,7 +97,7 @@ const faq = [
             </div>
           </section>
         </template>
-        <section v-else-if="activeTab === 'services'" class="service-prices" aria-labelledby="service-prices-title">
+        <section v-else-if="tab === 'services'" class="service-prices" aria-labelledby="service-prices-title">
           <div class="service-intro"><h2 id="service-prices-title">Дополнительные услуги</h2></div>
           <div class="service-grid">
             <article class="service-card wash-card">
@@ -115,14 +117,14 @@ const faq = [
             <p class="delivery-note">Доставка по области согласуется с учётом расстояния и доступности.</p>
           </article>
         </section>
-        <DamageCompensation v-else @open-terms="emit('open-terms')" />
+        <DamageCompensation v-else @open-terms="emit('open-terms')" @explain-protection="emit('explain-protection')" />
       </div>
     </div>
   </main>
 </template>
 
 <style scoped>
-.eyebrow,.section-label{margin:0 0 10px;color:#888883;font-size:10px;font-weight:750;letter-spacing:.14em}.prices-page h1 span,.price-questions h2 span{color:#e0ac00}.intro{margin:10px 0 0;color:#6e706b;font-size:15px}.price-tabs{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:27px;padding:6px;border:1px solid #e1e1dd;border-radius:11px;background:#fff}.price-tabs button{padding:13px 18px;border-radius:8px;color:#5e605c;font-weight:650;font-size:13px}.price-tabs button[aria-pressed=true]{background:#202222;color:#fff}.price-tabs button:hover:not([aria-pressed=true]){background:#f4f4f1;color:#171717}.price-toolbar{display:flex;justify-content:space-between;align-items:end;gap:18px;margin-top:38px}.price-toolbar h2,.price-questions h2{font-size:clamp(24px,2.5vw,32px);letter-spacing:-.035em;line-height:1.15}.price-toolbar p:last-child{margin-top:7px;color:#777;font-size:13px}.mileage-switch{display:flex;gap:6px;flex-wrap:wrap}.mileage-switch button{display:flex;align-items:center;gap:6px;min-height:42px;padding:9px 12px;border:1px solid #dddeda;border-radius:8px;background:#fff;color:#454742;font-size:12px;font-weight:650}.mileage-switch button[aria-pressed=true]{border-color:#deb12b;background:#fff2c7;color:#1c1c1c}.mileage-switch small{font-size:10px;font-weight:500;color:#777}.demo-note{display:flex;align-items:center;gap:8px;margin:19px 0 12px;color:#777;font-size:12px;line-height:1.45}.demo-note svg{flex:none}.table-shell{overflow:hidden;border:1px solid #e1e1dd;border-radius:13px;background:#fff}.price-table{border-collapse:collapse;width:100%;table-layout:fixed}.price-table th{padding:15px 17px;background:#f0f0ed;color:#777;text-align:left;font-size:11px;font-weight:700}.price-table th:first-child{width:35%}.price-table th:last-child{width:156px}.price-table td{padding:16px 17px;border-top:1px solid #ecece8;vertical-align:middle;font-size:14px}.price-table tbody tr:first-child td{border-top:0}.car-wrap{display:flex;align-items:center;gap:14px;min-width:0}.car-wrap :deep(.car-art){width:95px;height:63px;flex:none;aspect-ratio:auto;container-type:size;border-radius:7px;background:#f3f3f1}.car-wrap :deep(.car-art::before){width:min(100%,calc(100cqh * 1.65));transform:translate(-50%,-53%)}.car-wrap strong,.price-table td small{display:block}.car-wrap strong{font-size:15px}.price-table td small{margin-top:4px;color:#858782;font-size:11px;line-height:1.3}.price-table .price{font-size:18px;white-space:nowrap}.price-table s{color:#81837e;font-size:13px}.muted{color:#888;font-size:12px}.car-link{display:flex;margin-inline-start:auto;align-items:center;justify-content:center;gap:8px;padding:10px 12px;border-radius:8px;background:#f2f2ef;font-size:12px;font-weight:700;white-space:nowrap}.car-link:hover{background:#ffc107}.table-note{margin:12px 0 0;color:#81837e;font-size:11px;line-height:1.5}.price-questions{display:grid;grid-template-columns:minmax(220px,.8fr) minmax(0,1.5fr);gap:45px;margin-top:60px;padding-top:42px;border-top:1px solid #e2e2de}.faq-intro{margin-top:9px;color:#777;font-size:13px;line-height:1.5}.question-list{display:grid;gap:9px}.question-list details{border:1px solid #e3e3df;border-radius:11px;background:#fff}.question-list summary{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 18px;cursor:pointer;list-style:none;font-size:14px;font-weight:700;line-height:1.4}.question-list summary::-webkit-details-marker{display:none}.toggle{display:grid;place-items:center;flex:none;width:32px;height:32px;border-radius:50%;background:#f1f1ef}.question-list details[open] .toggle{background:#ffc107}.question-list details[open] .toggle svg{transform:rotate(180deg)}.question-list details>p{padding:0 60px 18px 18px;color:#666;font-size:13px;line-height:1.55}.empty-prices{margin-top:32px;padding:42px;border:1px solid #e3e3df;border-radius:13px;background:#fff}.empty-icon{display:grid;place-items:center;width:46px;height:46px;margin-bottom:18px;border-radius:11px;background:#fff2c7}.empty-prices h2{font-size:25px;letter-spacing:-.03em}.empty-prices p{margin:9px 0 20px;color:#777;line-height:1.5}.empty-prices a{display:inline-flex;align-items:center;gap:8px;font-weight:700}.visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.eyebrow,.section-label{margin:0 0 10px;color:#888883;font-size:10px;font-weight:750;letter-spacing:.14em}.prices-page h1 span,.price-questions h2 span{color:#e0ac00}.intro{margin:10px 0 0;color:#6e706b;font-size:15px}.price-tabs{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:27px;padding:6px;border:1px solid #e1e1dd;border-radius:11px;background:#fff}.price-tabs a{display:grid;place-items:center;padding:13px 18px;border-radius:8px;color:#5e605c;font-weight:650;font-size:13px}.price-tabs a[aria-current="page"]{background:#202222;color:#fff}.price-tabs a:hover:not([aria-current="page"]){background:#f4f4f1;color:#171717}.price-toolbar{display:flex;justify-content:space-between;align-items:end;gap:18px;margin-top:38px}.price-toolbar h2,.price-questions h2{font-size:clamp(24px,2.5vw,32px);letter-spacing:-.035em;line-height:1.15}.price-toolbar p:last-child{margin-top:7px;color:#777;font-size:13px}.mileage-switch{display:flex;gap:6px;flex-wrap:wrap}.mileage-switch button{display:flex;align-items:center;gap:6px;min-height:42px;padding:9px 12px;border:1px solid #dddeda;border-radius:8px;background:#fff;color:#454742;font-size:12px;font-weight:650}.mileage-switch button[aria-pressed=true]{border-color:#deb12b;background:#fff2c7;color:#1c1c1c}.mileage-switch small{font-size:10px;font-weight:500;color:#777}.demo-note{display:flex;align-items:center;gap:8px;margin:19px 0 12px;color:#777;font-size:12px;line-height:1.45}.demo-note svg{flex:none}.table-shell{overflow:hidden;border:1px solid #e1e1dd;border-radius:13px;background:#fff}.price-table{border-collapse:collapse;width:100%;table-layout:fixed}.price-table th{padding:15px 17px;background:#f0f0ed;color:#777;text-align:left;font-size:11px;font-weight:700}.price-table th:first-child{width:35%}.price-table th:last-child{width:156px}.price-table td{padding:16px 17px;border-top:1px solid #ecece8;vertical-align:middle;font-size:14px}.price-table tbody tr:first-child td{border-top:0}.car-wrap{display:flex;align-items:center;gap:14px;min-width:0}.car-wrap :deep(.car-art){width:95px;height:63px;flex:none;aspect-ratio:auto;container-type:size;border-radius:7px;background:#f3f3f1}.car-wrap :deep(.car-art::before){width:min(100%,calc(100cqh * 1.65));transform:translate(-50%,-53%)}.car-wrap strong,.price-table td small{display:block}.car-wrap strong{font-size:15px}.price-table td small{margin-top:4px;color:#858782;font-size:11px;line-height:1.3}.price-table .price{font-size:18px;white-space:nowrap}.price-table s{color:#81837e;font-size:13px}.muted{color:#888;font-size:12px}.car-link{display:flex;margin-inline-start:auto;align-items:center;justify-content:center;gap:8px;padding:10px 12px;border-radius:8px;background:#f2f2ef;font-size:12px;font-weight:700;white-space:nowrap}.car-link:hover{background:#ffc107}.table-note{margin:12px 0 0;color:#81837e;font-size:11px;line-height:1.5}.price-questions{display:grid;grid-template-columns:minmax(220px,.8fr) minmax(0,1.5fr);gap:45px;margin-top:60px;padding-top:42px;border-top:1px solid #e2e2de}.faq-intro{margin-top:9px;color:#777;font-size:13px;line-height:1.5}.question-list{display:grid;gap:9px}.question-list details{border:1px solid #e3e3df;border-radius:11px;background:#fff}.question-list summary{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 18px;cursor:pointer;list-style:none;font-size:14px;font-weight:700;line-height:1.4}.question-list summary::-webkit-details-marker{display:none}.toggle{display:grid;place-items:center;flex:none;width:32px;height:32px;border-radius:50%;background:#f1f1ef}.question-list details[open] .toggle{background:#ffc107}.question-list details[open] .toggle svg{transform:rotate(180deg)}.question-list details>p{padding:0 60px 18px 18px;color:#666;font-size:13px;line-height:1.55}.empty-prices{margin-top:32px;padding:42px;border:1px solid #e3e3df;border-radius:13px;background:#fff}.empty-icon{display:grid;place-items:center;width:46px;height:46px;margin-bottom:18px;border-radius:11px;background:#fff2c7}.empty-prices h2{font-size:25px;letter-spacing:-.03em}.empty-prices p{margin:9px 0 20px;color:#777;line-height:1.5}.empty-prices a{display:inline-flex;align-items:center;gap:8px;font-weight:700}.visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @media(max-width:850px){.price-toolbar{align-items:start;flex-direction:column}.price-table th:first-child{width:30%}.price-table th:last-child{width:64px}.price-table th,.price-table td{padding:13px 10px}.car-wrap :deep(.car-art){width:65px;height:50px}.car-link span{display:none}.car-link{padding:10px}.price-questions{gap:25px}}
 
 .service-prices{margin-top:38px}.service-intro h2{font-size:clamp(24px,2.5vw,32px);letter-spacing:-.035em}.service-intro>p:last-child{margin:8px 0 20px;color:#777;font-size:13px;line-height:1.5}.service-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.service-card{min-width:0;padding:24px;border:1px solid #e1e1dd;border-radius:13px;background:#fff}.service-card h3{font-size:18px;letter-spacing:-.025em}.service-card>p{margin:8px 0 0;color:#777;font-size:12px;line-height:1.5}.service-list{margin:20px 0 0}.service-list>div{display:flex;justify-content:space-between;align-items:baseline;gap:18px;padding:12px 0;border-top:1px solid #ecece8;font-size:13px}.service-list dt{color:#5b5d59}.service-list dd{margin:0;text-align:right;font-weight:700;line-height:1.4}.delivery-card{margin-top:16px}.delivery-table-wrap{margin-top:20px}.delivery-table{width:100%;border-collapse:collapse;table-layout:fixed}.delivery-table th,.delivery-table td{padding:13px 12px;border-top:1px solid #ecece8;text-align:left;font-size:13px}.delivery-table thead th{color:#777;font-size:11px;font-weight:700}.delivery-table tbody th{font-weight:600}.delivery-table td{font-weight:700}.delivery-card .delivery-note{margin-top:10px;font-size:11px}
@@ -162,7 +164,7 @@ const faq = [
   color: #5d5f5a;
   font-size: var(--type-secondary);
 }
-.price-tabs button, .mileage-switch button, .car-link { font-size: var(--type-control); }
+.price-tabs a, .mileage-switch button, .car-link { font-size: var(--type-control); }
 .price-table td, .car-wrap strong, .question-list summary, .question-list details > p,
 .service-list > div, .service-list dd, .option-card h3, .option-card p.option-note,
 .delivery-table td, .delivery-card .delivery-note { font-size: var(--type-body); }
@@ -180,7 +182,7 @@ const faq = [
   .price-heading { margin-bottom: 18px; }
   .price-heading .interior-action { display: none; }
   .price-tabs { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 4px; margin-top: 0; }
-  .price-tabs button { min-width: 0; min-height: 44px; padding: 6px 4px; font-size: var(--type-secondary); line-height: 1.2; text-align: center; }
+  .price-tabs a { min-width: 0; min-height: 46px; padding: 6px 4px; font-size: var(--type-secondary); line-height: 1.2; text-align: center; }
   .price-toolbar {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;

@@ -873,6 +873,15 @@ button {
   gap: 18px;
 }
 .request-vehicle { margin: 10px 0 16px; color: #343731; font-size: var(--type-body); font-weight: 650; }
+.request-contact {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-bottom: 16px;
+}
+.request-contact p { flex: 1 1 230px; color: #5d5f5a; font-size: var(--type-secondary); }
+.request-contact .button { min-height: 44px; }
 .request-form .text-field { font-size: var(--type-secondary); }
 .request-form .text-field input { font-size: var(--type-control); }
 .text-field {

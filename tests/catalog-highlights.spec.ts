@@ -85,10 +85,41 @@ test("class and mileage selection carry prices through the catalogue and vehicle
   await page.getByRole("button", { name: "К ценам" }).click();
   await expect(priceOptions.getByRole("button", { name: "100 км" })).toHaveAttribute("aria-pressed", "true");
   await expect(solaris.locator(".price")).toContainText(/2\s900 ₽/);
-  await page.getByRole("button", { name: "Доп. услуги" }).click();
+  await page.getByRole("link", { name: "Доп. услуги" }).click();
   await expect(page.getByRole("heading", { name: "Доставка автомобиля" })).toBeVisible();
-  await page.getByRole("button", { name: "Компенсация ущерба" }).click();
+  await page.getByRole("link", { name: "Компенсация ущерба" }).click();
   await expect(page.getByRole("heading", { name: "Компенсация ущерба" })).toBeVisible();
+});
+
+test("price lists are shareable and damage prices fit the selected class on mobile", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto("/#prices/services");
+  await expect(page.getByRole("heading", { name: "Доставка автомобиля" })).toBeVisible();
+  const damageLink = page.getByRole("link", { name: "Компенсация ущерба" });
+  await damageLink.click();
+  await expect(page).toHaveURL(/#prices\/damage$/);
+  await page.reload();
+  await expect(damageLink).toHaveAttribute("aria-current", "page");
+
+  const classOptions = page.getByRole("group", { name: "Класс автомобиля" });
+  const prices = page.getByRole("table").first();
+  await expect(prices.getByRole("columnheader", { name: "Эконом" })).toBeVisible();
+  const business = classOptions.getByRole("button", { name: "Бизнес" });
+  await business.click();
+  await expect(business).toHaveAttribute("aria-pressed", "true");
+  await expect(prices.getByRole("columnheader")).toHaveCount(2);
+  await expect(prices.getByRole("columnheader", { name: "Бизнес" })).toBeVisible();
+  await expect(prices.getByRole("row").filter({ hasText: "Сколы Л.П." })).toContainText(/800 ₽/);
+  for (const table of await page.locator(".table-wrap").all()) {
+    expect(await table.evaluate(el => el.scrollWidth)).toBe(await table.evaluate(el => el.clientWidth));
+  }
+
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await expect(classOptions).toBeHidden();
+  await expect(prices.getByRole("columnheader")).toHaveCount(5);
+  await page.goBack();
+  await expect(page).toHaveURL(/#prices\/services$/);
+  await expect(page.getByRole("link", { name: "Доп. услуги" })).toHaveAttribute("aria-current", "page");
 });
 
 test("mobile banners can be browsed manually and link to their actions", async ({ page }) => {

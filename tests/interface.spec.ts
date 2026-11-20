@@ -198,12 +198,12 @@ test("vehicle details, cover, mileage and request form use the same rental detai
   await expect(summary).toContainText("09:30");
   await expect(summary).toContainText("25 ноября 2026 г., 10:00");
   await expect(summary).toContainText(/за 4 дня\s*16\s360 ₽/);
-  await request.getByRole("button", { name: "Проверить заявку" }).click();
+  await request.getByRole("button", { name: "Собрать параметры для звонка" }).click();
   await expect(request.getByText("Введите телефон полностью")).toBeVisible();
   await request.getByRole("textbox", { name: "Ваше имя" }).fill("Александр");
   await request.getByRole("textbox", { name: "Телефон", exact: true }).fill("9991234567");
   await request.getByRole("checkbox", { name: /Согласен на обработку/ }).check();
-  await request.getByRole("button", { name: "Проверить заявку" }).click();
+  await request.getByRole("button", { name: "Собрать параметры для звонка" }).click();
   const details = page.getByRole("dialog", { name: "Параметры аренды" });
   await expect(details).toContainText(/Предварительно 16\s360 ₽/);
   await expect(details.getByRole("heading", { name: "Что сообщить при звонке" })).toBeVisible();
@@ -221,14 +221,56 @@ test("request modal traps focus and restores the opener", async ({ page }) => {
   await trigger.click();
   const dialog = page.getByRole("dialog", { name: "Запрос на аренду" });
   await expect(dialog.getByText("Введённые данные остаются на этой странице.", { exact: false })).toBeVisible();
+  await expect(dialog.getByRole("link", { name: "Позвонить сейчас" })).toHaveAttribute("href", "tel:+74951041010");
   const close = dialog.getByRole("button", { name: "Закрыть окно" });
   await expect(close).toBeFocused();
   await page.keyboard.press("Shift+Tab");
-  await expect(dialog.getByRole("button", { name: "Проверить заявку" })).toBeFocused();
+  await expect(dialog.getByRole("button", { name: "Собрать параметры для звонка" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(close).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(trigger).toBeFocused();
+});
+
+test("the shared calendar focuses the requested endpoint and Back dismisses the request", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-11-20T10:00:00+03:00"));
+  await page.goto("/#catalog");
+  const opener = page.locator(".fleet-card").first().getByRole("button", { name: "Подробнее", exact: true });
+  await opener.click();
+
+  const period = page.getByRole("region", { name: "Даты аренды" });
+  const pickup = period.getByRole("button", { name: /^Получение/ });
+  const dropoff = period.getByRole("button", { name: /^Возврат/ });
+  await dropoff.press("Enter");
+  const calendar = page.getByRole("dialog", { name: "Даты и время аренды" });
+  await expect(calendar.getByText("Предложенный период")).toBeVisible();
+  await expect(calendar.getByRole("button", { name: "Изменить дату возврата" })).toHaveAttribute("aria-pressed", "true");
+  await expect(pickup).toHaveAttribute("aria-expanded", "false");
+  await expect(dropoff).toHaveAttribute("aria-expanded", "true");
+  await expect(calendar.getByRole("button", { name: "23 ноября 2026 г.", exact: true })).toBeFocused();
+  await expect(calendar.getByRole("button", { name: "22 ноября 2026 г.", exact: true })).toBeDisabled();
+  await expect(calendar.locator(".date-grid button[tabindex='0']")).toHaveCount(1);
+  await page.keyboard.press("ArrowRight");
+  await expect(calendar.getByRole("button", { name: "24 ноября 2026 г.", exact: true })).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  const nextMonth = calendar.getByRole("button", { name: "1 декабря 2026 г.", exact: true });
+  await expect(nextMonth).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(calendar.getByText("Предложенный период")).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await expect(dropoff).toBeFocused();
+  await expect(dropoff).toContainText("Выберите дату");
+
+  await pickup.press("Enter");
+  await calendar.getByRole("button", { name: "Подтвердить период" }).click();
+  await page.getByRole("button", { name: "Подготовить заявку" }).click();
+  const request = page.getByRole("dialog", { name: "Запрос на аренду" });
+  await expect(request).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(/#catalog$/);
+  await expect(request).toHaveCount(0);
+  await expect(page.locator("body")).not.toHaveCSS("overflow", "hidden");
+  await expect(opener).toBeFocused();
 });
 
 for (const width of [320, 430, 768, 1024, 1440, 1536, 2048]) {
@@ -333,6 +375,8 @@ test("news and promotions keep their detail on reload and return to the list", a
   await expect(page).toHaveURL(/#promotions\/half-day$/);
   await page.reload();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Аренда на полдня.");
+  await expect(page.getByRole("link", { name: "Позвонить по акции" })).toHaveAttribute("href", "tel:+74951041010");
+  await expect(page.getByRole("main").getByRole("link", { name: "Посмотреть автомобили" })).toHaveCount(0);
   await page.getByRole("link", { name: "Все акции" }).click();
   await expect(offer).toBeFocused();
 });
@@ -453,7 +497,7 @@ test("editable pickup suggests houses and preserves a manual address and mileage
   await request.getByRole("textbox", { name: "Ваше имя" }).fill("Александр");
   await request.getByRole("textbox", { name: "Телефон", exact: true }).fill("9991234567");
   await request.getByRole("checkbox", { name: "Согласен на обработку" }).check();
-  await request.getByRole("button", { name: "Проверить заявку" }).click();
+  await request.getByRole("button", { name: "Собрать параметры для звонка" }).click();
   await expect(request).toContainText("Пробег — обсудить перед оформлением");
   await expect(request).toContainText("Москва, Сиреневый бульвар, 24с1");
 });
