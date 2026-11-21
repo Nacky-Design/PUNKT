@@ -1,4 +1,10 @@
-export type CarPhoto = { label: string; file: string; role?: "front" | "exterior" | "rear" | "interior" | "trunk" | "other"; thumbnail?: string; illustration?: boolean };
+export type CarPhoto = {
+  label: string;
+  file: string;
+  role?: "front" | "exterior" | "rear" | "interior" | "trunk" | "other";
+  thumbnail?: string;
+  verticalPosition?: number;
+};
 export const mileageOptions = ["100 км / сутки", "250 км / сутки", "500 км / сутки"] as const;
 export const baseMileage = mileageOptions[0];
 export const washPrices = { Эконом: 1300, Стандарт: 1500, Кроссовер: 1800, Бизнес: 2000 };
@@ -6,6 +12,7 @@ type MileageLimit = 100 | 250 | 500;
 export type Car = {
   id: number;
   name: string;
+  hidden?: boolean;
   year?: number;
   category: keyof typeof washPrices;
   rates: Record<MileageLimit, number>;
@@ -33,18 +40,21 @@ export function rentalRate(car: Car, option: string) {
   return car.rates[mileageLimit(option)];
 }
 const demoPhotos = (model: string): CarPhoto[] => [
-  { label: "Вид спереди", file: `demo-${model}-front.webp`, thumbnail: `demo-${model}-thumb.webp`, role: "front", illustration: true },
-  { label: "Вид сзади", file: `demo-${model}-rear.webp`, role: "rear", illustration: true },
+  { label: "Вид спереди", file: `demo-${model}-front.webp`, thumbnail: `demo-${model}-thumb.webp`, role: "front" },
+  { label: "Вид сзади", file: `demo-${model}-rear.webp`, role: "rear" },
 ];
-function fleetPhotos(directory: string, frames: [name: string, label: string, role: NonNullable<CarPhoto["role"]>][]): CarPhoto[] {
-  return frames.map(([name, label, role]) => ({
+function fleetPhotos(directory: string, frames: [
+  name: string, label: string, role: NonNullable<CarPhoto["role"]>, verticalPosition?: number,
+][]): CarPhoto[] {
+  return frames.map(([name, label, role, verticalPosition]) => ({
     label,
     file: `cars/${directory}/${name}.webp`,
     thumbnail: `cars/${directory}/${name}-thumb.webp`,
     role,
+    verticalPosition,
   }));
 }
-export const cars: Car[] = [
+const fleet: Car[] = [
   {
     id: 1,
     name: "Hyundai Solaris",
@@ -64,12 +74,12 @@ export const cars: Car[] = [
     photos: fleetPhotos("solaris", [
       ["blue-front", "Синий, вид спереди", "front"],
       ["blue-rear-quarter", "Синий, вид сзади под углом", "rear"],
-      ["blue-side", "Синий, вид сбоку", "exterior"],
+      ["blue-side", "Синий, вид сбоку", "exterior", 80],
       ["blue-front-other-side", "Синий, вид спереди с другой стороны", "exterior"],
-      ["blue-rear", "Синий, вид сзади", "rear"],
+      ["blue-rear", "Синий, вид сзади", "rear", 72],
       ["black-front", "Чёрный, вид спереди", "exterior"],
       ["black-rear-quarter", "Чёрный, вид сзади под углом", "rear"],
-      ["black-rear", "Чёрный, вид сзади", "rear"],
+      ["black-rear", "Чёрный, вид сзади", "rear", 66],
       ["blue-interior", "Синий, общий вид салона", "interior"],
       ["blue-dashboard", "Синий, руль и приборная панель", "interior"],
       ["blue-front-seats", "Синий, передние сиденья", "interior"],
@@ -108,7 +118,14 @@ export const cars: Car[] = [
     drive: "Передний",
     body: "Седан",
     image: 1,
-    photos: demoPhotos("rio"),
+    photos: fleetPhotos("rio-white", [
+      ["front", "Вид спереди под углом", "front"],
+      ["side", "Вид сбоку", "exterior"],
+      ["rear-left", "Вид сзади слева", "rear"],
+      ["rear-right", "Вид сзади справа", "rear"],
+      ["dashboard", "Место водителя", "interior"],
+      ["passenger-seat", "Переднее пассажирское место", "interior"],
+    ]),
     extraSpecs: [{ label: "Двигатель", value: "1,6 л" }],
     trim: {
       name: "Comfort",
@@ -118,6 +135,7 @@ export const cars: Car[] = [
   {
     id: 3,
     name: "BMW 318d (G20)",
+    hidden: true,
     category: "Бизнес",
     rates: { 100: 5500, 250: 6500, 500: 8000 },
     protectionPrice: 1500,
@@ -169,7 +187,16 @@ export const cars: Car[] = [
     drive: "Полный",
     body: "Кроссовер",
     image: 5,
-    photos: demoPhotos("jolion"),
+    photos: fleetPhotos("jolion", [
+      ["silver-front", "Серебристый, вид спереди", "front"],
+      ["silver-side", "Серебристый, вид сбоку", "exterior"],
+      ["white-front", "Белый, вид спереди", "exterior", 58],
+      ["white-rear-left", "Белый, вид сзади слева", "rear", 70],
+      ["white-rear-right", "Белый, вид сзади справа", "rear", 70],
+      ["silver-interior", "Серебристый, салон", "interior"],
+      ["white-interior", "Белый, салон", "interior"],
+      ["white-trunk", "Белый, багажник", "trunk"],
+    ]),
     extraSpecs: [{ label: "Двигатель", value: "1,5 л" }],
   },
   {
@@ -185,8 +212,8 @@ export const cars: Car[] = [
     body: "Кроссовер",
     image: 6,
     photos: fleetPhotos("creta-white", [
-      ["front", "Белая, вид спереди", "front"],
-      ["side", "Белая, вид сбоку", "exterior"],
+      ["front", "Белая, вид спереди", "front", 80],
+      ["side", "Белая, вид сбоку", "exterior", 84],
       ["rear-quarter", "Белая, вид сзади под углом", "rear"],
       ["rear", "Белая, вид сзади", "rear"],
       ["front-turned-wheel", "Белая, передний ракурс с повёрнутыми колёсами", "exterior"],
@@ -207,9 +234,20 @@ export const cars: Car[] = [
     drive: "Передний",
     body: "Кроссовер",
     image: 7,
+    photos: fleetPhotos("cityray", [
+      ["white-front", "Белый, вид спереди", "front"],
+      ["white-side", "Белый, вид сбоку", "exterior"],
+      ["gray-front-right", "Серый, вид спереди справа", "exterior"],
+      ["gray-front-left", "Серый, вид спереди слева", "exterior"],
+      ["gray-side", "Серый, вид сбоку", "exterior"],
+      ["gray-rear", "Серый, вид сзади под углом", "rear"],
+      ["interior", "Салон и приборная панель", "interior"],
+      ["white-trunk", "Белый, багажник со сложенными сиденьями", "trunk"],
+    ]),
     extraSpecs: [{ label: "Двигатель", value: "1,5 л" }],
   },
 ];
+export const cars = fleet.filter(car => !car.hidden);
 export const categories = [
   "Все классы",
   "Эконом",

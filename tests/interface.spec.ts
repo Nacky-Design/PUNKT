@@ -72,7 +72,7 @@ test("class selection supports keyboard and search has an honest empty state", a
   await expect(page).toHaveURL(/#catalog$/);
   await expect(page.getByText("По этим параметрам автомобилей нет")).toBeVisible();
   await page.getByRole("button", { name: "Сбросить фильтры" }).click();
-  await expect(page.locator(".fleet-card")).toHaveCount(7);
+  await expect(page.locator(".fleet-card")).toHaveCount(6);
 });
 
 test("catalogue compares costs, sorts and returns focus to the vehicle", async ({ page }) => {
@@ -145,7 +145,7 @@ test("vehicle details, cover, mileage and request form use the same rental detai
   const gallery = car.getByRole("figure", { name: "Фотографии автомобиля" });
   const mainPhoto = gallery.getByRole("img", { name: "Hyundai Solaris — Синий, вид спереди", exact: true });
   await expect(mainPhoto).toHaveJSProperty("naturalWidth", 1200);
-  await expect(mainPhoto).toHaveCSS("object-fit", "contain");
+  await expect(mainPhoto).toHaveCSS("object-fit", "cover");
   const photoBox = await mainPhoto.boundingBox();
   const previewsBox = await gallery.getByRole("group", { name: "Выберите фотографию" }).boundingBox();
   expect(photoBox).not.toBeNull();
@@ -297,7 +297,7 @@ for (const width of [320, 430, 768, 1024, 1440, 1536, 2048]) {
         .evaluateAll(labels => labels.map(label => label.getBoundingClientRect().top));
       expect(Math.max(...captionPositions) - Math.min(...captionPositions)).toBeLessThan(1);
     }
-    await expect(page.locator(".fleet-card")).toHaveCount(7);
+    await expect(page.locator(".fleet-card")).toHaveCount(6);
   });
 }
 

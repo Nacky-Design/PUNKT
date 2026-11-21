@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { ArrowRight, ArrowUpRight, CarFront, Check, ChevronLeft, Fuel, MapPin, Settings2, UsersRound, Zap } from "lucide-vue-next";
 import CatalogDateRange from "./CatalogDateRange.vue";
 import VehicleGallery from "./VehicleGallery.vue";
@@ -7,7 +8,7 @@ import RentalTerms from "./RentalTerms.vue";
 import { messengerLinks } from "../contact";
 import { baseMileage, mileageOptions, money, rentalRate, washPrices, type Car, type RentalPeriod } from "../data";
 
-defineProps<{
+const props = defineProps<{
   car: Car;
   backLabel?: string;
   pickupLabel: string;
@@ -24,6 +25,10 @@ defineProps<{
   quote: { days: number; total: number; includedMileage: number };
   dayLabel: string;
 }>();
+const subtitle = computed(() => {
+  const { category, year, body } = props.car;
+  return [category, year && `${year} г.`, body !== category && body].filter(Boolean).join(" · ");
+});
 const surcharge = (car: Car, option: string) => rentalRate(car, option) - rentalRate(car, baseMileage);
 const emit = defineEmits<{
   back: [];
@@ -45,7 +50,7 @@ const emit = defineEmits<{
       <div class="vehicle-heading">
         <div>
           <h1 id="vehicle-page-title">{{ car.name }}</h1>
-          <p class="vehicle-subtitle">{{ car.category }}<template v-if="car.year"> · {{ car.year }} г.</template> · {{ car.body }}</p>
+          <p class="vehicle-subtitle">{{ subtitle }}</p>
         </div>
         <div class="vehicle-heading-price"><span>Стоимость аренды</span><strong>{{ money(rate) }} ₽ <small>/ сутки</small></strong></div>
       </div>
