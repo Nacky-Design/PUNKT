@@ -69,7 +69,8 @@ function endSwipe(event: TouchEvent) {
     <div v-if="photos.length > 1" class="gallery-rail" :style="{ '--preview-rows': Math.min(photos.length, 3) }">
       <div ref="thumbnails" class="gallery-thumbnails" role="group" aria-label="Выберите фотографию">
         <button v-for="(photo, index) in photos" :key="photo.file" type="button" :aria-label="photo.label" :aria-pressed="index === current" @click="current = index">
-          <img :src="asset(photo.thumbnail ?? photo.file)" alt="" loading="lazy" decoding="async" />
+          <img :src="asset(photo.thumbnail ?? photo.file)" alt="" loading="lazy" decoding="async"
+            :style="{ objectPosition: `${photo.thumbnailHorizontalPosition ?? 50}% center` }" />
         </button>
       </div>
     </div>

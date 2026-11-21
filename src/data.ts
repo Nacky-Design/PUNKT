@@ -3,6 +3,7 @@ export type CarPhoto = {
   file: string;
   role?: "front" | "exterior" | "rear" | "interior" | "trunk" | "other";
   thumbnail?: string;
+  thumbnailHorizontalPosition?: number;
   verticalPosition?: number;
 };
 export const mileageOptions = ["100 км / сутки", "250 км / сутки", "500 км / сутки"] as const;
@@ -43,13 +44,16 @@ const demoPhotos = (model: string): CarPhoto[] => [
   { label: "Вид спереди", file: `demo-${model}-front.webp`, thumbnail: `demo-${model}-thumb.webp`, role: "front" },
   { label: "Вид сзади", file: `demo-${model}-rear.webp`, role: "rear" },
 ];
+const fleetPhotoVersion = "punkt-plates-1";
 function fleetPhotos(directory: string, frames: [
   name: string, label: string, role: NonNullable<CarPhoto["role"]>, verticalPosition?: number,
+  thumbnailHorizontalPosition?: number,
 ][]): CarPhoto[] {
-  return frames.map(([name, label, role, verticalPosition]) => ({
+  return frames.map(([name, label, role, verticalPosition, thumbnailHorizontalPosition]) => ({
     label,
-    file: `cars/${directory}/${name}.webp`,
-    thumbnail: `cars/${directory}/${name}-thumb.webp`,
+    file: `cars/${directory}/${name}.webp?v=${fleetPhotoVersion}`,
+    thumbnail: `cars/${directory}/${name}-thumb.webp?v=${fleetPhotoVersion}`,
+    thumbnailHorizontalPosition,
     role,
     verticalPosition,
   }));
@@ -72,12 +76,12 @@ const fleet: Car[] = [
     body: "Седан",
     image: 0,
     photos: fleetPhotos("solaris", [
-      ["blue-front", "Синий, вид спереди", "front"],
+      ["blue-front", "Синий, вид спереди", "front", undefined, 70],
       ["blue-rear-quarter", "Синий, вид сзади под углом", "rear"],
       ["blue-side", "Синий, вид сбоку", "exterior", 80],
       ["blue-front-other-side", "Синий, вид спереди с другой стороны", "exterior"],
       ["blue-rear", "Синий, вид сзади", "rear", 72],
-      ["black-front", "Чёрный, вид спереди", "exterior"],
+      ["black-front", "Чёрный, вид спереди", "exterior", undefined, 72],
       ["black-rear-quarter", "Чёрный, вид сзади под углом", "rear"],
       ["black-rear", "Чёрный, вид сзади", "rear", 66],
       ["blue-interior", "Синий, общий вид салона", "interior"],
@@ -164,7 +168,7 @@ const fleet: Car[] = [
     body: "Кроссовер",
     image: 4,
     photos: fleetPhotos("coolray-white", [
-      ["front", "Вид спереди", "front"],
+      ["front", "Вид спереди", "front", undefined, 35],
       ["side", "Вид сбоку", "exterior"],
       ["rear", "Вид сзади", "rear"],
       ["interior", "Салон", "interior"],
@@ -212,11 +216,11 @@ const fleet: Car[] = [
     body: "Кроссовер",
     image: 6,
     photos: fleetPhotos("creta-white", [
-      ["front", "Белая, вид спереди", "front", 80],
+      ["front", "Белая, вид спереди", "front", 80, 42],
       ["side", "Белая, вид сбоку", "exterior", 84],
       ["rear-quarter", "Белая, вид сзади под углом", "rear"],
       ["rear", "Белая, вид сзади", "rear"],
-      ["front-turned-wheel", "Белая, передний ракурс с повёрнутыми колёсами", "exterior"],
+      ["front-turned-wheel", "Белая, передний ракурс с повёрнутыми колёсами", "exterior", undefined, 30],
       ["rear-lights", "Белая, задние фонари", "rear"],
       ["interior", "Белая, общий вид салона", "interior"],
     ]),
@@ -235,12 +239,12 @@ const fleet: Car[] = [
     body: "Кроссовер",
     image: 7,
     photos: fleetPhotos("cityray", [
-      ["white-front", "Белый, вид спереди", "front"],
+      ["white-front", "Белый, вид спереди", "front", undefined, 35],
       ["white-side", "Белый, вид сбоку", "exterior"],
-      ["gray-front-right", "Серый, вид спереди справа", "exterior"],
+      ["gray-front-right", "Серый, вид спереди справа", "exterior", undefined, 70],
       ["gray-front-left", "Серый, вид спереди слева", "exterior"],
       ["gray-side", "Серый, вид сбоку", "exterior"],
-      ["gray-rear", "Серый, вид сзади под углом", "rear"],
+      ["gray-rear", "Серый, вид сзади под углом", "rear", undefined, 32],
       ["interior", "Салон и приборная панель", "interior"],
       ["white-trunk", "Белый, багажник со сложенными сиденьями", "trunk"],
     ]),
