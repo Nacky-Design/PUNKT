@@ -3171,8 +3171,6 @@ h2 {
 /* Contact hours follow Moscow time on every page. */
 .header-contact { display: grid; gap: 5px; }
 .header-hours { display: flex; align-items: center; gap: 7px; color: #c9cbca; font-size: 11px; line-height: 1.1; white-space: nowrap; }
-.hours-dot { width: 7px; height: 7px; flex: none; border-radius: 50%; background: #a5aaa7; }
-.hours-dot-open { background: #28b250; }
 @media (min-width: 761px) and (max-width: 950px) {
   .header-hours { font-size: 10px; }
   .header-phone { width: auto; justify-content: flex-start; }
@@ -3300,7 +3298,6 @@ h2 {
 @media (max-width: 380px) {
   .header-hours { bottom: 13px; gap: 4px; font-size: 12px; }
   .header-hours .hours-zone { display: none; }
-  .header-hours .hours-dot { width: 6px; height: 6px; }
   .header-contact-row, .site-header-solid .header-contact-row { gap: 5px; }
   .header-contact-row .header-phone { gap: 5px; font-size: 14px; }
   .header-contact-row .header-phone svg, .header-contact-row .header-messenger { width: 18px; height: 18px; }

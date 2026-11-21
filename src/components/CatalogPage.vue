@@ -13,7 +13,7 @@ import CompanyIntro from './CompanyIntro.vue';
 import RentalTerms from './RentalTerms.vue';
 import PickupAddressDialog from './PickupAddressDialog.vue';
 import { messengerLinks } from '../contact';
-import { money, type Car } from '../data';
+import { money, rentalRate, type Car } from '../data';
 import { deliveryAddressLine, hasDeliveryAddress, type DeliveryPoint, type DeliverySelection } from '../delivery';
 
 const props = defineProps<{
@@ -32,7 +32,6 @@ const props = defineProps<{
   deliveryPoint?: DeliveryPoint;
   mileage: string;
   baseMileage: string;
-  mileagePrices: Record<string, number>;
   mileageLabel: string;
   protection: boolean;
   rate: (car: Car) => number;
@@ -44,7 +43,7 @@ const emit = defineEmits<{
   (event: 'show-car', car: Car): void;
   (event: 'confirm-address', selection: DeliverySelection): void;
 }>();
-const lowestRate = computed(() => Math.min(...props.allCars.map(car => car.price)));
+const lowestRate = computed(() => Math.min(...props.allCars.map(car => rentalRate(car, props.baseMileage))));
 const draftCategory = ref(props.category);
 const draftStart = ref(props.start);
 const draftEnd = ref(props.end);
@@ -115,7 +114,7 @@ const mileageField = ref<InstanceType<typeof CatalogMileage>>();
         <CatalogDateRange v-model:start="draftStart" v-model:end="draftEnd" />
         <SelectField :model-value="pickupValue" class="location-field" label="Место получения" :options="pickupOptions" appearance="catalog"
           @update:model-value="choosePickup" />
-        <CatalogMileage ref="mileageField" :model-value="mileage" :prices="mileagePrices"
+        <CatalogMileage ref="mileageField" :model-value="mileage"
           @update:model-value="emit('update:mileage', $event)" />
         <CatalogFilters :filters="filters" :all-cars="allCars" @apply="emit('update:filters', $event)" />
         <button class="search-submit" type="submit">Применить <ArrowRight :size="18" /></button>
@@ -139,8 +138,8 @@ const mileageField = ref<InstanceType<typeof CatalogMileage>>();
             <span>{{ car.category }}</span>
           </button>
           <div class="car-content">
-            <div class="car-title"><h3>{{ car.name }}</h3><span>{{ car.year }}</span></div>
-            <div class="car-specs"><span><Settings2 :size="15" /> Автомат</span><span><UsersRound :size="15" /> {{ car.seats }} мест</span><span><Gauge :size="15" /> {{ car.power }} л.с.</span></div>
+            <div class="car-title"><h3>{{ car.name }}</h3><span v-if="car.year">{{ car.year }}</span></div>
+            <div class="car-specs"><span><Settings2 :size="15" /> Автомат</span><span v-if="car.seats"><UsersRound :size="15" /> {{ car.seats }} мест</span><span v-if="car.power"><Gauge :size="15" /> {{ car.power }} л.с.</span></div>
             <div class="car-price"><div><strong>{{ money(rate(car)) }} ₽</strong><span> / сутки</span></div></div>
             <p v-if="protection && car.protectionPrice == null" class="unpriced-option">Защита+ оплачивается дополнительно, стоимость уточняется</p>
             <div class="card-bottom"><span><Gauge :size="14" /> {{ mileageLabel }}</span><button type="button" :data-car-action="`details-${car.id}`" @click="emit('show-car', car)">Подробнее <ArrowRight :size="16" /></button></div>

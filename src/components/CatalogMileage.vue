@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Check, ChevronDown } from 'lucide-vue-next';
-import { money } from '../data';
+import { baseMileage, mileageOptions } from '../data';
 import { usePopoverPlacement } from '../composables/usePopoverPlacement';
 import { useMobileSheet } from '../composables/useMobileSheet';
 import BaseModal from './BaseModal.vue';
 
 const props = defineProps<{
   modelValue: string;
-  prices: Record<string, number>;
 }>();
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>();
 
@@ -77,15 +76,15 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', outside));
       v-bind="sheet ? { title: 'Пробег в сутки', sheet: true } : { class: ['mileage-picker', { 'mileage-picker--above': above }] }"
       @close="close()">
       <div id="catalog-mileage-options" ref="options" class="mileage-options" role="group" aria-label="Пакеты пробега">
-        <button v-for="(extra, option) in prices" :key="option" type="button" :aria-pressed="option === modelValue" @click="choose(option)">
+        <button v-for="option in mileageOptions" :key="option" type="button" :aria-pressed="option === modelValue" @click="choose(option)">
           <span>
             <strong>{{ option }}</strong>
-            <small>{{ extra ? '+' + money(extra) + ' ₽ в сутки' : 'Включено в базовую цену' }}</small>
+            <small v-if="option === baseMileage">Базовый тариф</small>
           </span>
           <Check v-if="option === modelValue" :size="18" aria-hidden="true" />
         </button>
       </div>
-      <p class="mileage-terms">Километры сверх лимита оплачиваются отдельно. Ставка указана в карточке автомобиля.</p>
+      <p class="mileage-terms">Цена зависит от автомобиля. Пробег суммируется за все оплаченные сутки.</p>
     </component>
   </div>
 </template>

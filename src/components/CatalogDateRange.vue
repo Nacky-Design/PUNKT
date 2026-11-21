@@ -88,7 +88,6 @@ function fullDate(s: string) {
 }
 function fieldValue(which: 'start' | 'end') {
   if (!props.times) return dateLabel(props[which]);
-  if (!props.times.confirmed) return 'Выберите дату';
   const day = localDate(props[which]).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
   return `${day}, ${props.times[which]}`;
 }
@@ -192,7 +191,7 @@ onBeforeUnmount(() => { document.removeEventListener('pointerdown', onOutside); 
     <button v-for="field in fields" :key="field.key" type="button" class="date-field"
       :aria-expanded="open && openedFrom === field.key" :aria-controls="open ? 'catalog-date-calendar' : undefined"
       :aria-haspopup="times || sheet ? 'dialog' : undefined"
-      :aria-label="times?.confirmed ? `${field.label}, ${fullDate(field.key === 'start' ? start : end)}, ${times[field.key]}` : undefined"
+      :aria-label="times ? `${field.label}, ${fullDate(field.key === 'start' ? start : end)}, ${times[field.key]}` : undefined"
       @click="toggle(field.key, $event)">
       <span class="date-caption">{{ field.label }}<CalendarDays v-if="times" :size="15" aria-hidden="true" /></span>
       <span class="date-value"><CalendarDays v-if="!times" :size="16" aria-hidden="true" />{{ fieldValue(field.key) }}</span>

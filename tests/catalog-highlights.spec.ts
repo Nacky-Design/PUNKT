@@ -27,7 +27,7 @@ test("class and mileage selection carry prices through the catalogue and vehicle
   await page.getByRole("option", { name: "Шереметьево (SVO)", exact: true }).click();
   await form.getByRole("button", { name: "Применить", exact: true }).click();
   const cards = page.locator(".fleet-card");
-  await expect(cards).toHaveCount(2);
+  await expect(cards).toHaveCount(4);
   const before = await cards.first().locator(".car-price strong").innerText();
   const amount = (value: string) => Number(value.split("₽")[0]!.replace(/\D/g, ""));
 
@@ -40,9 +40,9 @@ test("class and mileage selection carry prices through the catalogue and vehicle
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
   await expect(trigger).toContainText("250 км");
   await expect(trigger).toBeFocused();
-  await expect(cards).toHaveCount(2);
+  await expect(cards).toHaveCount(4);
   const price = await cards.first().locator(".car-price strong").innerText();
-  expect(amount(price) - amount(before)).toBe(700);
+  expect(amount(price) - amount(before)).toBe(800);
 
   await page.getByRole("button", { name: "Сравнить цены" }).click();
   await expect(higherPackage).toBeFocused();
@@ -69,22 +69,27 @@ test("class and mileage selection carry prices through the catalogue and vehicle
   const priceOptions = page.getByRole("group", { name: "Пробег в сутки" });
   const solaris = page.getByRole("row").filter({ hasText: "Hyundai Solaris" });
   await expect(priceOptions.getByRole("button", { name: "100 км" })).toHaveAttribute("aria-pressed", "true");
-  await expect(solaris.locator(".price")).toContainText(/2\s900 ₽/);
+  await expect(solaris.locator(".price")).toContainText(/2\s600 ₽/);
   await expect(solaris).toContainText(/10\s000 ₽/);
   await expect(solaris).not.toContainText(/за [345] д/);
   await priceOptions.getByRole("button", { name: /^250 км/ }).click();
-  await expect(solaris.locator(".price")).toContainText(/3\s600 ₽/);
+  await expect(solaris.locator(".price")).toContainText(/3\s000 ₽/);
   await priceOptions.getByRole("button", { name: /^500 км/ }).click();
-  await expect(solaris.locator(".price")).toContainText(/4\s400 ₽/);
+  await expect(solaris.locator(".price")).toContainText(/4\s000 ₽/);
   await page.getByRole("button", { name: "Что покрывает «Защита+»" }).click();
   await expect(page.getByRole("dialog", { name: "Защита+" })).toBeVisible();
   await page.keyboard.press("Escape");
   await solaris.getByRole("button", { name: /К карточке Hyundai Solaris с «Защитой\+»/ }).click();
   await expect(page.getByRole("checkbox", { name: /Добавить «Защиту\+»/ })).toBeChecked();
-  await expect(page.locator(".vehicle-heading-price")).toContainText(/4\s890 ₽/);
+  await expect(page.locator(".vehicle-heading-price")).toContainText(/4\s500 ₽/);
   await page.getByRole("button", { name: "К ценам" }).click();
-  await expect(priceOptions.getByRole("button", { name: "100 км" })).toHaveAttribute("aria-pressed", "true");
-  await expect(solaris.locator(".price")).toContainText(/2\s900 ₽/);
+  await expect(priceOptions.getByRole("button", { name: "500 км" })).toHaveAttribute("aria-pressed", "true");
+  await expect(solaris.locator(".price")).toContainText(/4\s000 ₽/);
+  const carLink = solaris.getByRole("link", { name: "Hyundai Solaris" });
+  await carLink.getByRole("img").click();
+  await expect(page.locator(".vehicle-heading-price")).toContainText(/4\s000 ₽/);
+  await page.getByRole("button", { name: "К ценам" }).click();
+  await expect(carLink).toBeFocused();
   await page.getByRole("link", { name: "Доп. услуги" }).click();
   await expect(page.getByRole("heading", { name: "Доставка автомобиля" })).toBeVisible();
   await page.getByRole("link", { name: "Компенсация ущерба" }).click();
@@ -150,7 +155,7 @@ test("mobile banners can be browsed manually and link to their actions", async (
   await expect(track).toHaveJSProperty("scrollLeft", 0);
   await banners.getByRole("link", { name: "Условия доставки" }).click();
   await expect(page).toHaveURL(/#promotions\/free-delivery$/);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Бесплатная доставка по Москве.");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Бесплатная доставка в пределах МКАД.");
   await expect(page.locator("main")).toContainText("09:00–21:00");
 });
 

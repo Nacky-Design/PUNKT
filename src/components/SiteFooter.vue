@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Clock3, MapPin, Phone } from 'lucide-vue-next';
 import MessengerIcons from './MessengerIcons.vue';
+import { officeAddress, officePickupHours } from '../data';
 
 const navItems = [
   { label: 'Цены', href: '#prices' }, { label: 'Услуги', href: '#services' },
@@ -33,8 +34,8 @@ const year = new Date().getFullYear();
         <div class="footer-contact">
           <p class="footer-label">МЫ НА СВЯЗИ</p>
           <a class="footer-phone" href="tel:+74951041010"><Phone :size="18" aria-hidden="true" />8 495 104-10-10</a>
-          <p><Clock3 :size="16" aria-hidden="true" />Пн–пт, 8:00–17:00 (МСК)</p>
-          <p><MapPin :size="16" aria-hidden="true" />Москва, ул. Авиационная, 24с1</p>
+          <p><Clock3 :size="16" aria-hidden="true" />Выдача {{ officePickupHours }} (МСК)</p>
+          <p><MapPin :size="16" aria-hidden="true" />{{ officeAddress }}</p>
         </div>
 
         <div class="footer-social">

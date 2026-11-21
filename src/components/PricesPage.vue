@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { ArrowLeft, ArrowRight, Baby, ChevronDown, Clock3, Droplets, Fuel, MapPin, Phone, ShieldCheck, Wrench } from 'lucide-vue-next';
+import { ArrowLeft, ArrowRight, Baby, ChevronDown, Droplets, Fuel, MapPin, Phone, ShieldCheck } from 'lucide-vue-next';
 import CarArt from './CarArt.vue';
 import DamageCompensation from './DamageCompensation.vue';
-import { daytimeDeliveryHours, money, type Car } from '../data';
+import { daytimeDeliveryHours, mileageOptions, money, rentalRate, washPrices, type Car } from '../data';
 
-const props = defineProps<{ tab: "rental" | "services" | "damage"; cars: Car[]; mileage: string; mileagePrices: Record<string, number> }>();
+const props = defineProps<{ tab: "rental" | "services" | "damage"; cars: Car[]; mileage: string }>();
 const emit = defineEmits<{
   'update:mileage': [value: string];
   'show-car': [car: Car, withProtection?: boolean];
@@ -17,8 +17,20 @@ const tabs = [
   { id: 'services', label: 'Доп. услуги', href: '#prices/services' },
   { id: 'damage', label: 'Компенсация ущерба', href: '#prices/damage' },
 ] as const;
-const selectedExtra = computed(() => props.mileagePrices[props.mileage] ?? 0);
-const sortedCars = computed(() => [...props.cars].sort((a, b) => a.price - b.price));
+const sortedCars = computed(() => [...props.cars].sort((a, b) => rentalRate(a, props.mileage) - rentalRate(b, props.mileage)));
+const deliveryRates = [
+  ['Подача, возврат или выезд сотрудника в пределах МКАД', 'Бесплатно', '3 000 ₽'],
+  ['Подача или возврат в аэропорту', '3 000 ₽', '4 500 ₽'],
+  ['Ожидание водителем свыше часа', '1 000 ₽ / час', '1 200 ₽ / час'],
+] as const;
+const cleaningPrices = [
+  ['Удаление насекомых', 300],
+  ['Удаление битума за элемент', 500],
+  ['Чистка багажника', 300],
+  ['Уборка мусора', 100],
+  ['Химчистка салона за элемент', 1000],
+  ['Удаление табачного запаха', 2500],
+] as const;
 const faq = [
   { question: 'Предусмотрены ли скидки на длительную аренду?', answer: 'Стоимость зависит от автомобиля и срока аренды. Возможные скидки и итоговую цену уточним до оформления.' },
   { question: 'Можно ли взять автомобиль без залога?', answer: 'Аренда без залога возможна при соблюдении условий. Применимость, а также размер залога в остальных случаях уточняются до подтверждения.' },
@@ -44,8 +56,8 @@ const faq = [
             <div>
               <h2 id="prices-mileage">Пробег в сутки</h2>
               <div class="mileage-switch" role="group" aria-labelledby="prices-mileage">
-                <button v-for="(extra, option) in mileagePrices" :key="option" type="button" :aria-pressed="mileage === option" @click="emit('update:mileage', option)">
-                  <span>{{ option.replace(' / сутки', '') }}</span><small v-if="extra">+{{ money(extra) }} ₽</small>
+                <button v-for="option in mileageOptions" :key="option" type="button" :aria-pressed="mileage === option" @click="emit('update:mileage', option)">
+                  <span>{{ option.replace(' / сутки', '') }}</span>
                 </button>
               </div>
             </div>
@@ -61,30 +73,28 @@ const faq = [
               <tbody>
                 <tr v-for="car in sortedCars" :key="car.id">
                   <td class="car-cell">
-                    <div class="car-wrap">
+                    <a class="car-wrap" :href="`#car/${car.id}`" :aria-label="car.name" :data-car-action="`name-${car.id}`" @click.exact.prevent="emit('show-car', car)">
                       <CarArt :index="car.image" :name="car.name" />
-                      <div><strong>{{ car.name }}</strong><small>{{ car.category }} · {{ car.year }} г.</small></div>
-                    </div>
+                      <span><strong>{{ car.name }}</strong><small>{{ car.category }}<template v-if="car.year"> · {{ car.year }} г.</template></small></span>
+                    </a>
                   </td>
                   <td class="daily-cell" data-label="Цена за сутки">
-                    <strong class="price">{{ money(car.price + selectedExtra) }} ₽</strong>
-                    <small v-if="car.overagePrice != null" class="price-overage">
+                    <strong class="price">{{ money(rentalRate(car, mileage)) }} ₽</strong>
+                    <small class="price-overage">
                       <span>Сверх лимита</span> <span>{{ money(car.overagePrice) }} ₽/км</span>
                     </small>
                   </td>
                   <td class="detail-cell" data-label="Защита+">
-                    <div v-if="car.protectionPrice !== undefined" class="price-cell-content">
+                    <div class="price-cell-content">
                       <span class="protection-rate"><strong>+{{ money(car.protectionPrice) }} ₽</strong><small>за сутки</small></span>
                       <button type="button" class="protection-add" :data-car-action="`protect-${car.id}`" :aria-label="`К карточке ${car.name} с «Защитой+»`" @click="emit('show-car', car, true)">К авто с «Защитой+»</button>
                     </div>
-                    <span v-else class="muted">Цена по запросу</span>
                   </td>
                   <td class="detail-cell" data-label="Залог">
-                    <div v-if="car.deposit !== undefined" class="price-cell-content">
+                    <div class="price-cell-content">
                       <strong>{{ money(car.deposit) }} ₽</strong>
                       <small><a href="#conditions/deposit" aria-label="Без залога — условия аренды">Без залога</a></small>
                     </div>
-                    <span v-else class="muted">Уточняется</span>
                   </td>
                   <td class="action-cell"><button type="button" class="car-link" :data-car-action="`price-${car.id}`" :aria-label="`Подробнее: ${car.name}`" @click="emit('show-car', car)"><span>Подробнее</span><ArrowRight :size="18" aria-hidden="true" /></button></td>
                 </tr>
@@ -110,19 +120,27 @@ const faq = [
           <div class="service-grid">
             <article class="service-card wash-card">
               <div class="service-card-heading"><span class="service-icon"><Droplets :size="22" aria-hidden="true" /></span><div><h3>Мойка при возврате</h3><p>Стоимость зависит от класса автомобиля</p></div></div>
-              <dl class="service-list"><div><dt>Эконом</dt><dd>1 500 ₽</dd></div><div><dt>Стандарт</dt><dd>1 700 ₽</dd></div><div><dt>Бизнес</dt><dd>1 800 ₽</dd></div><div><dt>Кроссовер</dt><dd>2 000 ₽</dd></div></dl>
+              <dl class="service-list"><div v-for="(price, category) in washPrices" :key="category"><dt>{{ category }}</dt><dd>{{ money(price) }} ₽</dd></div></dl>
             </article>
             <div class="option-grid" aria-label="Дополнительные услуги">
-              <article class="option-card"><span class="service-icon"><Fuel :size="21" aria-hidden="true" /></span><div><h3>Топливо при возврате</h3><p>90 ₽ <small>/ л</small></p></div></article>
-              <article class="option-card"><span class="service-icon"><Baby :size="21" aria-hidden="true" /></span><div><h3>Детское кресло</h3><p>Бесплатно</p></div></article>
-              <article class="option-card"><span class="service-icon"><Clock3 :size="21" aria-hidden="true" /></span><div><h3>Ожидание водителем клиента</h3><p>500 ₽ <small>/ час</small></p></div></article>
-              <article class="option-card"><span class="service-icon"><Wrench :size="21" aria-hidden="true" /></span><div><h3>Помощь на дороге</h3><p class="option-note">Выезд платный, стоимость по согласованию</p></div></article>
+              <article class="option-card"><span class="service-icon"><Fuel :size="21" aria-hidden="true" /></span><div><h3>Дозаправка при возврате</h3><p>80 ₽ <small>/ л</small></p></div></article>
+              <article class="option-card"><span class="service-icon"><Baby :size="21" aria-hidden="true" /></span><div><h3>Детское кресло</h3><p>100 ₽ <small>/ сутки</small></p><p class="option-note">До 1 000 ₽ за весь срок</p></div></article>
+              <article class="option-card"><span class="service-icon"><Droplets :size="21" aria-hidden="true" /></span><div><h3>Стеклоомывающая жидкость</h3><p>300 ₽ <small>/ 4 л</small></p></div></article>
             </div>
           </div>
           <article class="service-card delivery-card">
             <div class="delivery-header"><div class="service-card-heading"><span class="service-icon"><MapPin :size="22" aria-hidden="true" /></span><div><h3>Доставка автомобиля</h3><p>Тариф зависит от места и времени подачи.</p></div></div></div>
-            <div class="delivery-table-wrap"><table class="delivery-table"><thead><tr><th scope="col">Место доставки</th><th scope="col"><span>Днём</span>{{ daytimeDeliveryHours }}</th><th scope="col"><span>Ночью</span>21:00–09:00</th></tr></thead><tbody><tr><th scope="row">Москва</th><td :data-time="daytimeDeliveryHours">Бесплатно</td><td data-time="21:00–09:00">3 000 ₽</td></tr><tr><th scope="row">Московская область</th><td :data-time="daytimeDeliveryHours">По согласованию</td><td data-time="21:00–09:00">По согласованию</td></tr><tr><th scope="row">Аэропорты</th><td :data-time="daytimeDeliveryHours">3 000 ₽</td><td data-time="21:00–09:00">4 000 ₽</td></tr></tbody></table></div>
-            <p class="delivery-note">Доставка по области согласуется с учётом расстояния и доступности.</p>
+            <div class="delivery-table-wrap">
+              <table class="delivery-table">
+                <thead><tr><th scope="col">Услуга</th><th scope="col"><span>Днём</span>{{ daytimeDeliveryHours }}</th><th scope="col"><span>Ночью</span>21:00–09:00</th></tr></thead>
+                <tbody><tr v-for="[service, daytime, nighttime] in deliveryRates" :key="service"><th scope="row">{{ service }}</th><td :data-time="daytimeDeliveryHours">{{ daytime }}</td><td data-time="21:00–09:00">{{ nighttime }}</td></tr></tbody>
+              </table>
+            </div>
+            <p class="delivery-note">Доставку и допуслуги согласуем заранее. Стоимость выезда за МКАД уточним при оформлении.</p>
+          </article>
+          <article class="service-card">
+            <div class="service-card-heading"><span class="service-icon"><Droplets :size="22" aria-hidden="true" /></span><div><h3>Сильные загрязнения при возврате</h3></div></div>
+            <dl class="service-list"><div v-for="[service, price] in cleaningPrices" :key="service"><dt>{{ service }}</dt><dd>{{ money(price) }} ₽</dd></div></dl>
           </article>
         </section>
         <DamageCompensation v-else @open-terms="emit('open-terms')" @explain-protection="emit('explain-protection')" />
@@ -132,6 +150,8 @@ const faq = [
 </template>
 
 <style scoped>
+.car-wrap { color: inherit; text-decoration: none; }
+.car-wrap:hover strong { text-decoration: underline; }
 .eyebrow,.section-label{margin:0 0 10px;color:#888883;font-size:10px;font-weight:750;letter-spacing:.14em}.prices-page h1 span,.price-questions h2 span{color:#e0ac00}.intro{margin:10px 0 0;color:#6e706b;font-size:15px}.price-tabs{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:27px;padding:6px;border:1px solid #e1e1dd;border-radius:11px;background:#fff}.price-tabs a{display:grid;place-items:center;padding:13px 18px;border-radius:8px;color:#5e605c;font-weight:650;font-size:13px}.price-tabs a[aria-current="page"]{background:#202222;color:#fff}.price-tabs a:hover:not([aria-current="page"]){background:#f4f4f1;color:#171717}.price-toolbar{display:flex;justify-content:space-between;align-items:end;gap:18px;margin-top:38px}.price-toolbar h2,.price-questions h2{font-size:clamp(24px,2.5vw,32px);letter-spacing:-.035em;line-height:1.15}.price-toolbar p:last-child{margin-top:7px;color:#777;font-size:13px}.mileage-switch{display:flex;gap:6px;flex-wrap:wrap}.mileage-switch button{display:flex;align-items:center;gap:6px;min-height:42px;padding:9px 12px;border:1px solid #dddeda;border-radius:8px;background:#fff;color:#454742;font-size:12px;font-weight:650}.mileage-switch button[aria-pressed=true]{border-color:#deb12b;background:#fff2c7;color:#1c1c1c}.mileage-switch small{font-size:10px;font-weight:500;color:#777}.demo-note{display:flex;align-items:center;gap:8px;margin:19px 0 12px;color:#777;font-size:12px;line-height:1.45}.demo-note svg{flex:none}.table-shell{overflow:hidden;border:1px solid #e1e1dd;border-radius:13px;background:#fff}.price-table{border-collapse:collapse;width:100%;table-layout:fixed}.price-table th{padding:15px 17px;background:#f0f0ed;color:#777;text-align:left;font-size:11px;font-weight:700}.price-table th:first-child{width:35%}.price-table th:last-child{width:156px}.price-table td{padding:16px 17px;border-top:1px solid #ecece8;vertical-align:middle;font-size:14px}.price-table tbody tr:first-child td{border-top:0}.car-wrap{display:flex;align-items:center;gap:14px;min-width:0}.car-wrap :deep(.car-art){width:95px;height:63px;flex:none;aspect-ratio:auto;container-type:size;border-radius:7px;background:#f3f3f1}.car-wrap :deep(.car-art::before){width:min(100%,calc(100cqh * 1.65));transform:translate(-50%,-53%)}.car-wrap strong,.price-table td small{display:block}.car-wrap strong{font-size:15px}.price-table td small{margin-top:4px;color:#858782;font-size:11px;line-height:1.3}.price-table .price{font-size:18px;white-space:nowrap}.price-table s{color:#81837e;font-size:13px}.muted{color:#888;font-size:12px}.car-link{display:flex;margin-inline-start:auto;align-items:center;justify-content:center;gap:8px;padding:10px 12px;border-radius:8px;background:#f2f2ef;font-size:12px;font-weight:700;white-space:nowrap}.car-link:hover{background:#ffc107}.table-note{margin:12px 0 0;color:#81837e;font-size:11px;line-height:1.5}.price-questions{display:grid;grid-template-columns:minmax(220px,.8fr) minmax(0,1.5fr);gap:45px;margin-top:60px;padding-top:42px;border-top:1px solid #e2e2de}.faq-intro{margin-top:9px;color:#777;font-size:13px;line-height:1.5}.question-list{display:grid;gap:9px}.question-list details{border:1px solid #e3e3df;border-radius:11px;background:#fff}.question-list summary{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 18px;cursor:pointer;list-style:none;font-size:14px;font-weight:700;line-height:1.4}.question-list summary::-webkit-details-marker{display:none}.toggle{display:grid;place-items:center;flex:none;width:32px;height:32px;border-radius:50%;background:#f1f1ef}.question-list details[open] .toggle{background:#ffc107}.question-list details[open] .toggle svg{transform:rotate(180deg)}.question-list details>p{padding:0 60px 18px 18px;color:#666;font-size:13px;line-height:1.55}.empty-prices{margin-top:32px;padding:42px;border:1px solid #e3e3df;border-radius:13px;background:#fff}.empty-icon{display:grid;place-items:center;width:46px;height:46px;margin-bottom:18px;border-radius:11px;background:#fff2c7}.empty-prices h2{font-size:25px;letter-spacing:-.03em}.empty-prices p{margin:9px 0 20px;color:#777;line-height:1.5}.empty-prices a{display:inline-flex;align-items:center;gap:8px;font-weight:700}.visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @media(max-width:850px){.price-toolbar{align-items:start;flex-direction:column}.price-table th:first-child{width:30%}.price-table th:last-child{width:64px}.price-table th,.price-table td{padding:13px 10px}.car-wrap :deep(.car-art){width:65px;height:50px}.car-link span{display:none}.car-link{padding:10px}.price-questions{gap:25px}}
 

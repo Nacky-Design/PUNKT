@@ -65,7 +65,7 @@ for (const [width, height] of [[320, 568], [390, 844], [430, 932], [667, 375]]) 
     await form.getByRole("button", { name: "Применить", exact: true }).tap();
     const cars = page.locator(".fleet-card");
     await expect(cars).toHaveCount(2);
-    await expect(cars.first().locator(".car-price")).toContainText(/3\s600 ₽ \/ сутки/);
+    await expect(cars.first().locator(".car-price")).toContainText(/3\s000 ₽ \/ сутки/);
     await noOverflow(page, width);
 
     const vehicle = cars.first().getByRole("button", { name: "Подробнее: Hyundai Solaris" });
@@ -73,11 +73,12 @@ for (const [width, height] of [[320, 568], [390, 844], [430, 932], [667, 375]]) 
     await expect(page.locator("main h1")).toHaveText("Hyundai Solaris");
     await expect(page.locator(".vehicle-heading-price")).toBeVisible();
     const gallery = page.getByRole("figure", { name: "Фотографии автомобиля" });
-    await expect(gallery.getByRole("img", { name: "Hyundai Solaris — Вид спереди" })).toBeVisible();
+    const cover = gallery.getByRole("img", { name: "Hyundai Solaris — Синий, вид спереди", exact: true });
+    await expect(cover).toBeVisible();
     await gallery.getByRole("button", { name: "Следующее фото" }).tap();
-    await expect(gallery.getByRole("img", { name: "Hyundai Solaris — Вид сзади" })).toBeVisible();
-    await gallery.getByRole("button", { name: "Вид спереди" }).tap();
-    await expect(gallery.getByRole("img", { name: "Hyundai Solaris — Вид спереди" })).toBeVisible();
+    await expect(gallery.getByRole("img", { name: "Hyundai Solaris — Синий, вид сзади под углом", exact: true })).toBeVisible();
+    await gallery.getByRole("button", { name: "Синий, вид спереди", exact: true }).tap();
+    await expect(cover).toBeVisible();
     await noOverflow(page, width);
 
     const period = page.getByRole("region", { name: "Даты аренды" });
@@ -90,7 +91,8 @@ for (const [width, height] of [[320, 568], [390, 844], [430, 932], [667, 375]]) 
     const request = page.getByRole("dialog", { name: "Запрос на аренду" });
     await fitsViewport(request, width, height);
     const summary = request.getByRole("group", { name: "Условия аренды" });
-    await expect(summary).toContainText(/за 3 дня\s*10\s800 ₽/);
+    await expect(summary).toContainText(/за 3 дня\s*9\s000 ₽/);
+    await expect(summary).toContainText("750 км за весь срок");
     await expect(summary).toContainText("10:00 (МСК)");
     await expect(request.locator("input")).toHaveCount(3);
     await request.getByRole("button", { name: "Собрать параметры для звонка" }).tap();
@@ -157,7 +159,7 @@ test("daily rental passes selected dates into the catalogue", async ({ page }) =
   await expect(page).toHaveURL(/#catalog$/);
   await expect(page.getByRole("button", { name: /^Получение/ })).toContainText("25.11.2026");
   await expect(page.getByRole("button", { name: /^Возврат/ })).toContainText("27.11.2026");
-  await expect(page.locator(".fleet-card .car-price").first()).toContainText(/2\s900 ₽ \/ сутки/);
+  await expect(page.locator(".fleet-card .car-price").first()).toContainText(/2\s600 ₽ \/ сутки/);
   await noOverflow(page, 320);
 });
 

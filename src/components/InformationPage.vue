@@ -3,9 +3,9 @@ import { ArrowLeft, ArrowRight, ArrowUpRight, Clock3, Mail, MapPin, Phone } from
 import RentalTerms from './RentalTerms.vue';
 import HeaderMessengerIcon from './HeaderMessengerIcon.vue';
 import { messengerLinks } from '../contact';
+import { officeAddress, officePickupHours } from '../data';
 
 defineProps<{ page: 'conditions' | 'contacts' | 'about' }>();
-const officeAddress = 'Москва, ул. Авиационная, 24с1';
 const directions = `https://yandex.ru/maps/?mode=routes&rtext=~${encodeURIComponent(officeAddress)}`;
 const officeMap = `https://yandex.ru/map-widget/v1/?mode=search&text=${encodeURIComponent(officeAddress)}&z=16`;
 </script>
@@ -53,7 +53,11 @@ const officeMap = `https://yandex.ru/map-widget/v1/?mode=search&text=${encodeURI
             </a>
             <div class="contact-row">
               <span class="contact-icon"><Clock3 :size="19" aria-hidden="true" /></span>
-              <span><small>Часы работы офиса</small><strong>Пн–пт, 8:00–17:00 (МСК)</strong></span>
+              <span><small>Выдача в офисе</small><strong>{{ officePickupHours }} (МСК)</strong></span>
+            </div>
+            <div class="contact-row">
+              <span class="contact-icon"><Clock3 :size="19" aria-hidden="true" /></span>
+              <span><small>Доставка</small><strong>Круглосуточно</strong></span>
             </div>
             <div v-if="messengerLinks.telegram || messengerLinks.max" class="messengers" aria-label="Мессенджеры">
               <a v-if="messengerLinks.telegram" :href="messengerLinks.telegram"><HeaderMessengerIcon kind="telegram" />Telegram</a>
@@ -75,7 +79,7 @@ const officeMap = `https://yandex.ru/map-widget/v1/?mode=search&text=${encodeURI
         <div class="contact-layout about-layout">
           <section class="contact-card" aria-labelledby="about-rental-title">
             <h2 id="about-rental-title">Как проходит аренда</h2>
-            <p>Мы выдаём чистые, обслуженные автомобили. Год выпуска и характеристики можно посмотреть в карточке машины. На автомобилях «Пункта» можно ездить по России и в Беларусь.</p>
+            <p>Мы выдаём чистые, обслуженные автомобили. Год выпуска и характеристики можно посмотреть в карточке машины. Для поездок по России и в Беларусь заранее согласуйте маршрут и территорию использования автомобиля в договоре.</p>
             <a href="#catalog" class="interior-action">Выбрать автомобиль <ArrowRight :size="17" aria-hidden="true" /></a>
           </section>
           <aside class="contact-aside">

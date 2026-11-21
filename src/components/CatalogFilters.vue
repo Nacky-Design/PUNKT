@@ -45,7 +45,7 @@ const brands = computed(() => {
 });
 const fuels = computed(() => [...new Set(props.allCars.map(car => car.fuel))]);
 const drives = computed(() => [...new Set(props.allCars.map(car => car.drive))]);
-const seats = computed(() => [...new Set(props.allCars.map(car => car.seats))].sort((a, b) => a - b));
+const seats = computed(() => [...new Set(props.allCars.map(car => car.seats).filter(value => value !== undefined))].sort((a, b) => a - b));
 const activeCount = computed(() => [props.filters.brand, props.filters.fuel, props.filters.drive, props.filters.transmission, props.filters.seats].filter(Boolean).length + (props.filters.extras?.length ?? 0));
 function toggle() {
   if (open.value) { close(); return; }

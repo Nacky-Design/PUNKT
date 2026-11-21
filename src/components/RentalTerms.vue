@@ -30,9 +30,10 @@ defineProps<{ embedded?: boolean }>();
         <KeyRound class="deposit-art" :size="128" :stroke-width="1" aria-hidden="true" />
         <h3 :id="embedded ? 'rental-deposit-title' : undefined" :tabindex="embedded ? -1 : undefined">Когда возможна аренда без залога</h3>
         <ul class="deposit-list">
-          <li><span class="list-icon"><CreditCard :size="19" aria-hidden="true" /></span><span>Оплата банковской картой</span></li>
+          <li><span class="list-icon"><UserRound :size="19" aria-hidden="true" /></span><span>Возраст от 23 лет и стаж от 3 лет</span></li>
+          <li><span class="list-icon"><CreditCard :size="19" aria-hidden="true" /></span><span>Действующая именная банковская карта</span></li>
           <li><span class="list-icon"><MapPin :size="19" aria-hidden="true" /></span><span>Поездки по Москве и Московской области</span></li>
-          <li><span class="list-icon"><BadgeCheck :size="19" aria-hidden="true" /></span><span>Гражданство РФ</span></li>
+          <li><span class="list-icon"><BadgeCheck :size="19" aria-hidden="true" /></span><span>Регистрация в Москве или Московской области</span></li>
         </ul>
         <p class="asterisk">В отдельных случаях арендодатель может запросить залог.</p>
         <p class="asterisk">Для поездок за пределы Москвы и Московской области залог обязателен.</p>

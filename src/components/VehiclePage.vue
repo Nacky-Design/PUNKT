@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ArrowRight, ArrowUpRight, CarFront, Check, ChevronLeft, Fuel, MapPin, Settings2, ShieldCheck, UsersRound, Zap } from "lucide-vue-next";
+import { ArrowRight, ArrowUpRight, CarFront, Check, ChevronLeft, Fuel, MapPin, Settings2, UsersRound, Zap } from "lucide-vue-next";
 import CatalogDateRange from "./CatalogDateRange.vue";
 import VehicleGallery from "./VehicleGallery.vue";
 import FleetFaq from "./FleetFaq.vue";
 import RentalTerms from "./RentalTerms.vue";
 import { messengerLinks } from "../contact";
-import { money, type Car, type RentalPeriod } from "../data";
+import { baseMileage, mileageOptions, money, rentalRate, washPrices, type Car, type RentalPeriod } from "../data";
 
 defineProps<{
   car: Car;
@@ -16,13 +16,15 @@ defineProps<{
   periodConfirmed: boolean;
   periodError: string;
   mileage: string;
-  mileagePrices: Record<string, number>;
   protection: boolean;
   renterContext: string[];
   extras: string[];
   delivery: boolean;
   rate: number;
+  quote: { days: number; total: number; includedMileage: number };
+  dayLabel: string;
 }>();
+const surcharge = (car: Car, option: string) => rentalRate(car, option) - rentalRate(car, baseMileage);
 const emit = defineEmits<{
   back: [];
   "update:mileage": [value: string];
@@ -43,7 +45,7 @@ const emit = defineEmits<{
       <div class="vehicle-heading">
         <div>
           <h1 id="vehicle-page-title">{{ car.name }}</h1>
-          <p class="vehicle-subtitle">{{ car.category }} · {{ car.year }} г. · {{ car.body }}</p>
+          <p class="vehicle-subtitle">{{ car.category }}<template v-if="car.year"> · {{ car.year }} г.</template> · {{ car.body }}</p>
         </div>
         <div class="vehicle-heading-price"><span>Стоимость аренды</span><strong>{{ money(rate) }} ₽ <small>/ сутки</small></strong></div>
       </div>
@@ -65,12 +67,12 @@ const emit = defineEmits<{
               <span class="vehicle-mileage-rate" role="status"><strong>{{ money(rate) }} ₽</strong> / сутки</span>
             </p>
             <div class="vehicle-mileage-options">
-              <button v-for="(price, option) in mileagePrices" :key="option" type="button" :aria-pressed="mileage === option"
-                :aria-label="price ? `${option}, доплата ${money(price)} ₽ в сутки` : `${option}, включено в базовую цену`"
+              <button v-for="option in mileageOptions" :key="option" type="button" :aria-pressed="mileage === option"
+                :aria-label="option === baseMileage ? `${option}, базовый тариф` : `${option}, доплата ${money(surcharge(car, option))} ₽ в сутки`"
                 @click="emit('update:mileage', option)">
                 <strong>{{ option.replace(' км / сутки', '') }}</strong>
                 <small>км в сутки</small>
-                <span class="mileage-surcharge">{{ price ? '+' + money(price) + ' ₽' : 'Включено' }}</span>
+                <span class="mileage-surcharge">{{ option === baseMileage ? 'Включено' : '+' + money(surcharge(car, option)) + ' ₽' }}</span>
               </button>
             </div>
           </div>
@@ -79,22 +81,25 @@ const emit = defineEmits<{
             <p v-if="pickupIncomplete" class="error-text">Укажите улицу и номер дома через «Изменить параметры».</p>
           </div>
           <dl class="vehicle-conditions" aria-label="Дополнительные условия расчёта">
-            <div><dt>Залог</dt><dd>{{ car.deposit == null ? 'Уточняется' : money(car.deposit) + ' ₽' }}</dd></div>
-            <div><dt>Пробег сверх лимита</dt><dd>{{ car.overagePrice == null ? 'Уточняется' : money(car.overagePrice) + ' ₽ / км' }}</dd></div>
-            <div><dt>Мойка при необходимости</dt><dd>{{ car.washPrice == null ? 'Уточняется' : money(car.washPrice) + ' ₽' }}</dd></div>
+            <div><dt>Залог</dt><dd>{{ money(car.deposit) }} ₽</dd></div>
+            <div><dt>Пробег сверх лимита</dt><dd>{{ money(car.overagePrice) }} ₽ / км</dd></div>
+            <div><dt>Мойка при необходимости</dt><dd>{{ money(washPrices[car.category]) }} ₽</dd></div>
           </dl>
           <button class="vehicle-edit text-button" type="button" @click="emit('edit-search')">Изменить параметры <ArrowUpRight :size="15" aria-hidden="true" /></button>
           <div v-if="extras.length" class="vehicle-extras"><strong>Пожелания к аренде</strong><p>{{ extras.join(", ") }}</p><small>Наличие и стоимость уточняются.</small></div>
           <div v-if="renterContext.length" class="context-tags"><span v-for="tag in renterContext" :key="tag">{{ tag }}</span></div>
           <div class="vehicle-protection">
-            <label v-if="car.protectionPrice != null">
+            <label>
               <input type="checkbox" :checked="protection" @change="emit('update:protection', ($event.target as HTMLInputElement).checked)" />
               <span><strong>Добавить «Защиту+»</strong><small>+{{ money(car.protectionPrice) }} ₽ / сутки</small></span>
             </label>
-            <p v-else><ShieldCheck :size="19" aria-hidden="true" /> «Защита+» · цена по запросу</p>
             <button class="text-button" type="button" aria-label="Что покрывает «Защита+»" @click="emit('explain-protection')">Что покрывает <ArrowUpRight :size="15" aria-hidden="true" /></button>
           </div>
-          <p v-if="!periodConfirmed" class="vehicle-request-hint">Выберите даты и время, чтобы подготовить заявку.</p>
+          <dl v-if="quote.days" class="vehicle-quote" aria-live="polite">
+            <div><dt>Предварительно за {{ quote.days }} {{ dayLabel }}</dt><dd>{{ money(quote.total) }} ₽</dd></div>
+            <div><dt>Пробег за весь срок</dt><dd>{{ money(quote.includedMileage) }} км</dd></div>
+          </dl>
+          <p v-if="!periodConfirmed" class="vehicle-request-hint">Подтвердите даты и время, чтобы подготовить заявку.</p>
           <button class="button button-primary full-width" type="button" :disabled="!periodConfirmed || !!periodError || pickupIncomplete" @click="emit('request', false)">Подготовить заявку <ArrowRight :size="18" aria-hidden="true" /></button>
           <button class="mileage-discuss text-button" type="button" :disabled="!periodConfirmed || !!periodError || pickupIncomplete" @click="emit('request', true)">Обсудить пробег <ArrowUpRight :size="15" aria-hidden="true" /></button>
         </aside>
@@ -107,11 +112,11 @@ const emit = defineEmits<{
           <section class="vehicle-section" aria-labelledby="vehicle-specs-title">
             <h2 id="vehicle-specs-title">Характеристики</h2>
             <dl class="spec-grid">
-              <div><dt><span class="spec-icon"><UsersRound :size="18" aria-hidden="true" /></span>Посадочные места</dt><dd>{{ car.seats }}</dd></div>
+              <div v-if="car.seats"><dt><span class="spec-icon"><UsersRound :size="18" aria-hidden="true" /></span>Посадочные места</dt><dd>{{ car.seats }}</dd></div>
               <div><dt><span class="spec-icon"><Settings2 :size="18" aria-hidden="true" /></span>Коробка передач</dt><dd>Автомат</dd></div>
               <div><dt><span class="spec-icon"><Fuel :size="18" aria-hidden="true" /></span>Топливо</dt><dd>{{ car.fuel }}</dd></div>
               <div><dt><span class="spec-icon"><CarFront :size="18" aria-hidden="true" /></span>Привод</dt><dd>{{ car.drive }}</dd></div>
-              <div><dt><span class="spec-icon"><Zap :size="18" aria-hidden="true" /></span>Мощность</dt><dd>{{ car.power }} л.с.</dd></div>
+              <div v-if="car.power"><dt><span class="spec-icon"><Zap :size="18" aria-hidden="true" /></span>Мощность</dt><dd>{{ car.power }} л.с.</dd></div>
               <div><dt><span class="spec-icon"><CarFront :size="18" aria-hidden="true" /></span>Тип кузова</dt><dd>{{ car.body }}</dd></div>
             </dl>
             <dl v-if="car.extraSpecs?.length" class="vehicle-tech"><div v-for="spec in car.extraSpecs" :key="spec.label"><dt>{{ spec.label }}</dt><dd>{{ spec.value }}</dd></div></dl>
@@ -123,10 +128,10 @@ const emit = defineEmits<{
           <section class="vehicle-section" aria-labelledby="vehicle-terms-title">
             <h2 id="vehicle-terms-title">Условия аренды</h2>
             <dl class="vehicle-terms">
-              <div><dt>Пробег сверх лимита</dt><dd>{{ car.overagePrice == null ? 'Ставка уточняется.' : `Ориентир — ${money(car.overagePrice)} ₽ за км.` }} Правила расчёта согласуем до оформления.</dd></div>
-              <div><dt>Залог</dt><dd>{{ car.deposit == null ? 'Размер уточняется.' : `Ориентир — ${money(car.deposit)} ₽.` }} Применимость и условия возврата уточним до подтверждения.</dd></div>
+              <div><dt>Пробег сверх лимита</dt><dd>{{ money(car.overagePrice) }} ₽ за км сверх общего лимита за оплаченный срок.</dd></div>
+              <div><dt>Залог</dt><dd>{{ money(car.deposit) }} ₽. <a href="#conditions/deposit">Условия аренды без залога</a>.</dd></div>
               <div v-if="delivery"><dt>Доставка</dt><dd>Стоимость подачи согласуем по выбранному месту получения.</dd></div>
-              <div><dt>Мойка и топливо</dt><dd>Машину возвращают чистой и с тем же уровнем топлива. {{ car.washPrice == null ? 'Стоимость мойки при необходимости уточняется.' : `Ориентировочная стоимость мойки при необходимости — ${money(car.washPrice)} ₽.` }} Дозаправка оплачивается отдельно.</dd></div>
+              <div><dt>Мойка и топливо</dt><dd>Машину возвращают чистой и с тем же уровнем топлива. Мойка при необходимости стоит {{ money(washPrices[car.category]) }} ₽. Дозаправка оплачивается отдельно.</dd></div>
               <div><dt>Защита+</dt><dd>Дополнительная опция. Покрытие и исключения уточняются перед заключением договора.</dd></div>
             </dl>
           </section>
@@ -145,6 +150,9 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
+.vehicle-quote { display: grid; gap: 8px; margin: 0; padding: 12px; border-radius: 9px; background: #f1f3ef; font-size: var(--type-small); }
+.vehicle-quote > div { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.vehicle-quote dd { margin: 0; font-weight: 750; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .vehicle-request-hint { color: #5d5f5a; font-size: var(--type-secondary); line-height: 1.4; margin: 0 0 8px; }
 
 .vehicle-page { min-height: 80vh; padding: 36px 24px 80px; background: #fff; color: #1d1d1d; }

@@ -2,10 +2,20 @@
 import { computed, ref, watch } from "vue";
 import { ChevronLeft, ChevronRight } from "lucide-vue-next";
 import CarArt from "./CarArt.vue";
-import type { Car } from "../data";
+import type { Car, CarPhoto } from "../data";
 
 const props = defineProps<{ car: Car }>();
-const photos = computed(() => props.car.photos ?? []);
+const photoOrder: Record<NonNullable<CarPhoto["role"]>, number> = {
+  front: 0,
+  exterior: 1,
+  rear: 1,
+  other: 1,
+  interior: 2,
+  trunk: 3,
+};
+const photos = computed(() => [...(props.car.photos ?? [])].sort(
+  (left, right) => photoOrder[left.role ?? "other"] - photoOrder[right.role ?? "other"],
+));
 const current = ref(0);
 const active = computed(() => photos.value[current.value]);
 const thumbnails = ref<HTMLDivElement>();
@@ -44,10 +54,11 @@ function endSwipe(event: TouchEvent) {
 </script>
 
 <template>
-  <figure class="detail-photo" :class="{ 'detail-photo--with-previews': photos.length > 1 }" aria-label="Фотографии автомобиля"
+  <figure class="detail-photo" :class="{ 'detail-photo--with-previews': photos.length > 1, 'detail-photo--preview-grid': photos.length >= 4 }"
+    aria-label="Фотографии автомобиля"
     @keydown.left.prevent="move(-1)" @keydown.right.prevent="move(1)">
     <div class="gallery-stage" @touchstart.passive="startSwipe" @touchend.passive="endSwipe" @touchcancel="touchStart = undefined">
-      <img v-if="active" :src="asset(active.file)" :alt="`${car.name} — ${active.label}`" decoding="async" />
+      <img v-if="active" :class="{ 'gallery-illustration': active.illustration }" :src="asset(active.file)" :alt="`${car.name} — ${active.label}`" decoding="async" />
       <CarArt v-else :index="car.image" :name="car.name" />
       <template v-if="photos.length > 1">
         <button class="gallery-arrow previous" type="button" aria-label="Предыдущее фото" @click="move(-1)"><ChevronLeft :size="24" aria-hidden="true" /></button>
@@ -69,6 +80,7 @@ function endSwipe(event: TouchEvent) {
 .detail-photo { --gallery-gap: 10px; min-width: 0; margin: 0; }
 .gallery-stage { position: relative; width: 100%; aspect-ratio: 16 / 9; max-height: 510px; overflow: hidden; border-radius: 14px; background: #edefeb; touch-action: pan-y pinch-zoom; }
 .gallery-stage > img, .gallery-stage :deep(.car-art) { display: block; width: 100%; height: 100%; object-fit: cover; }
+.gallery-stage > img:not(.gallery-illustration) { object-fit: contain; }
 .gallery-arrow { position: absolute; top: 50%; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; transform: translateY(-50%); border: 1px solid #d8dbd6; border-radius: 50%; background: #fff; }
 .gallery-arrow:hover { background: #f3f4f0; }
 .gallery-arrow.previous { left: 14px; }
@@ -92,6 +104,12 @@ function endSwipe(event: TouchEvent) {
     scrollbar-width: thin;
   }
   .gallery-thumbnails button { aspect-ratio: auto; }
+  .detail-photo--preview-grid { grid-template-columns: minmax(0, 16fr) minmax(0, 9fr); }
+  .detail-photo--preview-grid .gallery-thumbnails {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: calc((100% - var(--gallery-gap)) / 2);
+  }
+  .detail-photo--preview-grid .gallery-thumbnails button { align-self: start; width: 100%; aspect-ratio: 1; }
 }
 @media (max-width: 650px) {
   .gallery-arrow.previous { left: 8px; }

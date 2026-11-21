@@ -49,6 +49,13 @@ import {
   addDays,
   localDate,
   checkRentalPeriod,
+  defaultVehiclePeriod,
+  baseMileage,
+  mileageOptions,
+  mileageLimit,
+  rentalRate,
+  officeAddress,
+  officePickupHours,
   profileInitials,
   type Car,
   type RentalPeriod,
@@ -58,19 +65,12 @@ const currentTime = ref(new Date());
 let clockTimer: ReturnType<typeof setInterval> | undefined;
 onMounted(() => { clockTimer = setInterval(() => { currentTime.value = new Date(); }, 60_000); });
 onBeforeUnmount(() => { if (clockTimer) clearInterval(clockTimer); });
-const officeOpen = computed(() => {
-  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Moscow", weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(currentTime.value);
-  const part = (type: string) => parts.find((item) => item.type === type)?.value ?? "";
-  const minutes = Number(part("hour")) * 60 + Number(part("minute"));
-  return !["Sat", "Sun"].includes(part("weekday")) && minutes >= 8 * 60 && minutes < 17 * 60;
-});
 const addressDelivery = "Доставка по адресу";
 const pickupPresets = [office, "Шереметьево (SVO)", "Домодедово (DME)", "Внуково (VKO)"];
-const baseMileage = "100 км / сутки";
 const category = ref("Все классы"),
   location = ref(office),
-  mileage = ref(baseMileage);
-const pricesMileage = ref(baseMileage);
+  mileage = ref<string>(baseMileage);
+const pricesMileage = ref<string>(baseMileage);
 const priceTab = ref<"rental" | "services" | "damage">("rental");
 const address = ref("");
 const deliveryPoint = ref<DeliveryPoint>();
@@ -103,6 +103,8 @@ const delivery = computed({
 const start = ref(addDays(todayISO(), 2)),
   end = ref(addDays(start.value, 1));
 const confirmedPeriod = ref<RentalPeriod>();
+const proposedPeriod = ref<RentalPeriod>();
+const searchDatesSelected = ref(false);
 const protection = ref(false),
   business = ref(false),
   foreign = ref(false);
@@ -178,13 +180,22 @@ function readRoute() {
   const [section, slug = ""] = hash.slice(1).split("/");
   const car = section === "car" ? cars.find(item => String(item.id) === slug) : undefined;
 
-  if (car) selected.value = car;
+  if (car) {
+    selected.value = car;
+    const now = new Date();
+    const searchPeriod = { start: start.value, end: end.value, startTime: "10:00", endTime: "10:00" };
+    proposedPeriod.value = page.value !== "prices" && searchDatesSelected.value && !checkRentalPeriod(searchPeriod, now).error
+      ? searchPeriod
+      : defaultVehiclePeriod(now);
+  }
   if (section === "search" && slug === "business") business.value = true;
   if (section === "search" && slug === "international") foreign.value = true;
   if (section === "prices") {
     priceTab.value = slug === "services" || slug === "damage" ? slug : "rental";
     if (page.value === "prices") return;
-    pricesMileage.value = baseMileage;
+    if (carOrigin?.page !== "prices" || previousHash !== `#car/${carOrigin.id}`) {
+      pricesMileage.value = baseMileage;
+    }
   }
   page.value = pages.find(item => item === section && (item !== "car" || car)) ?? "catalog";
   detailId.value = slug;
@@ -208,7 +219,7 @@ function readRoute() {
     if (carOrigin && page.value === carOrigin.page && previousHash === `#car/${carOrigin.id}`) {
       const origin = carOrigin;
       carOrigin = undefined;
-      const opener = Array.from(document.querySelectorAll<HTMLButtonElement>("main [data-car-action]"))
+      const opener = Array.from(document.querySelectorAll<HTMLElement>("main [data-car-action]"))
         .find(button => button.dataset.carAction === origin.action);
       if (opener) opener.focus({ preventScroll: true });
       window.scrollTo({ top: origin.scroll, behavior: "instant" });
@@ -241,25 +252,26 @@ const rentalPeriod = computed<RentalPeriod>(() => ({
 }));
 const periodConfirmed = computed(() => confirmedPeriod.value?.start === start.value && confirmedPeriod.value?.end === end.value);
 const periodError = computed(() => periodConfirmed.value ? checkRentalPeriod(rentalPeriod.value, currentTime.value).error : "");
+const vehiclePeriod = computed(() => periodConfirmed.value ? rentalPeriod.value : proposedPeriod.value ?? rentalPeriod.value);
 function applyRentalPeriod(period: RentalPeriod) {
   start.value = period.start;
   end.value = period.end;
   confirmedPeriod.value = period;
 }
-const mileagePrices: Record<string, number> = {
-  [baseMileage]: 0,
-  "250 км / сутки": 700,
-  "500 км / сутки": 1500,
-};
-const mileageOptions = Object.keys(mileagePrices);
 const mileageOptionDetails = Object.fromEntries(
-  Object.entries(mileagePrices).map(([option, price]) =>
-    [option, price ? `+${money(price)} ₽ / сутки` : "Включено в базовый тариф"]),
+  mileageOptions.map(option => [option, option === baseMileage ? "Базовый тариф" : "Цена зависит от автомобиля"]),
 );
-const mileageExtra = computed(() => mileagePrices[mileage.value] ?? 0);
 const mileageLabel = computed(() => `${mileage.value} включено`);
 const rate = (car: Car) =>
-  car.price + mileageExtra.value + (protection.value ? (car.protectionPrice ?? 0) : 0);
+  rentalRate(car, mileage.value) + (protection.value ? car.protectionPrice : 0);
+const vehicleQuote = computed(() => {
+  const { days } = checkRentalPeriod(vehiclePeriod.value, currentTime.value);
+  return {
+    days,
+    total: rate(selected.value) * days,
+    includedMileage: mileageLimit(mileage.value) * days,
+  };
+});
 const filteredQuick = computed(() =>
   cars.filter(
     (c) =>
@@ -310,10 +322,10 @@ function openInfo(title: string, body: string, photo?: keyof typeof guidePhotos)
   mobileMenu.value = false;
 }
 function explainMileage() {
-  const limit = Number.parseInt(mileage.value, 10);
+  const limit = mileageLimit(mileage.value);
   openInfo(
     "Что означает лимит пробега",
-    `Лимит — расстояние, включённое в тариф, а не пробег самого автомобиля.\n\nС пакетом ${limit} км за сутки можно проехать ${limit} км по тарифу. При поездке на ${limit + 20} км доплата будет за 20 км. Цену за километр и правила для аренды на несколько суток уточним до оформления.`,
+    `Лимит пробега — расстояние, включённое в стоимость аренды. Пробег суммируется за все оплаченные сутки. С пакетом ${limit} км в сутки на три дня в стоимость входит ${money(limit * 3)} км за весь срок. Если при возврате общий пробег будет выше лимита, разницу оплачивают по ставке из карточки автомобиля.`,
     "mileage",
   );
 }
@@ -327,7 +339,7 @@ function explainDelivery() {
 function explainProtection() {
   openInfo(
     "Защита+",
-    "Защита+ — платная опция, которая снижает вашу ответственность при повреждении автомобиля. Стоимость указана за сутки и зависит от модели.\n\nПокрытие, исключения и ответственность согласуем до оформления. При получении осмотрите автомобиль вместе с сотрудником и зафиксируйте его состояние.",
+    "Защита+ — платная опция, которая покрывает определённые повреждения при соблюдении условий договора. В покрываемом ДТП или при внешнем воздействии защита может распространяться на кузов, стёкла, оптику и зеркала.\n\nДействуют исключения. Условия применения и порядок действий при происшествии уточним до оформления.",
     "protection",
   );
 }
@@ -369,23 +381,21 @@ function request(withMileageDiscussion = false) {
   if (!periodConfirmed.value || periodError.value || incompleteAddress.value) return;
 
   const period = rentalPeriod.value;
-  const { days } = checkRentalPeriod(period, currentTime.value);
+  const { days, total, includedMileage } = vehicleQuote.value;
   requestDetails.value = {
     car: selected.value.name,
     period: `${rentalMoment(period.start, period.startTime)} — ${rentalMoment(period.end, period.endTime)} (МСК)`,
     pickup: pickupLabel.value,
     pickupMap: addressSelected.value && deliveryPoint.value ? deliveryPointUrl(deliveryPoint.value) : undefined,
-    mileage: mileageLabel.value,
-    protection: protection.value
-      ? (selected.value.protectionPrice == null ? "Защита+ · стоимость уточняется" : "Защита+ подключена")
-      : "Без «Защиты+»",
+    mileage: `${mileage.value} · ${money(includedMileage)} км за весь срок`,
+    protection: protection.value ? "Защита+ подключена" : "Без «Защиты+»",
     notes: [
       ...renterContext.value,
       withMileageDiscussion ? "Пробег — обсудить перед оформлением" : "",
       catalogFilters.value.extras.length ? `Пожелания: ${catalogFilters.value.extras.join(", ")}` : "",
     ].filter(Boolean),
     days,
-    total: rate(selected.value) * days,
+    total,
   };
   modal.value = "request";
   submitted.value = false;
@@ -432,16 +442,20 @@ function searchWithAddress() {
     nextTick(() => searchPanel.value?.querySelector<HTMLElement>('input[aria-invalid="true"]')?.focus());
     return;
   }
-  search();
+  applySearch();
 }
 function search() {
   modal.value = null;
   if (page.value !== "catalog") goPage("catalog");
 }
+function applySearch() {
+  searchDatesSelected.value = true;
+  search();
+}
 function searchWithDates(startDate: string, endDate: string) {
   start.value = startDate;
   end.value = endDate;
-  search();
+  applySearch();
 }
 
 function selectQuick(value: string) {
@@ -537,9 +551,9 @@ function logoutDemo() {
       </a>
       <MessengerIcons class="header-messengers" icon-class="header-messenger" :channels="['telegram', 'whatsapp']" />
       </div>
-      <div class="header-hours" :aria-label="`${officeOpen ? 'Сейчас открыто' : 'Сейчас закрыто'}. Понедельник–пятница, с 8 до 17 часов по Москве`">
-        <span class="hours-dot" :class="{ 'hours-dot-open': officeOpen }" aria-hidden="true"></span>
-        <span>Пн–пт 8:00–17:00<span class="hours-zone"> (МСК)</span></span>
+      <div class="header-hours">
+        <Clock3 :size="14" aria-hidden="true" />
+        <span>Выдача {{ officePickupHours }}<span class="hours-zone"> (МСК)</span></span>
       </div>
       </div>
       <button
@@ -597,7 +611,7 @@ function logoutDemo() {
               :options="categories"
               ><CarFront :size="22"
             /></SelectField>
-            <DateRange v-model:start="start" v-model:end="end" />
+            <DateRange v-model:start="start" v-model:end="end" @update:start="searchDatesSelected = true" @update:end="searchDatesSelected = true" />
             <DeliveryAddress
               v-model="location"
               :address="address"
@@ -615,7 +629,7 @@ function logoutDemo() {
               <SelectField
                 v-model="mileage"
                 label="Лимит пробега"
-                :options="mileageOptions"
+                :options="[...mileageOptions]"
                 :option-details="mileageOptionDetails"
                 ><Gauge :size="20"
               /></SelectField>
@@ -742,7 +756,7 @@ function logoutDemo() {
                     class="car-card-bottom"
                     ><strong>{{ car.name }}</strong
                     ><span
-                      >от <b>{{ money(car.price) }} ₽</b
+                      >от <b>{{ money(rentalRate(car, baseMileage)) }} ₽</b
                       ><small> / сутки</small></span
                     ></span
                   ><span class="card-arrow"><ArrowUpRight :size="16" /></span>
@@ -775,15 +789,16 @@ function logoutDemo() {
     :cars="filteredCars" :all-cars="cars" v-model:filters="catalogFilters" :categories="categories" v-model:category="category" v-model:sort="sort"
     v-model:start="start" v-model:end="end" v-model:location="location" :location-options="pickupPresets"
     :address="address" :address-mode="addressDelivery" :delivery-point="deliveryPoint" @confirm-address="confirmDeliveryAddress"
-    v-model:mileage="mileage" :base-mileage="baseMileage" :mileage-prices="mileagePrices" :mileage-label="mileageLabel" :rate="rate" :protection="protection"
-    @apply-search="search" @edit-search="editSearch" @show-car="showCar" />
+    v-model:mileage="mileage" :base-mileage="baseMileage" :mileage-label="mileageLabel" :rate="rate" :protection="protection"
+    @apply-search="applySearch" @edit-search="editSearch" @show-car="showCar" />
   <VehiclePage v-if="page === 'car'"
     :car="selected" :back-label="carReturnPage === 'prices' ? 'К ценам' : 'Все автомобили'" :pickup-label="pickupLabel"
-    :period="rentalPeriod" :period-confirmed="periodConfirmed" :period-error="periodError" :pickup-incomplete="incompleteAddress"
-    v-model:mileage="mileage" :mileage-prices="mileagePrices" v-model:protection="protection"
+    :period="vehiclePeriod" :period-confirmed="periodConfirmed" :period-error="periodError" :pickup-incomplete="incompleteAddress"
+    v-model:mileage="mileage" v-model:protection="protection"
     :renter-context="renterContext" :extras="catalogFilters.extras" :delivery="delivery" :rate="rate(selected)"
+    :quote="vehicleQuote" :day-label="rentalDayLabel(vehicleQuote.days)"
     @back="closeCar" @edit-search="editSearch" @apply-period="applyRentalPeriod" @request="request" @explain-protection="explainProtection" />
-  <PricesPage v-if="page === 'prices'" :tab="priceTab" :cars="cars" v-model:mileage="pricesMileage" :mileage-prices="mileagePrices"
+  <PricesPage v-if="page === 'prices'" :tab="priceTab" :cars="cars" v-model:mileage="pricesMileage"
     @show-car="showPriceCar" @explain-protection="explainProtection" @open-terms="goPage('conditions')" />
   <ServicesPage v-if="page === 'services'" :detail-id="detailId" :start="start" :end="end" @find-cars="searchWithDates" />
   <InformationPage v-if="page === 'conditions' || page === 'contacts' || page === 'about'" :page="page" />
@@ -801,8 +816,8 @@ function logoutDemo() {
       <a href="tel:+74951041010" class="contact-phone"
         ><Phone :size="21" />8 495 104-10-10</a
       >
-      <p>Пн–пт, 8:00–17:00 (МСК)</p>
-      <p><MapPin :size="19" />Москва, ул. Авиационная, 24с1</p>
+      <p>Выдача в офисе {{ officePickupHours }} (МСК). Доставка круглосуточно.</p>
+      <p><MapPin :size="19" />{{ officeAddress }}</p>
       <a href="mailto:info@punktprokat.ru"
         ><Mail :size="18" />info@punktprokat.ru</a
       >

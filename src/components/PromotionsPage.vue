@@ -7,29 +7,24 @@ import { daytimeDeliveryHours } from '../data';
 const props = defineProps<{ detailId: string }>();
 const offers = [
   {
-    id: 'free-delivery', title: 'Бесплатная доставка по Москве', image: 'guide-delivery.webp', discount: null,
+    id: 'free-delivery', title: 'Бесплатная доставка в пределах МКАД', image: 'guide-delivery.webp', discount: null,
     summary: `Дневная подача ${daytimeDeliveryHours}.`,
-    description: `Дневная доставка в пределах Москвы бесплатна в часы ${daytimeDeliveryHours}. Согласуйте адрес и время подачи до оформления. Для ночной доставки, области и аэропортов действуют отдельные тарифы.`,
+    description: `Дневная доставка в пределах МКАД бесплатна (${daytimeDeliveryHours}). Согласуйте адрес и время подачи до оформления. Для ночной доставки, выезда за МКАД и аэропортов действуют отдельные условия.`,
   },
   {
-    id: 'families', title: 'Участникам СВО и членам их семей', image: 'promo-families.webp', discount: '20%',
+    id: 'families', title: 'Участникам СВО и членам их семей', image: 'promo-families.webp', discount: '10%',
     summary: 'Условия аренды для участников СВО и членов их семей.',
     description: 'До выбора машины уточните, на какие автомобили и даты действует предложение и какие документы нужны при оформлении.',
   },
   {
-    id: 'bloggers', title: 'Для блогеров', image: 'hero-moscow.webp', discount: '20%',
-    summary: 'Аренда автомобиля для съёмки или публикации.',
-    description: 'Расскажите о формате, датах съёмки и нужной модели. Условия сотрудничества можно обсудить с командой «Пункта».',
-  },
-  {
-    id: 'half-day', title: 'Аренда на полдня', image: 'guide-road.webp', discount: '30%',
-    summary: 'Вариант для поездок на несколько часов.',
-    description: 'Чтобы оформить аренду на полдня, позвоните нам. Назовите время получения и возврата, а мы подберём автомобиль и рассчитаем стоимость.',
-  },
-  {
-    id: 'large-families', title: 'Многодетным семьям', image: 'hero-wan-hd.webp', discount: '20%',
+    id: 'large-families', title: 'Многодетным семьям', image: 'hero-wan-hd.webp', discount: '10%',
     summary: 'Условия аренды для многодетных семей.',
     description: 'Перед оформлением уточните подходящие автомобили, сроки предложения и документы, которые понадобятся.',
+  },
+  {
+    id: 'cash', title: 'При оплате наличными', image: 'guide-inspection.webp', discount: '5%',
+    summary: 'Скидка 5% при оплате аренды наличными.',
+    description: 'При оплате аренды наличными действует скидка 5%. Уточните итоговую стоимость при оформлении.',
   },
 ];
 const selected = computed(() => offers.find(offer => offer.id === props.detailId));
@@ -53,9 +48,9 @@ const asset = (file: string) => `${import.meta.env.BASE_URL}assets/${file}`;
             <p>{{ selected.description }}</p>
           </header>
           <div class="detail-actions">
-            <a href="tel:+74951041010" class="interior-action"><Phone :size="17" aria-hidden="true" /> {{ selected.id === 'half-day' ? 'Позвонить по акции' : 'Уточнить условия' }}</a>
+            <a href="tel:+74951041010" class="interior-action"><Phone :size="17" aria-hidden="true" /> Уточнить условия</a>
             <a v-if="selected.id === 'free-delivery'" href="#prices/services" class="interior-action secondary">Все тарифы доставки <ArrowRight :size="17" aria-hidden="true" /></a>
-            <a v-else-if="selected.id !== 'half-day'" href="#catalog" class="interior-action secondary">Посмотреть автомобили <ArrowRight :size="17" aria-hidden="true" /></a>
+            <a v-else href="#catalog" class="interior-action secondary">Посмотреть автомобили <ArrowRight :size="17" aria-hidden="true" /></a>
           </div>
         </div>
       </article>

@@ -1,18 +1,21 @@
-export type CarPhoto = { label: string; file: string; role?: "front" | "rear" | "interior" | "other"; thumbnail?: string; illustration?: boolean };
+export type CarPhoto = { label: string; file: string; role?: "front" | "exterior" | "rear" | "interior" | "trunk" | "other"; thumbnail?: string; illustration?: boolean };
+export const mileageOptions = ["100 км / сутки", "250 км / сутки", "500 км / сутки"] as const;
+export const baseMileage = mileageOptions[0];
+export const washPrices = { Эконом: 1300, Стандарт: 1500, Кроссовер: 1800, Бизнес: 2000 };
+type MileageLimit = 100 | 250 | 500;
 export type Car = {
   id: number;
   name: string;
-  year: number;
-  category: string;
-  price: number;
-  protectionPrice?: number;
-  deposit?: number;
-  overagePrice?: number;
-  washPrice?: number;
+  year?: number;
+  category: keyof typeof washPrices;
+  rates: Record<MileageLimit, number>;
+  protectionPrice: number;
+  deposit: number;
+  overagePrice: number;
   modelDescription?: string;
   autoUrl?: string;
-  power: number;
-  seats: number;
+  power?: number;
+  seats?: number;
   fuel: string;
   drive: string;
   body: "Седан" | "Кроссовер";
@@ -21,30 +24,62 @@ export type Car = {
   extraSpecs?: { label: string; value: string }[];
   trim?: { name: string; features: string[] };
 };
+export function mileageLimit(option: string): MileageLimit {
+  if (option === mileageOptions[1]) return 250;
+  if (option === mileageOptions[2]) return 500;
+  return 100;
+}
+export function rentalRate(car: Car, option: string) {
+  return car.rates[mileageLimit(option)];
+}
 const demoPhotos = (model: string): CarPhoto[] => [
   { label: "Вид спереди", file: `demo-${model}-front.webp`, thumbnail: `demo-${model}-thumb.webp`, role: "front", illustration: true },
   { label: "Вид сзади", file: `demo-${model}-rear.webp`, role: "rear", illustration: true },
 ];
+function fleetPhotos(directory: string, frames: [name: string, label: string, role: NonNullable<CarPhoto["role"]>][]): CarPhoto[] {
+  return frames.map(([name, label, role]) => ({
+    label,
+    file: `cars/${directory}/${name}.webp`,
+    thumbnail: `cars/${directory}/${name}-thumb.webp`,
+    role,
+  }));
+}
 export const cars: Car[] = [
   {
     id: 1,
     name: "Hyundai Solaris",
     year: 2021,
     category: "Эконом",
-    price: 2900,
-    protectionPrice: 490,
+    rates: { 100: 2600, 250: 3000, 500: 4000 },
+    protectionPrice: 500,
     deposit: 10000,
     overagePrice: 8,
-    washPrice: 1500,
     modelDescription: "Практичный седан для города и загородных поездок. Hyundai Solaris сочетает экономичность, комфорт и доступное обслуживание.",
-    autoUrl: "https://auto.ru/catalog/cars/hyundai/solaris/21796089/21796128/equipment/21796128_21800863_21796132/",
     power: 123,
     seats: 5,
     fuel: "Бензин",
     drive: "Передний",
     body: "Седан",
     image: 0,
-    photos: demoPhotos("solaris"),
+    photos: fleetPhotos("solaris", [
+      ["blue-front", "Синий, вид спереди", "front"],
+      ["blue-rear-quarter", "Синий, вид сзади под углом", "rear"],
+      ["blue-side", "Синий, вид сбоку", "exterior"],
+      ["blue-front-other-side", "Синий, вид спереди с другой стороны", "exterior"],
+      ["blue-rear", "Синий, вид сзади", "rear"],
+      ["black-front", "Чёрный, вид спереди", "exterior"],
+      ["black-rear-quarter", "Чёрный, вид сзади под углом", "rear"],
+      ["black-rear", "Чёрный, вид сзади", "rear"],
+      ["blue-interior", "Синий, общий вид салона", "interior"],
+      ["blue-dashboard", "Синий, руль и приборная панель", "interior"],
+      ["blue-front-seats", "Синий, передние сиденья", "interior"],
+      ["black-interior", "Чёрный, общий вид салона", "interior"],
+      ["black-driver-seat", "Чёрный, место водителя", "interior"],
+      ["black-front-seats", "Чёрный, передние сиденья", "interior"],
+      ["black-rear-seats", "Чёрный, задние сиденья", "interior"],
+      ["climate-controls", "Панель климат-контроля", "interior"],
+      ["black-trunk", "Чёрный, багажник", "trunk"],
+    ]),
     extraSpecs: [
       { label: "Двигатель", value: "1,6 л" },
       { label: "Объём багажника", value: "480 л" },
@@ -54,12 +89,8 @@ export const cars: Car[] = [
       { label: "Длина × ширина × высота", value: "4 405 × 1 729 × 1 469 мм" },
     ],
     trim: {
-      name: "Comfort",
-      features: [
-        "Кондиционер", "Подогрев передних сидений", "Мультимедиа с Bluetooth",
-        "Управление аудио на руле", "Электростеклоподъёмники",
-        "Электрорегулировка зеркал", "Центральный замок", "Две подушки безопасности",
-      ],
+      name: "Elegance",
+      features: ["Apple CarPlay и Android Auto", "Камера заднего вида", "Датчик света", "Противотуманные фары"],
     },
   },
   {
@@ -67,9 +98,10 @@ export const cars: Car[] = [
     name: "Kia Rio",
     year: 2022,
     category: "Эконом",
-    price: 3200,
-    protectionPrice: 590,
-    deposit: 12000,
+    rates: { 100: 2800, 250: 3200, 500: 4200 },
+    protectionPrice: 600,
+    deposit: 10000,
+    overagePrice: 9,
     power: 123,
     seats: 5,
     fuel: "Бензин",
@@ -77,66 +109,105 @@ export const cars: Car[] = [
     body: "Седан",
     image: 1,
     photos: demoPhotos("rio"),
+    extraSpecs: [{ label: "Двигатель", value: "1,6 л" }],
+    trim: {
+      name: "Comfort",
+      features: ["Мультимедиа с FM и Bluetooth", "Датчик света", "Противотуманные фары", "Обогрев лобового стекла"],
+    },
   },
   {
     id: 3,
-    name: "BMW 3 Series",
-    year: 2019,
+    name: "BMW 318d (G20)",
     category: "Бизнес",
-    price: 5500,
-    protectionPrice: 890,
+    rates: { 100: 5500, 250: 6500, 500: 8000 },
+    protectionPrice: 1500,
     deposit: 20000,
-    power: 184,
+    overagePrice: 15,
     seats: 5,
-    fuel: "Бензин",
+    fuel: "Дизель",
     drive: "Задний",
     body: "Седан",
     image: 2,
     photos: demoPhotos("bmw"),
   },
   {
-    id: 4,
-    name: "Toyota Camry",
-    year: 2021,
-    category: "Бизнес",
-    price: 6200,
-    protectionPrice: 990,
-    deposit: 25000,
-    power: 200,
-    seats: 5,
-    fuel: "Бензин",
-    drive: "Передний",
-    body: "Седан",
-    image: 3,
-    photos: demoPhotos("camry"),
-  },
-  {
     id: 5,
     name: "Geely Coolray",
     year: 2023,
     category: "Кроссовер",
-    price: 4800,
+    rates: { 100: 3200, 250: 4000, 500: 5000 },
+    protectionPrice: 700,
+    deposit: 12000,
+    overagePrice: 10,
     power: 150,
     seats: 5,
     fuel: "Бензин",
     drive: "Передний",
     body: "Кроссовер",
     image: 4,
-    photos: demoPhotos("coolray"),
+    photos: fleetPhotos("coolray-white", [
+      ["front", "Вид спереди", "front"],
+      ["side", "Вид сбоку", "exterior"],
+      ["rear", "Вид сзади", "rear"],
+      ["interior", "Салон", "interior"],
+      ["panoramic-roof", "Панорамная крыша", "interior"],
+      ["trunk", "Багажник", "trunk"],
+    ]),
+    extraSpecs: [{ label: "Двигатель", value: "1,5 л" }],
   },
   {
     id: 6,
     name: "Haval Jolion",
     year: 2023,
     category: "Кроссовер",
-    price: 4600,
-    power: 143,
+    rates: { 100: 3200, 250: 4000, 500: 5000 },
+    protectionPrice: 700,
+    deposit: 12000,
+    overagePrice: 10,
     seats: 5,
     fuel: "Бензин",
-    drive: "Передний",
+    drive: "Полный",
     body: "Кроссовер",
     image: 5,
     photos: demoPhotos("jolion"),
+    extraSpecs: [{ label: "Двигатель", value: "1,5 л" }],
+  },
+  {
+    id: 7,
+    name: "Hyundai Creta 4WD",
+    category: "Кроссовер",
+    rates: { 100: 3300, 250: 4200, 500: 5200 },
+    protectionPrice: 700,
+    deposit: 12000,
+    overagePrice: 10,
+    fuel: "Бензин",
+    drive: "Полный",
+    body: "Кроссовер",
+    image: 6,
+    photos: fleetPhotos("creta-white", [
+      ["front", "Белая, вид спереди", "front"],
+      ["side", "Белая, вид сбоку", "exterior"],
+      ["rear-quarter", "Белая, вид сзади под углом", "rear"],
+      ["rear", "Белая, вид сзади", "rear"],
+      ["front-turned-wheel", "Белая, передний ракурс с повёрнутыми колёсами", "exterior"],
+      ["rear-lights", "Белая, задние фонари", "rear"],
+      ["interior", "Белая, общий вид салона", "interior"],
+    ]),
+    extraSpecs: [{ label: "Двигатель", value: "2,0 л" }],
+  },
+  {
+    id: 8,
+    name: "Geely Cityray",
+    category: "Кроссовер",
+    rates: { 100: 3800, 250: 4500, 500: 5500 },
+    protectionPrice: 900,
+    deposit: 15000,
+    overagePrice: 12,
+    fuel: "Бензин",
+    drive: "Передний",
+    body: "Кроссовер",
+    image: 7,
+    extraSpecs: [{ label: "Двигатель", value: "1,5 л" }],
   },
 ];
 export const categories = [
@@ -160,8 +231,8 @@ export const serviceGroups = [
   {
     title: "Поездки и события",
     items: [
-      { id: "russia", title: "Поездки по России", description: "Расскажите о маршруте до оформления, чтобы согласовать регионы поездки и подходящий лимит пробега." },
-      { id: "abroad", title: "Поездки за границу", description: "На наших автомобилях можно поехать в Беларусь. Условия поездки и документы согласуем заранее." },
+      { id: "russia", title: "Поездки по России", description: "Расскажите о маршруте до оформления. Согласуем лимит пробега и укажем в договоре территорию поездки." },
+      { id: "abroad", title: "Поездки за границу", description: "На наших автомобилях можно поехать в Беларусь по согласованию. До выдачи согласуем условия, документы и территорию поездки в договоре." },
     ],
   },
   {
@@ -174,7 +245,9 @@ export const serviceGroups = [
     ],
   },
 ] as const;
+export const officePickupHours = "09:00–21:00";
 export const daytimeDeliveryHours = "09:00–21:00";
+export const officeAddress = "Москва, ул. Авиационная, 24с1";
 export const money = (n: number) => new Intl.NumberFormat("ru-RU").format(n);
 export const isoDate = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -208,6 +281,14 @@ export const addDays = (str: string, days: number) => {
   d.setDate(d.getDate() + days);
   return isoDate(d);
 };
+
+export function defaultVehiclePeriod(now: Date): RentalPeriod {
+  const nextHour = new Date(Math.ceil(now.getTime() / 3600000) * 3600000);
+  const hour = (nextHour.getUTCHours() + 3) % 24;
+  const start = hour >= 21 ? addDays(todayISO(nextHour), 1) : todayISO(nextHour);
+  const time = hour < 9 || hour >= 21 ? "09:00" : `${String(hour).padStart(2, "0")}:00`;
+  return { start, end: addDays(start, 1), startTime: time, endTime: time };
+}
 
 
 export function profileInitials(name: string, fallback: string) {

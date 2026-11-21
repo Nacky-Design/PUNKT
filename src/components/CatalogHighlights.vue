@@ -38,7 +38,7 @@ function show(index: number) {
     <div id="catalog-highlights" ref="track" class="highlights-track" @scroll.passive="updateActive">
       <article class="highlight delivery-highlight">
         <div class="highlight-copy">
-          <h3>Бесплатная доставка по Москве</h3>
+          <h3>Бесплатная доставка в пределах МКАД</h3>
           <p>Дневная подача {{ daytimeDeliveryHours }}. Адрес и время согласуем заранее.</p>
           <a href="#promotions/free-delivery" class="highlight-action">
             Условия доставки <ArrowRight :size="17" aria-hidden="true" />
