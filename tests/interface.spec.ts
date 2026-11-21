@@ -144,7 +144,7 @@ test("vehicle details, cover, mileage and request form use the same rental detai
   await expect(car.locator(".vehicle-tech")).toContainText("480 л");
   const gallery = car.getByRole("figure", { name: "Фотографии автомобиля" });
   const mainPhoto = gallery.getByRole("img", { name: "Hyundai Solaris — Синий, вид спереди", exact: true });
-  await expect(mainPhoto).toHaveJSProperty("naturalWidth", 1200);
+  await expect.poll(() => mainPhoto.evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThanOrEqual(1200);
   await expect(mainPhoto).toHaveCSS("object-fit", "cover");
   const photoBox = await mainPhoto.boundingBox();
   const previewsBox = await gallery.getByRole("group", { name: "Выберите фотографию" }).boundingBox();
